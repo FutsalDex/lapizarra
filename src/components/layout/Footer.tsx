@@ -1,4 +1,4 @@
-import { Futbol } from "lucide-react";
+import { Goal } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           <div className="flex items-center space-x-2">
-            <Futbol className="h-6 w-6 text-primary" />
+            <Goal className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline text-lg">LaPizarra</span>
           </div>
           <p className="text-center text-sm text-muted-foreground">

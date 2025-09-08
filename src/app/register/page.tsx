@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Futbol } from "lucide-react";
+import { Goal } from "lucide-react";
 
 export default function RegisterPage() {
   return (
@@ -18,7 +18,7 @@ export default function RegisterPage() {
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-            <Futbol className="h-8 w-8 text-primary" />
+            <Goal className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl font-headline">Registro</CardTitle>
           <CardDescription>
