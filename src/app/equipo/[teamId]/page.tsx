@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Users, ClipboardCheck, Trophy, Settings } from 'lucide-react';
+import { ArrowLeft, Users, ClipboardCheck, BarChartHorizontal, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -32,9 +32,9 @@ const teamModules = [
     href: (teamId: string) => `/equipo/${teamId}/asistencia`,
   },
   {
-    title: 'Partidos',
-    description: 'Da de alta nuevos partidos, consulta el historial y gestiona las estadísticas en vivo.',
-    icon: Trophy,
+    title: 'Partidos y Estadísticas',
+    description: 'Gestiona el partido en tiempo real, estadísticas, goles y crono.',
+    icon: BarChartHorizontal,
     href: (teamId: string) => `/equipo/${teamId}/partidos`,
   },
 ];

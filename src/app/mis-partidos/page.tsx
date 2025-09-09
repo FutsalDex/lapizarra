@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Trophy, PlusCircle, Eye, BarChart2, Trash2 } from 'lucide-react';
+import { Trophy, PlusCircle, Eye, BarChartHorizontal, Trash2 } from 'lucide-react';
 import AddMatchDialog from './_components/AddMatchDialog';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -101,7 +101,7 @@ export default function MisPartidosPage() {
               </CardHeader>
               <CardFooter className="flex justify-center gap-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link href={`/marcador/${match.id}`}><BarChart2 className="mr-2 h-4 w-4" />Estadísticas</Link>
+                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="mr-2 h-4 w-4" />Estadísticas</Link>
                 </Button>
                  <AddMatchDialog>
                      <Button variant="ghost" size="icon">
