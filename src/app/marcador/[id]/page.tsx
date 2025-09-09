@@ -100,17 +100,20 @@ export default function MarcadorEnVivoPage() {
             if(userPlayers) {
                 const batch = writeBatch(db);
                 userPlayers.forEach(player => {
-                    const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
-                    batch.update(playerRef, {
-                        pj: increment(1),
-                        goals: increment(player.goals),
-                        faltas: increment(player.faltas),
-                        ta: increment(player.amarillas),
-                        tr: increment(player.rojas),
-                        paradas: increment(player.paradas),
-                        gRec: increment(player.golesContra),
-                        smvp: increment(player.vs1), 
-                    });
+                    // Only update players that belong to the user's team (don't have visitor/local temporary IDs)
+                    if (!player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
+                        const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
+                        batch.update(playerRef, {
+                            pj: increment(1),
+                            goals: increment(player.goals),
+                            faltas: increment(player.faltas),
+                            ta: increment(player.amarillas),
+                            tr: increment(player.rojas),
+                            paradas: increment(player.paradas),
+                            gRec: increment(player.golesContra),
+                            smvp: increment(player.vs1), 
+                        });
+                    }
                 });
                 await batch.commit();
             }
@@ -151,34 +154,32 @@ export default function MarcadorEnVivoPage() {
 
 
   // Match data and timer logic
-    useEffect(() => {
-        if (!id) return;
-        const matchDocRef = doc(db, 'matches', id);
+  useEffect(() => {
+    if (!id) return;
+    const matchDocRef = doc(db, 'matches', id);
 
-        const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data() as Omit<MatchDetails, 'id'>;
+    const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data() as Omit<MatchDetails, 'id'>;
 
-                let localPlayers = data.localPlayers;
-                let visitorPlayers = data.visitorPlayers;
+            let localPlayers = data.localPlayers;
+            let visitorPlayers = data.visitorPlayers;
 
-                // This complex logic ensures we only fetch the user's team once,
-                // and correctly place them as local or visitor.
-                if (data.teamId && (!localPlayers || !visitorPlayers)) {
-                    const teamDocRef = doc(db, 'teams', data.teamId);
-                    const teamDoc = await getDoc(teamDocRef);
-                    if (teamDoc.exists()) {
-                        const teamName = teamDoc.data().name;
-                        const isLocalTeam = teamName === data.localTeam;
-                        const isVisitorTeam = teamName === data.visitorTeam;
+            if (data.teamId) {
+                const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
+                if (teamDoc.exists()) {
+                    const teamName = teamDoc.data().name;
+                    const isLocalTeam = teamName === data.localTeam;
+                    const isVisitorTeam = teamName === data.visitorTeam;
 
+                    if ((isLocalTeam && !localPlayers) || (isVisitorTeam && !visitorPlayers)) {
                         const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playersQuery);
                         const userTeamPlayers = playersSnapshot.docs.map(d => ({
                             id: d.id, name: d.data().name, number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
                         })).sort((a, b) => a.number - b.number);
-
+                        
                         if (isLocalTeam && !localPlayers) {
                             localPlayers = userTeamPlayers;
                         } else if (isVisitorTeam && !visitorPlayers) {
@@ -186,27 +187,26 @@ export default function MarcadorEnVivoPage() {
                         }
                     }
                 }
-                
-                setMatch({
-                    id: docSnap.id,
-                    ...data,
-                    localPlayers: localPlayers || [],
-                    visitorPlayers: visitorPlayers || [],
-                    timeLeft: data.timeLeft ?? 25 * 60,
-                    period: data.period ?? '1ª Parte',
-                    isActive: data.isActive ?? false,
-                    events: data.events || []
-                });
-
-
-            } else {
-                toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
             }
-            setLoading(false);
-        });
+            
+            setMatch({
+                id: docSnap.id,
+                ...data,
+                localPlayers: localPlayers || [],
+                visitorPlayers: visitorPlayers || [],
+                timeLeft: data.timeLeft ?? 25 * 60,
+                period: data.period ?? '1ª Parte',
+                isActive: data.isActive ?? false,
+                events: data.events || []
+            });
+        } else {
+            toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
+        }
+        setLoading(false);
+    });
 
-        return () => unsubscribe();
-    }, [id, toast]);
+    return () => unsubscribe();
+}, [id, toast]);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -223,7 +223,7 @@ export default function MarcadorEnVivoPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [match?.isActive, match?.timeLeft]);
+  }, [match?.isActive]);
 
 
  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
@@ -377,9 +377,7 @@ export default function MarcadorEnVivoPage() {
   const renderTeamTable = (team: 'local' | 'visitor') => {
     const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
     const players = match[teamKey] || [];
-    const isUserTeam = players.some(p => !p.id.startsWith('local-') && !p.id.startsWith('visitor-'));
-
-
+    
     return (
         <div className="mt-0">
             <div className={cn("p-2", team === 'local' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
@@ -412,7 +410,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8 w-14 text-center" 
                                         value={player.number} 
                                         onChange={(e) => handlePlayerInfoChange(team, index, 'number', parseInt(e.target.value) || 0)} 
-                                        readOnly={isUserTeam} 
+                                        readOnly={!player.id.startsWith('visitor-') && !player.id.startsWith('local-')} 
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -420,7 +418,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8" 
                                         value={player.name} 
                                         onChange={(e) => handlePlayerInfoChange(team, index, 'name', e.target.value)} 
-                                        readOnly={isUserTeam} 
+                                        readOnly={!player.id.startsWith('visitor-') && !player.id.startsWith('local-')}
                                     />
                                 </TableCell>
                                 <StatButtonCell team={team} playerIndex={index} stat="goals" />
@@ -434,14 +432,14 @@ export default function MarcadorEnVivoPage() {
                         ))}
                     </TableBody>
                 </Table>
-                {!isUserTeam && (
-                    <div className="p-2 text-right">
-                        <Button variant="outline" size="sm" onClick={() => addPlayer(team)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Jugador
-                        </Button>
-                    </div>
-                )}
+                
+                <div className="p-2 text-right">
+                    <Button variant="outline" size="sm" onClick={() => addPlayer(team)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Añadir Jugador
+                    </Button>
+                </div>
+                
             </div>
         </div>
     );
