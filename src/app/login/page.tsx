@@ -61,7 +61,8 @@ export default function LoginPage() {
       router.push('/');
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
   
@@ -69,7 +70,6 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
@@ -92,6 +92,8 @@ export default function LoginPage() {
         return 'Demasiados intentos de inicio de sesión. Inténtalo de nuevo más tarde.';
        case 'auth/operation-not-allowed':
         return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
+      case 'auth/popup-closed-by-user':
+        return 'El proceso de inicio de sesión fue cancelado.';
       default:
         return 'Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.';
     }

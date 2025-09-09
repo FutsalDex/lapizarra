@@ -31,7 +31,7 @@ const GoogleIcon = () => (
       fill="#4285F4"
     />
     <path
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98. ৬৬-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
       fill="#34A853"
     />
     <path
@@ -70,7 +70,8 @@ export default function RegisterPage() {
       router.push('/');
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -78,7 +79,6 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
@@ -99,6 +99,8 @@ export default function RegisterPage() {
         return 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
       case 'auth/operation-not-allowed':
         return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
+      case 'auth/popup-closed-by-user':
+        return 'El proceso de inicio de sesión fue cancelado.';
       default:
         return 'Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.';
     }
