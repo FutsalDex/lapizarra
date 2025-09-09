@@ -174,18 +174,6 @@ export default function MarcadorEnVivoPage() {
         </TableCell>
     )
   }
-  
-  const CardCell = ({ value, color }: { value: number, color: 'yellow' | 'red' }) => {
-    return (
-        <TableCell className="text-center">
-            <div className="flex items-center justify-center gap-2">
-                <div className={cn("w-4 h-5 rounded-sm", color === 'yellow' ? 'bg-yellow-400' : 'bg-red-600')}></div>
-                <span>{value}</span>
-            </div>
-        </TableCell>
-    )
-  }
-
 
   if (loading) {
     return (
@@ -248,8 +236,8 @@ export default function MarcadorEnVivoPage() {
                                         <TableCell>{player.number}</TableCell>
                                         <TableCell>{player.name}</TableCell>
                                         <StatButtonCell team="local" playerIndex={index} stat="goals" />
-                                        <CardCell value={player.amarillas} color="yellow" />
-                                        <CardCell value={player.rojas} color="red" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="amarillas" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="rojas" />
                                         <StatButtonCell team="local" playerIndex={index} stat="faltas" />
                                         <StatButtonCell team="local" playerIndex={index} stat="paradas" />
                                         <StatButtonCell team="local" playerIndex={index} stat="golesContra" />
@@ -279,3 +267,4 @@ export default function MarcadorEnVivoPage() {
 }
 
     
+
