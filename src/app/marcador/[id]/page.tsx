@@ -58,7 +58,7 @@ interface MatchDetails {
     events: GoalEvent[];
 }
 
-type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'assists'>;
+type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number'>;
 
 
 export default function MarcadorEnVivoPage() {
@@ -206,6 +206,7 @@ export default function MarcadorEnVivoPage() {
                             batch.update(playerRef, {
                                 pj: increment(1),
                                 goals: increment(player.goals || 0),
+                                assists: increment(player.assists || 0),
                                 faltas: increment(player.faltas || 0),
                                 ta: increment(player.amarillas || 0),
                                 tr: increment(player.rojas || 0),
@@ -404,6 +405,7 @@ export default function MarcadorEnVivoPage() {
                             <TableHead>Dorsal</TableHead>
                             <TableHead>Nombre</TableHead>
                             <TableHead className="text-center">Goles</TableHead>
+                            <TableHead className="text-center">As</TableHead>
                             <TableHead className="text-center">
                                 <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
                             </TableHead>
@@ -436,6 +438,7 @@ export default function MarcadorEnVivoPage() {
                                     />
                                 </TableCell>
                                 <StatButtonCell team={team} playerIndex={index} stat="goals" />
+                                <StatButtonCell team={team} playerIndex={index} stat="assists" />
                                 <StatButtonCell team={team} playerIndex={index} stat="amarillas" />
                                 <StatButtonCell team={team} playerIndex={index} stat="rojas" />
                                 <StatButtonCell team={team} playerIndex={index} stat="faltas" />
@@ -485,7 +488,7 @@ export default function MarcadorEnVivoPage() {
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button variant="destructive" onClick={finalizeMatch} disabled={isSaving || match.isFinished}>
+                         <Button variant="destructive" disabled={isSaving || match.isFinished}>
                             {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : (isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<CheckCircle className="mr-2 h-4 w-4"/>)}
                             {match.isFinished ? 'Partido Finalizado' : 'Finalizar Partido'}
                         </Button>
@@ -558,5 +561,3 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
-
-    

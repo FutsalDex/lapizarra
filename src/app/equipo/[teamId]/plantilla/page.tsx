@@ -67,6 +67,7 @@ interface Player {
     active: boolean;
     pj: number;
     goals: number;
+    assists: number;
     ta: number;
     tr: number;
     faltas: number;
@@ -154,6 +155,7 @@ export default function TeamRosterPage() {
                 active: true,
                 pj: 0,
                 goals: 0,
+                assists: 0,
                 ta: 0,
                 tr: 0,
                 faltas: 0,
@@ -190,6 +192,7 @@ export default function TeamRosterPage() {
             batch.update(playerRef, {
                 pj: 0,
                 goals: 0,
+                assists: 0,
                 ta: 0,
                 tr: 0,
                 faltas: 0,
@@ -315,6 +318,7 @@ export default function TeamRosterPage() {
                         <TableHead className="w-[5%]">Activo</TableHead>
                         <TableHead className="text-center">PJ</TableHead>
                         <TableHead className="text-center">Goles</TableHead>
+                        <TableHead className="text-center">As</TableHead>
                         <TableHead className="text-center">T.A.</TableHead>
                         <TableHead className="text-center">T.R.</TableHead>
                         <TableHead className="text-center">Faltas</TableHead>
@@ -346,6 +350,7 @@ export default function TeamRosterPage() {
                             <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handlePlayerChange(player.id, 'active', checked)} /></TableCell>
                             <TableCell className="text-center">{player.pj || 0}</TableCell>
                             <TableCell className="text-center">{player.goals || 0}</TableCell>
+                            <TableCell className="text-center">{player.assists || 0}</TableCell>
                             <TableCell className="text-center">{player.ta || 0}</TableCell>
                             <TableCell className="text-center">{player.tr || 0}</TableCell>
                             <TableCell className="text-center">{player.faltas || 0}</TableCell>
@@ -369,6 +374,28 @@ export default function TeamRosterPage() {
                 </Button>
             </div>
         </CardContent>
+        <CardFooter className="pt-6">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive"><RefreshCw className="mr-2 h-4 w-4"/>Resetear Estadísticas</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Resetear estadísticas?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción pondrá a CERO todas las estadísticas (PJ, Goles, etc.) de todos los jugadores de la plantilla. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetStats} disabled={isSaving}>
+                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Sí, resetear
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </CardFooter>
       </Card>
     </div>
   );

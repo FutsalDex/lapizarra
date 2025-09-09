@@ -29,6 +29,7 @@ interface PlayerStats {
   number: number;
   name: string;
   goals: number;
+  assists: number;
   amarillas: number;
   rojas: number;
   faltas: number;
@@ -183,6 +184,7 @@ export default function MatchDetailsPage() {
                                     <TableHead>#</TableHead>
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>G</TableHead>
+                                    <TableHead>As</TableHead>
                                     <TableHead>TA</TableHead>
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
@@ -197,6 +199,7 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.number ?? 0}</TableCell>
                                     <TableCell>{player.name}</TableCell>
                                     <TableCell>{player.goals ?? 0}</TableCell>
+                                    <TableCell>{player.assists ?? 0}</TableCell>
                                     <TableCell>{player.amarillas ?? 0}</TableCell>
                                     <TableCell>{player.rojas ?? 0}</TableCell>
                                     <TableCell>{player.faltas ?? 0}</TableCell>
@@ -238,6 +241,7 @@ export default function MatchDetailsPage() {
                                     <TableHead>#</TableHead>
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>G</TableHead>
+                                    <TableHead>As</TableHead>
                                     <TableHead>TA</TableHead>
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
@@ -252,6 +256,7 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.number ?? 0}</TableCell>
                                     <TableCell>{player.name}</TableCell>
                                     <TableCell>{player.goals ?? 0}</TableCell>
+                                    <TableCell>{player.assists ?? 0}</TableCell>
                                     <TableCell>{player.amarillas ?? 0}</TableCell>
                                     <TableCell>{player.rojas ?? 0}</TableCell>
                                     <TableCell>{player.faltas ?? 0}</TableCell>
