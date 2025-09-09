@@ -1,39 +1,245 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ClipboardList } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  ArrowLeft,
+  ClipboardList,
+  Edit,
+  Eye,
+  Filter,
+  Loader2,
+  Trash2,
+} from 'lucide-react';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDocs,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import Link from 'next/link';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+interface Exercise {
+  id: string;
+  name: string;
+  duration: string;
+}
+
+interface Session {
+  id: string;
+  date: { seconds: number; nanoseconds: number };
+  sessionNumber: string;
+  initialExercise: string;
+  mainExercises: string[];
+  finalExercise: string;
+}
+
+interface PopulatedSession extends Omit<Session, 'initialExercise' | 'mainExercises' | 'finalExercise'> {
+    initialExercise: Exercise | null;
+    mainExercises: (Exercise | null)[];
+    finalExercise: Exercise | null;
+    totalDuration: number;
+}
+
 
 export default function MisSesionesPage() {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<PopulatedSession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(collection(db, 'sessions'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(
+      q,
+      async (sessionSnapshot) => {
+        setLoading(true);
+        const sessionsData = sessionSnapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Session)
+        );
+
+        if (sessionsData.length === 0) {
+            setSessions([]);
+            setLoading(false);
+            return;
+        }
+
+        // Fetch all exercises at once for efficiency
+        const exercisesSnapshot = await getDocs(collection(db, 'exercises'));
+        const exercisesMap = new Map<string, Exercise>();
+        exercisesSnapshot.forEach((doc) =>
+          exercisesMap.set(doc.id, { 
+            id: doc.id,
+            name: doc.data().name || doc.data().title,
+            ...doc.data()
+        } as Exercise)
+        );
+
+        const populatedSessions = sessionsData.map((session) => {
+            const initialEx = exercisesMap.get(session.initialExercise) || null;
+            const mainExs = session.mainExercises.map((id) => exercisesMap.get(id) || null);
+            const finalEx = exercisesMap.get(session.finalExercise) || null;
+
+            const initialDuration = parseInt(initialEx?.duration || '0', 10);
+            const mainDuration = mainExs.reduce((acc, ex) => acc + parseInt(ex?.duration || '0', 10),0);
+            const finalDuration = parseInt(finalEx?.duration || '0', 10);
+            const totalDuration = initialDuration + mainDuration + finalDuration;
+
+          return {
+            ...session,
+            initialExercise: initialEx,
+            mainExercises: mainExs,
+            finalExercise: finalEx,
+            totalDuration
+          };
+        });
+
+        setSessions(populatedSessions);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching sessions: ', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
   return (
-    <div className="container mx-auto max-w-4xl py-12 px-4">
-      <div className="text-center mb-12">
-         <div className="flex justify-center mb-4">
-            <ClipboardList className="h-16 w-16 text-primary" />
+    <div className="container mx-auto max-w-7xl py-12 px-4">
+      <div className="flex justify-between items-start mb-8">
+        <div className="text-left">
+          <div className="flex items-center gap-4">
+            <ClipboardList className="h-10 w-10 text-primary hidden md:block" />
+            <div>
+                <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
+                    Mis Sesiones
+                </h1>
+                <p className="text-lg text-muted-foreground mt-1">
+                    Aquí encontrarás todas las sesiones de entrenamiento que has creado.
+                </p>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
-          Mis Sesiones
-        </h1>
-        <p className="text-xl text-muted-foreground mt-2">
-          Aquí encontrarás todas tus sesiones de entrenamiento guardadas.
-        </p>
+        <Button asChild variant="outline">
+          <Link href="/mi-equipo">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver al Panel
+          </Link>
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Próximamente...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Estamos trabajando en esta sección. Pronto podrás ver, editar y descargar tus sesiones guardadas desde aquí.
-          </p>
-        </CardContent>
-      </Card>
+       <Card className="mb-8">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg"><Filter className="h-5 w-5" />Filtrar Sesiones</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Select defaultValue="2025">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Año" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2025">2025</SelectItem>
+                        <SelectItem value="2024">2024</SelectItem>
+                        <SelectItem value="2023">2023</SelectItem>
+                      </SelectContent>
+                    </Select>
+                     <Select defaultValue="todos">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Mes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos los meses</SelectItem>
+                        <SelectItem value="enero">Enero</SelectItem>
+                        <SelectItem value="febrero">Febrero</SelectItem>
+                        {/* ... more months ... */}
+                      </SelectContent>
+                    </Select>
+                    <Button>Aplicar Filtro</Button>
+                 </div>
+            </CardContent>
+        </Card>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-96 rounded-lg" />)}
+        </div>
+      ) : sessions.length === 0 ? (
+        <div className="text-center py-16 border-2 border-dashed rounded-lg bg-card">
+           <div className="flex justify-center mb-4">
+            <ClipboardList className="h-16 w-16 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold">No has creado ninguna sesión</h3>
+          <p className="text-muted-foreground mt-2 mb-4">Usa el creador de sesiones para planificar tu entrenamiento.</p>
+           <Button asChild>
+            <Link href="/crear-sesion">Crear una Sesión</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {sessions.map(session => (
+                <Card key={session.id} className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="text-primary">{format(new Date(session.date.seconds * 1000), "d 'de' MMMM 'de' yyyy", { locale: es })}</CardTitle>
+                        <CardDescription>
+                            Número sesión: {session.sessionNumber} | Tiempo total: {session.totalDuration} min
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-4 text-sm">
+                        <div>
+                            <h4 className="font-semibold text-foreground">Calentamiento</h4>
+                            <p className="text-muted-foreground">{session.initialExercise?.name || 'N/A'}</p>
+                        </div>
+                         <div>
+                            <h4 className="font-semibold text-foreground">Ejercicios Principales</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                {session.mainExercises.map(ex => ex ? <li key={ex.id}>{ex.name}</li> : null)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-foreground">Vuelta a la Calma</h4>
+                            <p className="text-muted-foreground">{session.finalExercise?.name || 'N/A'}</p>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex-col items-stretch space-y-2">
+                        <Button variant="outline"><Eye className="mr-2 h-4 w-4" />Ver Ficha Detallada</Button>
+                        <div className="grid grid-cols-2 gap-2">
+                             <Button variant="secondary"><Edit className="mr-2 h-4 w-4" />Editar</Button>
+                             <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Borrar</Button>
+                        </div>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

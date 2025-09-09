@@ -29,13 +29,13 @@ const modules = [
     title: 'Mi Plantilla',
     description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
     icon: Users,
-    href: '#',
+    href: '/mi-plantilla',
   },
   {
     title: 'Control de Asistencia',
     description: 'Registra y consulta la asistencia de los jugadores a entrenamientos y partidos.',
     icon: ClipboardCheck,
-    href: '#',
+    href: '/control-asistencia',
   },
   {
     title: 'Mis Partidos',
@@ -59,13 +59,13 @@ const modules = [
     title: 'Mis Eventos',
     description: 'Visualiza la cronología de todos tus partidos y sesiones de entrenamiento guardados.',
     icon: CalendarDays,
-    href: '#',
+    href: '/mis-eventos',
   },
    {
     title: 'Mis Estadísticas',
     description: 'Visualiza un resumen de los datos más relevantes de la temporada y las sesiones.',
     icon: BarChart3,
-    href: '#',
+    href: '/mis-estadisticas',
   },
    {
     title: 'Soporte Técnico',
