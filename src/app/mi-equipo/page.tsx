@@ -1,217 +1,115 @@
 
 'use client';
-import { useState } from 'react';
-import {
-  interactiveAiSupport,
-  type InteractiveAiSupportInput,
-  type InteractiveAiSupportOutput,
-} from '@/ai/flows/interactive-ai-support';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Bot, Loader2, Send, User } from 'lucide-react';
+  Users,
+  ClipboardCheck,
+  Trophy,
+  PenSquare,
+  ClipboardList,
+  CalendarDays,
+  BarChart3,
+  LifeBuoy,
+  ArrowRight,
+} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
-const teamMembers = [
+const modules = [
   {
-    name: 'Alex García',
-    position: 'Cierre',
-    avatar: 'https://picsum.photos/id/237/40/40',
+    title: 'Mi Plantilla',
+    description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
+    icon: Users,
+    href: '#',
   },
   {
-    name: 'Marta López',
-    position: 'Ala',
-    avatar: 'https://picsum.photos/id/238/40/40',
+    title: 'Control de Asistencia',
+    description: 'Registra y consulta la asistencia de los jugadores a entrenamientos y partidos.',
+    icon: ClipboardCheck,
+    href: '#',
   },
   {
-    name: 'Carlos Ruiz',
-    position: 'Pívot',
-    avatar: 'https://picsum.photos/id/239/40/40',
+    title: 'Mis Partidos',
+    description: 'Da de alta nuevos partidos, consulta el historial y gestiona las estadísticas en vivo con el marcador integrado.',
+    icon: Trophy,
+    href: '#',
   },
   {
-    name: 'Sofía Fernández',
-    position: 'Portera',
-    avatar: 'https://picsum.photos/id/240/40/40',
+    title: 'Marcador',
+    description: 'Usa un marcador rápido para partidos o entrenamientos y registra estadísticas básicas.',
+    icon: PenSquare,
+    href: '#',
   },
-  {
-    name: 'Javier Moreno',
-    position: 'Ala',
-    avatar: 'https://picsum.photos/id/241/40/40',
+    {
+    title: 'Mis Sesiones',
+    description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manualmente.',
+    icon: ClipboardList,
+    href: '/mis-sesiones',
+  },
+    {
+    title: 'Mis Eventos',
+    description: 'Visualiza la cronología de todos tus partidos y sesiones de entrenamiento guardados.',
+    icon: CalendarDays,
+    href: '#',
+  },
+   {
+    title: 'Mis Estadísticas',
+    description: 'Visualiza un resumen de los datos más relevantes de la temporada y las sesiones.',
+    icon: BarChart3,
+    href: '#',
+  },
+   {
+    title: 'Soporte Técnico',
+    description: 'Chatea con nuestro entrenador por IA configurado para darte respuestas sobre dudas, órdenes, etc.',
+    icon: LifeBuoy,
+    href: '#',
   },
 ];
 
-interface Message {
-  text: string;
-  sender: 'user' | 'ai';
-}
-
 export default function MiEquipoPage() {
-  const [chatHistory, setChatHistory] = useState<Message[]>([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-
-    const newHistory: Message[] = [...chatHistory, { text: query, sender: 'user' }];
-    setChatHistory(newHistory);
-    setQuery('');
-    setLoading(true);
-
-    try {
-      const result = await interactiveAiSupport({ query });
-      setChatHistory([
-        ...newHistory,
-        { text: result.response, sender: 'ai' },
-      ]);
-    } catch (error) {
-      console.error('Error with AI support:', error);
-      setChatHistory([
-        ...newHistory,
-        { text: 'Lo siento, no puedo responder en este momento.', sender: 'ai' },
-      ]);
-    }
-    setLoading(false);
-  };
-
+    const { user } = useAuth();
   return (
-    <div className="container mx-auto py-12 px-4">
+    <div className="container mx-auto max-w-7xl py-12 px-4">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold font-headline tracking-tighter text-primary">
-          Gestión de Equipo
+          Panel de Mi Equipo
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Tu centro de mando para todo lo relacionado con el equipo.
+            {user ? `Bienvenido, ${user.displayName || user.email}. ` : ''}
+            Aquí tienes el centro de mando para tu equipo.
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Plantilla de Jugadores</CardTitle>
-              <CardDescription>
-                Lista de todos los miembros de tu equipo.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Posición</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamMembers.map((player) => (
-                    <TableRow key={player.name}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={player.avatar} alt={player.name} data-ai-hint="person portrait" />
-                            <AvatarFallback>
-                              {player.name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{player.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{player.position}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <Card className="flex flex-col h-full">
-            <CardHeader>
-              <CardTitle>Soporte con IA</CardTitle>
-              <CardDescription>
-                Consulta tus dudas al asistente virtual.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col">
-              <ScrollArea className="flex-grow h-64 pr-4 -mr-4 mb-4">
-                <div className="space-y-4">
-                  {chatHistory.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-start gap-3 ${
-                        msg.sender === 'user' ? 'justify-end' : ''
-                      }`}
-                    >
-                      {msg.sender === 'ai' && (
-                        <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                          <AvatarFallback>
-                            <Bot className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={`max-w-xs rounded-lg px-4 py-2 ${
-                          msg.sender === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{msg.text}</p>
-                      </div>
-                      {msg.sender === 'user' && (
-                         <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            <User className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  ))}
-                  {loading && (
-                     <div className="flex items-start gap-3">
-                       <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                          <AvatarFallback>
-                            <Bot className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="max-w-xs rounded-lg px-4 py-2 bg-muted">
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        </div>
-                     </div>
-                  )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {modules.map((item) => (
+          <Card key={item.title} className="flex flex-col hover:shadow-lg transition-shadow">
+            <CardHeader className="flex-row items-center gap-4 space-y-0">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                     <item.icon className="h-6 w-6 text-primary" />
                 </div>
-              </ScrollArea>
-              <form onSubmit={handleChatSubmit} className="flex gap-2">
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Pregunta algo..."
-                  disabled={loading}
-                />
-                <Button type="submit" size="icon" disabled={loading}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              <CardTitle className="text-xl font-bold">{item.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <CardDescription>{item.description}</CardDescription>
             </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href={item.href}>
+                  Ir a {item.title} <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
           </Card>
-        </div>
+        ))}
       </div>
     </div>
   );
