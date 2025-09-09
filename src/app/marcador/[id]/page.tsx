@@ -59,6 +59,7 @@ interface MatchDetails {
 export default function MarcadorEnVivoPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
   const { toast } = useToast();
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,7 +74,7 @@ export default function MarcadorEnVivoPage() {
     }
   }, [match, saveStatus]);
 
-  const saveMatchData = useCallback(async (showToast = false) => {
+  const saveMatchData = useCallback(async (showToast = false, shouldExit = false) => {
     if (matchRef.current) {
         setSaveStatus('saving');
         const matchDocRef = doc(db, 'matches', id);
@@ -110,8 +111,11 @@ export default function MarcadorEnVivoPage() {
         if (showToast) {
             toast({ title: "Guardado", description: "Todos los cambios han sido guardados." });
         }
+        if (shouldExit) {
+            router.push(`/equipo/${matchRef.current.teamId}/partidos`);
+        }
     }
-  }, [id, toast]);
+  }, [id, toast, router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -120,19 +124,19 @@ export default function MarcadorEnVivoPage() {
         }
     }, 5000); // Autosave every 5 seconds
 
-    window.addEventListener('beforeunload', () => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         if (saveStatus === 'unsaved') {
+            e.preventDefault();
+            e.returnValue = ''; // For older browsers
             saveMatchData();
         }
-    });
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
         clearInterval(interval);
-        window.removeEventListener('beforeunload', () => {
-            if (saveStatus === 'unsaved') {
-                saveMatchData();
-            }
-        });
+        window.removeEventListener('beforeunload', handleBeforeUnload);
     }
   }, [saveMatchData, saveStatus]);
 
@@ -200,10 +204,10 @@ export default function MarcadorEnVivoPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [match?.isActive]);
+  }, [match?.isActive, match?.timeLeft]);
 
 
-  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name'>, delta: 1 | -1) => {
+  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists'>, delta: 1 | -1) => {
       setMatch(prev => {
           if (!prev || prev.period === 'Descanso') return null;
           const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -268,7 +272,7 @@ export default function MarcadorEnVivoPage() {
         });
     };
 
-  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' > }) => {
+  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' > }) => {
     const player = match?.[team === 'local' ? 'localPlayers' : 'visitorPlayers']?.[playerIndex];
     const value = player?.[stat] ?? 0;
 
@@ -340,7 +344,7 @@ export default function MarcadorEnVivoPage() {
                  <Button variant="outline" asChild>
                     <Link href={`/equipo/${match.teamId}/partidos`}>Cancelar</Link>
                 </Button>
-                <Button onClick={() => saveMatchData(true)}>
+                <Button onClick={() => saveMatchData(true, true)}>
                     <Save className="mr-2 h-4 w-4" />
                     Guardar y Salir
                 </Button>
