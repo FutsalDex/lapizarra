@@ -41,13 +41,13 @@ const modules = [
     title: 'Mis Partidos',
     description: 'Da de alta nuevos partidos, consulta el historial y gestiona las estadísticas en vivo con el marcador integrado.',
     icon: Trophy,
-    href: '#',
+    href: '/mis-partidos',
   },
   {
     title: 'Marcador',
     description: 'Usa un marcador rápido para partidos o entrenamientos y registra estadísticas básicas.',
     icon: PenSquare,
-    href: '#',
+    href: '/marcador',
   },
     {
     title: 'Mis Sesiones',
