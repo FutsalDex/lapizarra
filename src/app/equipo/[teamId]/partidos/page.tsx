@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Trophy, PlusCircle, Eye, BarChart2, Trash2, ArrowLeft } from 'lucide-react';
+import { Trophy, PlusCircle, Eye, BarChart2, Trash2, ArrowLeft, Edit } from 'lucide-react';
 import AddMatchDialog from '@/app/mis-partidos/_components/AddMatchDialog';
 import { collection, onSnapshot, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface Match {
   id: string;
@@ -31,6 +32,7 @@ interface Match {
   localScore: number;
   visitorScore: number;
   date: string;
+  matchType: string;
 }
 
 interface Team {
@@ -54,7 +56,7 @@ export default function TeamMatchesPage() {
     const q = query(collection(db, 'matches'), where('teamId', '==', teamId));
     const unsubscribeMatches = onSnapshot(q, (snapshot) => {
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-      setMatches(matchesData);
+      setMatches(matchesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setLoading(false);
     }, (error) => {
       console.error("Error fetching matches: ", error);
@@ -128,22 +130,20 @@ export default function TeamMatchesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {matches.map(match => (
-            <Card key={match.id} className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardDescription>{new Date(match.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</CardDescription>
-                <CardTitle className="text-2xl font-bold flex justify-center items-center gap-4">
-                  <span>{match.localTeam}</span>
-                  <span className="text-3xl">{match.localScore ?? 0} - {match.visitorScore ?? 0}</span>
-                  <span>{match.visitorTeam}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="flex justify-center gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/marcador/${match.id}`}><BarChart2 className="mr-2 h-4 w-4" />Estadísticas</Link>
+            <Card key={match.id} className="text-center hover:shadow-lg transition-shadow flex flex-col">
+              <CardContent className="p-6 flex-grow flex flex-col justify-center items-center">
+                  <h3 className="font-semibold">{match.localTeam} vs {match.visitorTeam}</h3>
+                  <p className="text-sm text-muted-foreground">{new Date(match.date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                  <p className="text-5xl font-bold text-primary my-4">{match.localScore ?? 0} - {match.visitorScore ?? 0}</p>
+                  <Badge variant="secondary">{match.matchType}</Badge>
+              </CardContent>
+              <CardFooter className="flex justify-center gap-2 border-t pt-4">
+                <Button asChild variant="ghost" size="icon">
+                  <Link href={`/marcador/${match.id}`}><Eye className="h-5 w-5" /></Link>
                 </Button>
                 <AddMatchDialog matchData={match} teamId={teamId}>
                     <Button variant="ghost" size="icon">
-                        <Eye className="h-5 w-5" />
+                        <Edit className="h-5 w-5" />
                     </Button>
                 </AddMatchDialog>
                 <AlertDialog>
@@ -173,5 +173,3 @@ export default function TeamMatchesPage() {
     </div>
   );
 }
-
-    
