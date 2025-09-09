@@ -94,8 +94,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                 const j = playerStats[player.id]?.j || 0;
                 const l = playerStats[player.id]?.l || 0;
                 
-                const accountableSessions = p + a; // Only 'presente' and 'ausente' count for percentage
-                const percentage = accountableSessions > 0 ? Math.round((p / accountableSessions) * 100) : 0;
+                const percentage = p > 0 ? Math.round((p / totalSessions) * 100) : 0;
                 
                 return {
                     id: player.id,
