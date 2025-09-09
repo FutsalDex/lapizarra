@@ -32,7 +32,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import AttendanceHistory from '@/app/control-asistencia/_components/AttendanceHistory';
 import Link from 'next/link';
-import { doc, onSnapshot, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,7 @@ interface Player {
     id: string;
     name: string;
     number: number;
+    active: boolean;
 }
 
 export default function TeamAttendancePage() {
@@ -58,6 +59,7 @@ export default function TeamAttendancePage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [recordExists, setRecordExists] = useState(false);
   const { toast } = useToast();
 
    useEffect(() => {
@@ -85,7 +87,7 @@ export default function TeamAttendancePage() {
     
     // Fetch attendance for the selected date
     useEffect(() => {
-        if (!date || !teamId) return;
+        if (!date || !teamId || players.length === 0) return;
 
         const dateString = format(date, 'yyyy-MM-dd');
         const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
@@ -93,6 +95,7 @@ export default function TeamAttendancePage() {
         const unsubscribe = onSnapshot(attendanceDocRef, (doc) => {
             if (doc.exists()) {
                 setAttendance(doc.data().statuses);
+                setRecordExists(true);
             } else {
                 // If no record exists, reset to default 'presente' for all players
                 const defaultAttendance = players.reduce((acc, player) => {
@@ -100,6 +103,7 @@ export default function TeamAttendancePage() {
                     return acc;
                 }, {} as Record<string, AttendanceStatus>);
                 setAttendance(defaultAttendance);
+                setRecordExists(false);
             }
         });
 
@@ -208,66 +212,79 @@ export default function TeamAttendancePage() {
           </div>
         </CardHeader>
         <CardContent>
-            <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead className="w-[100px]">Dorsal</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead className="text-right">Asistencia</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {players.map((player) => (
-                    <TableRow key={player.id}>
-                        <TableCell className="font-medium">{player.number}</TableCell>
-                        <TableCell>{player.name}</TableCell>
-                        <TableCell className="text-right">
-                           <RadioGroup
-                              defaultValue="presente"
-                              className="flex justify-end gap-4"
-                              value={attendance[player.id] || 'presente'}
-                              onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="presente" id={`presente-${player.id}`} />
-                                <Label htmlFor={`presente-${player.id}`}>Presente</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="ausente" id={`ausente-${player.id}`} />
-                                <Label htmlFor={`ausente-${player.id}`}>Ausente</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="justificado" id={`justificado-${player.id}`} />
-                                <Label htmlFor={`justificado-${player.id}`}>Justificado</Label>
-                              </div>
-                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="lesionado" id={`lesionado-${player.id}`} />
-                                <Label htmlFor={`lesionado-${player.id}`}>Lesionado</Label>
-                              </div>
-                            </RadioGroup>
-                        </TableCell>
+             {players.length > 0 ? (
+                <>
+                <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[100px]">Dorsal</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead className="text-right">Asistencia</TableHead>
                     </TableRow>
-                ))}
-                </TableBody>
-            </Table>
-            </div>
-            <div className="flex justify-end mt-6 gap-4">
-                <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    Eliminar Registro
-                </Button>
-                <Button size="lg" onClick={handleSaveAttendance} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
-                    Guardar Asistencia
-                </Button>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                    {players.map((player) => (
+                        <TableRow key={player.id}>
+                            <TableCell className="font-medium">{player.number}</TableCell>
+                            <TableCell>{player.name}</TableCell>
+                            <TableCell className="text-right">
+                            <RadioGroup
+                                defaultValue="presente"
+                                className="flex justify-end gap-4"
+                                value={attendance[player.id] || 'presente'}
+                                onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
+                                >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="presente" id={`presente-${player.id}`} />
+                                    <Label htmlFor={`presente-${player.id}`}>Presente</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="ausente" id={`ausente-${player.id}`} />
+                                    <Label htmlFor={`ausente-${player.id}`}>Ausente</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="justificado" id={`justificado-${player.id}`} />
+                                    <Label htmlFor={`justificado-${player.id}`}>Justificado</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="lesionado" id={`lesionado-${player.id}`} />
+                                    <Label htmlFor={`lesionado-${player.id}`}>Lesionado</Label>
+                                </div>
+                                </RadioGroup>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+                <div className="flex justify-end mt-6 gap-4">
+                    <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving || !recordExists}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Eliminar Registro
+                    </Button>
+                    <Button size="lg" onClick={handleSaveAttendance} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
+                        {recordExists ? 'Actualizar Asistencia' : 'Guardar Asistencia'}
+                    </Button>
+                </div>
+              </>
+            ) : (
+                <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <p>No hay jugadores activos en la plantilla.</p>
+                    <Button asChild variant="link">
+                        <Link href={`/equipo/${teamId}/plantilla`}>Gestionar plantilla</Link>
+                    </Button>
+                </div>
+            )}
         </CardContent>
       </Card>
 
-      <AttendanceHistory />
+      <AttendanceHistory teamId={teamId} />
     </div>
   );
 }
+
+    
 
     
