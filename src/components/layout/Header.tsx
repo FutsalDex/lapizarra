@@ -34,7 +34,6 @@ const baseNav = [
 ];
 
 const userNav = [
-    { title: "Mis Invitaciones", href: "/mis-invitaciones", icon: Mail },
 ]
 
 const adminNav = [
