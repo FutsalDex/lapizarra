@@ -104,12 +104,12 @@ export default function MarcadorEnVivoPage() {
                         const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
                         batch.update(playerRef, {
                             pj: increment(1),
-                            goals: increment(player.goals),
-                            faltas: increment(player.faltas),
-                            ta: increment(player.amarillas),
-                            tr: increment(player.rojas),
-                            paradas: increment(player.paradas),
-                            gRec: increment(player.golesContra)
+                            goals: increment(player.goals || 0),
+                            faltas: increment(player.faltas || 0),
+                            ta: increment(player.amarillas || 0),
+                            tr: increment(player.rojas || 0),
+                            paradas: increment(player.paradas || 0),
+                            gRec: increment(player.golesContra || 0)
                         });
                     }
                 });
