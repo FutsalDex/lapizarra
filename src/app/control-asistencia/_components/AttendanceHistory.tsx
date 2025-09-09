@@ -93,8 +93,9 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                 const a = playerStats[player.id]?.a || 0;
                 const j = playerStats[player.id]?.j || 0;
                 const l = playerStats[player.id]?.l || 0;
-                const total = p + a + j + l;
-                const percentage = total > 0 ? Math.round((p / total) * 100) : 0;
+                
+                const accountableSessions = p + a; // Only 'presente' and 'ausente' count for percentage
+                const percentage = accountableSessions > 0 ? Math.round((p / accountableSessions) * 100) : 0;
                 
                 return {
                     id: player.id,
@@ -182,7 +183,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
             <p><span className="font-bold">L:</span> Lesionado</p>
         </div>
         <p className="text-xs text-muted-foreground mt-4">
-          * El % de asistencia se calcula como: (Presente / (Presente + Ausente + Justificado + Lesionado)) * 100.
+          * El % de asistencia se calcula como: (Presente / (Presente + Ausente)) * 100.
         </p>
       </CardContent>
     </Card>
