@@ -33,7 +33,7 @@ interface PlayerStats {
   rojas: number;
   faltas: number;
   paradas: number;
-  golesContra: number;
+  gRec: number;
   vs1: number;
 }
 
@@ -187,22 +187,22 @@ export default function MatchDetailsPage() {
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
                                     <TableHead>Par.</TableHead>
-                                    <TableHead>G.C.</TableHead>
+                                    <TableHead>GR</TableHead>
                                     <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {match.localPlayers.map(player => (
                                 <TableRow key={player.id}>
-                                    <TableCell>{player.number}</TableCell>
+                                    <TableCell>{player.number ?? 0}</TableCell>
                                     <TableCell>{player.name}</TableCell>
-                                    <TableCell>{player.goals}</TableCell>
-                                    <TableCell>{player.amarillas}</TableCell>
-                                    <TableCell>{player.rojas}</TableCell>
-                                    <TableCell>{player.faltas}</TableCell>
-                                    <TableCell>{player.paradas}</TableCell>
-                                    <TableCell>{player.golesContra}</TableCell>
-                                    <TableCell>{player.vs1}</TableCell>
+                                    <TableCell>{player.goals ?? 0}</TableCell>
+                                    <TableCell>{player.amarillas ?? 0}</TableCell>
+                                    <TableCell>{player.rojas ?? 0}</TableCell>
+                                    <TableCell>{player.faltas ?? 0}</TableCell>
+                                    <TableCell>{player.paradas ?? 0}</TableCell>
+                                    <TableCell>{player.gRec ?? 0}</TableCell>
+                                    <TableCell>{player.vs1 ?? 0}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
@@ -242,22 +242,22 @@ export default function MatchDetailsPage() {
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
                                     <TableHead>Par.</TableHead>
-                                    <TableHead>G.C.</TableHead>
+                                    <TableHead>GR</TableHead>
                                     <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {match.visitorPlayers.map(player => (
                                 <TableRow key={player.id}>
-                                    <TableCell>{player.number}</TableCell>
+                                    <TableCell>{player.number ?? 0}</TableCell>
                                     <TableCell>{player.name}</TableCell>
-                                    <TableCell>{player.goals}</TableCell>
-                                    <TableCell>{player.amarillas}</TableCell>
-                                    <TableCell>{player.rojas}</TableCell>
-                                    <TableCell>{player.faltas}</TableCell>
-                                    <TableCell>{player.paradas}</TableCell>
-                                    <TableCell>{player.golesContra}</TableCell>
-                                    <TableCell>{player.vs1}</TableCell>
+                                    <TableCell>{player.goals ?? 0}</TableCell>
+                                    <TableCell>{player.amarillas ?? 0}</TableCell>
+                                    <TableCell>{player.rojas ?? 0}</TableCell>
+                                    <TableCell>{player.faltas ?? 0}</TableCell>
+                                    <TableCell>{player.paradas ?? 0}</TableCell>
+                                    <TableCell>{player.gRec ?? 0}</TableCell>
+                                    <TableCell>{player.vs1 ?? 0}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
