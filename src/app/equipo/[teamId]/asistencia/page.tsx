@@ -87,7 +87,7 @@ export default function TeamAttendancePage() {
     
     // Fetch attendance for the selected date
     useEffect(() => {
-        if (!date || !teamId || players.length === 0) return;
+        if (!date || !teamId) return;
 
         const dateString = format(date, 'yyyy-MM-dd');
         const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
@@ -97,18 +97,14 @@ export default function TeamAttendancePage() {
                 setAttendance(doc.data().statuses);
                 setRecordExists(true);
             } else {
-                // If no record exists, reset to default 'presente' for all players
-                const defaultAttendance = players.reduce((acc, player) => {
-                    acc[player.id] = 'presente';
-                    return acc;
-                }, {} as Record<string, AttendanceStatus>);
-                setAttendance(defaultAttendance);
+                // If no record exists, reset to empty state
+                setAttendance({});
                 setRecordExists(false);
             }
         });
 
         return () => unsubscribe();
-    }, [date, teamId, players]);
+    }, [date, teamId]);
 
 
   const handleAttendanceChange = (playerId: string, status: AttendanceStatus) => {
@@ -117,6 +113,16 @@ export default function TeamAttendancePage() {
 
   const handleSaveAttendance = async () => {
       if (!date || !teamId) return;
+       // Check if all players have a status
+      if (Object.keys(attendance).length !== players.length) {
+        toast({
+            title: "Faltan datos",
+            description: "Por favor, marca la asistencia para todos los jugadores.",
+            variant: "destructive"
+        });
+        return;
+      }
+
       setIsSaving(true);
       const dateString = format(date, 'yyyy-MM-dd');
       const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
@@ -230,9 +236,8 @@ export default function TeamAttendancePage() {
                             <TableCell>{player.name}</TableCell>
                             <TableCell className="text-right">
                             <RadioGroup
-                                defaultValue="presente"
                                 className="flex justify-end gap-4"
-                                value={attendance[player.id] || 'presente'}
+                                value={attendance[player.id]}
                                 onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
                                 >
                                 <div className="flex items-center space-x-2">
