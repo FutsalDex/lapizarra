@@ -183,11 +183,9 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
             <p><span className="font-bold">L:</span> Lesionado</p>
         </div>
         <p className="text-xs text-muted-foreground mt-4">
-          * El % de asistencia se calcula como: (Presente / (Presente + Ausente)) * 100.
+          * El % de asistencia se calcula como: (Número de registros / Presente) * 100.
         </p>
       </CardContent>
     </Card>
   );
 }
-
-    
