@@ -369,7 +369,7 @@ export default function CrearSesionPage() {
                                       )}
                                     >
                                       {field.value ? (
-                                        format(field.value, "PPP", { locale: es })
+                                        format(field.value, "dd/MM/yyyy")
                                       ) : (
                                         <span>Elige una fecha</span>
                                       )}
@@ -386,6 +386,7 @@ export default function CrearSesionPage() {
                                       date > new Date() || date < new Date("1900-01-01")
                                     }
                                     initialFocus
+                                    locale={es}
                                   />
                                 </PopoverContent>
                               </Popover>
