@@ -7,11 +7,13 @@ import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Settings, Minus, Plus } from 'lucide-react';
+import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Link from 'next/link';
 
 interface Player {
     id: string;
@@ -20,6 +22,11 @@ interface Player {
     goals: number;
     assists: number;
     faltas: number;
+    amarillas: number;
+    rojas: number;
+    paradas: number;
+    golesContra: number;
+    vs1: number;
 }
 
 interface MatchDetails {
@@ -89,9 +96,14 @@ export default function MarcadorEnVivoPage() {
                  id: d.id,
                  name: d.data().name,
                  number: d.data().number,
-                 goals: 0,
-                 assists: 0,
-                 faltas: 0
+                 goals: d.data().goals || 0,
+                 assists: d.data().assists || 0,
+                 faltas: d.data().faltas || 0,
+                 amarillas: d.data().amarillas || 0,
+                 rojas: d.data().rojas || 0,
+                 paradas: d.data().paradas || 0,
+                 golesContra: d.data().golesContra || 0,
+                 vs1: d.data().vs1 || 0,
              })).sort((a,b) => a.number - b.number);
         }
 
@@ -113,19 +125,6 @@ export default function MarcadorEnVivoPage() {
     return () => unsubscribe();
   }, [id, toast]);
   
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (match?.isActive && match.timeLeft > 0) {
-      interval = setInterval(() => {
-        setMatch(prev => prev ? { ...prev, timeLeft: prev.timeLeft - 1 } : null);
-      }, 1000);
-    }
-    return () => {
-        if(interval) clearInterval(interval)
-    };
-  }, [match?.isActive, match?.timeLeft]);
-
   const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'number'>, delta: 1 | -1) => {
       setMatch(prev => {
           if (!prev) return null;
@@ -134,44 +133,67 @@ export default function MarcadorEnVivoPage() {
           if (!players[playerIndex]) return prev;
 
           const currentStatValue = players[playerIndex][stat];
+          if (typeof currentStatValue !== 'number') return prev;
+          
           // Ensure stats don't go below 0
           if (delta === -1 && currentStatValue === 0) return prev;
 
           players[playerIndex] = { ...players[playerIndex], [stat]: currentStatValue + delta };
 
           // Also update total score if stat is 'goals'
-          let newScore = prev[team === 'local' ? 'localScore' : 'visitorScore'];
+          let newLocalScore = prev.localScore;
+          let newVisitorScore = prev.visitorScore;
           if (stat === 'goals') {
-              newScore += delta;
+              if (team === 'local') {
+                newLocalScore += delta;
+              } else {
+                newVisitorScore += delta;
+              }
           }
 
           return { 
               ...prev, 
               [teamKey]: players,
-              [team === 'local' ? 'localScore' : 'visitorScore']: newScore
+              localScore: newLocalScore,
+              visitorScore: newVisitorScore
           };
       });
   }
+
+  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'number'> }) => {
+    const player = match?.[team === 'local' ? 'localPlayers' : 'visitorPlayers']?.[playerIndex];
+    const value = player?.[stat] ?? 0;
+
+    return (
+        <TableCell className="text-center">
+            <div className="flex items-center justify-center gap-1">
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, -1)}><Minus className="h-4 w-4"/></Button>
+                <span>{value}</span>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, 1)}><Plus className="h-4 w-4"/></Button>
+            </div>
+        </TableCell>
+    )
+  }
   
-  const toggleTimer = () => setMatch(prev => prev ? {...prev, isActive: !prev.isActive} : null);
-  const resetTimer = () => setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25 * 60 } : null);
-  const setPeriod = (period: MatchDetails['period']) => setMatch(prev => prev ? {...prev, period} : null);
+  const CardCell = ({ value, color }: { value: number, color: 'yellow' | 'red' }) => {
+    return (
+        <TableCell className="text-center">
+            <div className="flex items-center justify-center gap-2">
+                <div className={cn("w-4 h-5 rounded-sm", color === 'yellow' ? 'bg-yellow-400' : 'bg-red-600')}></div>
+                <span>{value}</span>
+            </div>
+        </TableCell>
+    )
+  }
 
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   if (loading) {
     return (
         <div className="container mx-auto max-w-7xl py-8 px-4">
-            <Skeleton className="h-10 w-1/2 mx-auto mb-8" />
+            <Skeleton className="h-10 w-1/2 mb-8" />
             <Card>
                 <CardContent className="p-6">
-                    <Skeleton className="h-40 w-full" />
-                    <Skeleton className="h-80 w-full mt-6" />
+                    <Skeleton className="h-96 w-full" />
                 </CardContent>
             </Card>
         </div>
@@ -184,63 +206,40 @@ export default function MarcadorEnVivoPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-       <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold font-headline tracking-tight text-primary">
-                Marcador y Estadísticas en Vivo
-            </h1>
-            <p className="text-lg text-muted-foreground mt-1">
-                Gestiona el partido en tiempo real. Los cambios se guardan automáticamente.
-            </p>
-      </div>
+        <div className="mb-8">
+            <Button asChild variant="outline">
+                <Link href={`/equipo/${match.teamId}/partidos`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver a Partidos
+                </Link>
+            </Button>
+        </div>
 
       <Card>
-        <CardContent className="p-6">
-            {/* Scoreboard */}
-            <div className="bg-card border rounded-lg p-6 flex flex-col items-center justify-center">
-                <div className="flex justify-between items-center w-full max-w-2xl">
-                    <h2 className="text-2xl font-bold text-center w-1/3">{match.localTeam}</h2>
-                    <div className="text-5xl font-bold text-primary tabular-nums">
-                        {match.localScore} - {match.visitorScore}
+        <CardContent className="p-4 md:p-6">
+           <Tabs defaultValue="local">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
+                <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="local">
+                 <div className="mt-4">
+                    <div className="bg-primary text-primary-foreground p-2 rounded-t-lg">
+                        <h3 className="font-bold text-center">JUGADORES - {match.localTeam}</h3>
                     </div>
-                    <h2 className="text-2xl font-bold text-center w-1/3">{match.visitorTeam}</h2>
-                </div>
-                 <div className="flex gap-2 my-4">
-                    <Button onClick={() => setPeriod('1ª Parte')} variant={match.period === '1ª Parte' ? 'default' : 'outline'}>1ª Parte</Button>
-                    <Button onClick={() => setPeriod('Descanso')} variant={match.period === 'Descanso' ? 'default' : 'outline'}>Descanso</Button>
-                    <Button onClick={() => setPeriod('2ª Parte')} variant={match.period === '2ª Parte' ? 'default' : 'outline'}>2ª Parte</Button>
-                </div>
-                <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 text-white py-4 px-6 rounded-lg">
-                    {formatTime(match.timeLeft)}
-                </div>
-                <div className="flex items-center gap-4">
-                    <Button onClick={toggleTimer} size="lg">
-                        {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                        {match.isActive ? 'Pausar' : 'Iniciar'}
-                    </Button>
-                     <Button onClick={resetTimer} variant="outline" size="lg">
-                        <RefreshCw className="mr-2"/>
-                        Reiniciar
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                        <Settings />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Stats Table */}
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                 {/* Local Team */}
-                <div>
-                    <h3 className="text-xl font-bold mb-4">{match.localTeam}</h3>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border border-t-0">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>#</TableHead>
-                                    <TableHead>Jugador</TableHead>
+                                    <TableHead>Dorsal</TableHead>
+                                    <TableHead>Nombre</TableHead>
                                     <TableHead className="text-center">Goles</TableHead>
-                                    <TableHead className="text-center">Asist.</TableHead>
+                                    <TableHead className="text-center">TA</TableHead>
+                                    <TableHead className="text-center">TR</TableHead>
                                     <TableHead className="text-center">Faltas</TableHead>
+                                    <TableHead className="text-center">Paradas</TableHead>
+                                    <TableHead className="text-center">G.C.</TableHead>
+                                    <TableHead className="text-center">1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                              <TableBody>
@@ -248,71 +247,35 @@ export default function MarcadorEnVivoPage() {
                                     <TableRow key={player.id}>
                                         <TableCell>{player.number}</TableCell>
                                         <TableCell>{player.name}</TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'goals', -1)}><Minus className="h-4 w-4"/></Button>
-                                                {player.goals}
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'goals', 1)}><Plus className="h-4 w-4"/></Button>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'assists', -1)}><Minus className="h-4 w-4"/></Button>
-                                                {player.assists}
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'assists', 1)}><Plus className="h-4 w-4"/></Button>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'faltas', -1)}><Minus className="h-4 w-4"/></Button>
-                                                {player.faltas}
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('local', index, 'faltas', 1)}><Plus className="h-4 w-4"/></Button>
-                                            </div>
-                                        </TableCell>
+                                        <StatButtonCell team="local" playerIndex={index} stat="goals" />
+                                        <CardCell value={player.amarillas} color="yellow" />
+                                        <CardCell value={player.rojas} color="red" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="faltas" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="paradas" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="golesContra" />
+                                        <StatButtonCell team="local" playerIndex={index} stat="vs1" />
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </div>
                 </div>
-                 {/* Visitor Team */}
-                 <div>
-                    <h3 className="text-xl font-bold mb-4">{match.visitorTeam}</h3>
-                    <div className="rounded-md border">
-                        <Table>
-                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>#</TableHead>
-                                    <TableHead>Jugador</TableHead>
-                                    <TableHead className="text-center">Goles</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                 {(match.visitorPlayers || []).map((player, index) => (
-                                    <TableRow key={player.id || index}>
-                                        <TableCell><Input className="h-8 w-14" value={player.number} /></TableCell>
-                                        <TableCell><Input className="h-8" value={player.name} /></TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('visitor', index, 'goals', -1)}><Minus className="h-4 w-4"/></Button>
-                                                {player.goals}
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange('visitor', index, 'goals', 1)}><Plus className="h-4 w-4"/></Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center">
-                                        <Button variant="outline" size="sm">Añadir jugador visitante</Button>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+            </TabsContent>
+            <TabsContent value="visitor">
+                <div className="mt-4">
+                    <div className="bg-muted text-muted-foreground p-2 rounded-t-lg">
+                        <h3 className="font-bold text-center">JUGADORES - {match.visitorTeam}</h3>
                     </div>
+                     <div className="rounded-md border border-t-0">
+                        <p className="p-8 text-center text-muted-foreground">La gestión de estadísticas para el equipo visitante estará disponible próximamente.</p>
+                     </div>
                 </div>
-            </div>
+            </TabsContent>
+           </Tabs>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
