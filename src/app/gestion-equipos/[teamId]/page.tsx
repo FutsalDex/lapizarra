@@ -181,7 +181,7 @@ export default function TeamMembersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserPlus />Invitar Nuevo Miembro</CardTitle>
-          <CardDescription>Crea un enlace de invitación para que otros entrenadores o miembros del cuerpo técnico se unan.</CardDescription>
+          <CardDescription>Crea un enlace de invitación para que otros miembros del cuerpo técnico se unan.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
