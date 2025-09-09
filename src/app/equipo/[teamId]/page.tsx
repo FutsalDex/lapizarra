@@ -23,19 +23,19 @@ const teamModules = [
     title: 'Plantilla',
     description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
     icon: Users,
-    href: '/mi-plantilla', // This will be dynamic: /equipo/[teamId]/plantilla
+    href: (teamId: string) => `/equipo/${teamId}/plantilla`,
   },
   {
     title: 'Control de Asistencia',
     description: 'Registra y consulta la asistencia de los jugadores a entrenamientos y partidos.',
     icon: ClipboardCheck,
-    href: '/control-asistencia', // This will be dynamic
+    href: (teamId: string) => `/equipo/${teamId}/asistencia`,
   },
   {
     title: 'Partidos',
     description: 'Da de alta nuevos partidos, consulta el historial y gestiona las estadísticas en vivo.',
     icon: Trophy,
-    href: '/mis-partidos', // This will be dynamic
+    href: (teamId: string) => `/equipo/${teamId}/partidos`,
   },
 ];
 
@@ -133,8 +133,7 @@ export default function TeamDashboardPage() {
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full" variant="outline">
-                {/* The link will eventually be dynamic, e.g., `/equipo/${teamId}/plantilla` */}
-                <Link href={'#'}>
+                <Link href={item.href(teamId)}>
                   Ir a {item.title}
                 </Link>
               </Button>
