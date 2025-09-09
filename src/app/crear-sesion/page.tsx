@@ -1,271 +1,281 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import {
-  generateTrainingSession,
-  type GenerateTrainingSessionInput,
-  type GenerateTrainingSessionOutput,
-} from '@/ai/flows/generate-training-session';
+import { useState, useEffect, useMemo } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { Loader2, Zap } from 'lucide-react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Loader2, Save, Filter, ClipboardList, ListPlus, ListChecks, ListEnd } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const formSchema = z.object({
-  teamDescription: z
-    .string()
-    .min(10, 'Describe tu equipo con al menos 10 caracteres.'),
-  trainingGoals: z
-    .string()
-    .min(10, 'Define tus objetivos con al menos 10 caracteres.'),
-  sessionFocus: z
-    .string()
-    .min(5, 'El enfoque debe tener al menos 5 caracteres.'),
-  preferredSessionLengthMinutes: z.number().min(30).max(120),
-});
+
+interface Exercise {
+  id: string;
+  name: string;
+  duration: string;
+  sessionPhase: string;
+  category: string;
+  isVisible: boolean;
+}
 
 export default function CrearSesionPage() {
-  const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<GenerateTrainingSessionOutput | null>(
-    null
-  );
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  
+  const [initialExercise, setInitialExercise] = useState<string | undefined>(undefined);
+  const [mainExercises, setMainExercises] = useState<string[]>([]);
+  const [finalExercise, setFinalExercise] = useState<string | undefined>(undefined);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      teamDescription: '',
-      trainingGoals: '',
-      sessionFocus: '',
-      preferredSessionLengthMinutes: 60,
-    },
-  });
+  const [mainCategories, setMainCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const q = query(collection(db, "exercises"), where("isVisible", "==", true));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const exercisesData = snapshot.docs.map(doc => ({ 
+          id: doc.id,
+          name: doc.data().name || doc.data().title,
+          ...doc.data() 
+      } as Exercise));
+      setAllExercises(exercisesData);
+      
+      const uniqueCategories = Array.from(new Set(exercisesData
+        .filter(ex => ex.sessionPhase === 'Parte Principal')
+        .map(ex => ex.category)
+        .filter(Boolean)));
+      setMainCategories(uniqueCategories);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
-    setSession(null);
-    setError(null);
-    try {
-      const result = await generateTrainingSession(
-        values as GenerateTrainingSessionInput
-      );
-      setSession(result);
-    } catch (e) {
-      setError('Hubo un error al generar la sesión. Inténtalo de nuevo.');
-      console.error(e);
-    }
-    setLoading(false);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching exercises: ", error);
+      setLoading(false);
+      toast({ title: "Error", description: "No se pudieron cargar los ejercicios.", variant: "destructive" });
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
+  const warmUpExercises = useMemo(() => 
+    allExercises.filter(ex => ex.sessionPhase === 'Calentamiento'), 
+  [allExercises]);
+  
+  const coolDownExercises = useMemo(() => 
+    allExercises.filter(ex => ex.sessionPhase === 'Vuelta a la Calma'),
+  [allExercises]);
+
+  const filteredMainExercises = useMemo(() => {
+    return allExercises.filter(ex => 
+      ex.sessionPhase === 'Parte Principal' &&
+      (selectedCategories.length === 0 || selectedCategories.includes(ex.category))
+    );
+  }, [allExercises, selectedCategories]);
+
+  const handleMainExerciseToggle = (exerciseId: string) => {
+    setMainExercises(prev => {
+      if (prev.includes(exerciseId)) {
+        return prev.filter(id => id !== exerciseId);
+      }
+      if (prev.length < 4) {
+        return [...prev, exerciseId];
+      }
+      toast({ title: "Límite alcanzado", description: "Puedes seleccionar hasta 4 ejercicios para la fase principal.", variant: "destructive" });
+      return prev;
+    });
+  };
+
+  const handleCategoryToggle = (category: string) => {
+      setSelectedCategories(prev => prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]);
   }
+  
+  const selectedSessionExercises = useMemo(() => {
+    const initial = allExercises.find(ex => ex.id === initialExercise);
+    const main = mainExercises.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean);
+    const final = allExercises.find(ex => ex.id === finalExercise);
+    return { initial, main, final };
+  }, [allExercises, initialExercise, mainExercises, finalExercise]);
+
+  const totalDuration = useMemo(() => {
+      const initialDuration = parseInt(selectedSessionExercises.initial?.duration || '0', 10);
+      const mainDuration = selectedSessionExercises.main.reduce((acc, ex) => acc + parseInt(ex?.duration || '0', 10), 0);
+      const finalDuration = parseInt(selectedSessionExercises.final?.duration || '0', 10);
+      return initialDuration + mainDuration + finalDuration;
+  }, [selectedSessionExercises]);
+
+
+  const handleSaveSession = () => {
+    if (!initialExercise || mainExercises.length === 0 || !finalExercise) {
+        toast({ title: "Faltan ejercicios", description: "Debes seleccionar al menos un ejercicio para cada fase.", variant: "destructive"});
+        return;
+    }
+    // Placeholder for save functionality
+    console.log("Saving session:", {initialExercise, mainExercises, finalExercise});
+    toast({ title: "¡Sesión Guardada!", description: "Tu plan de entrenamiento ha sido guardado."});
+  };
 
   return (
-    <div className="container mx-auto max-w-4xl py-12 px-4">
-      <div className="text-center mb-12">
+    <div className="container mx-auto max-w-6xl py-12 px-4">
+      <div className="text-left mb-12">
         <h1 className="text-4xl font-bold font-headline tracking-tighter text-primary">
-          Generador de Sesiones con IA
+          Crear Sesión
         </h1>
         <p className="text-xl text-muted-foreground mt-2">
-          Diseña entrenamientos a medida para tu equipo en segundos.
+          Selecciona ejercicios de nuestra biblioteca para construir tu propio plan de entrenamiento.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        <Card className="sticky top-24">
-          <CardHeader>
-            <CardTitle>Configura tu Entrenamiento</CardTitle>
-            <CardDescription>
-              Proporciona los detalles y deja que LaPizarra AI cree la sesión
-              perfecta.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={form.control}
-                  name="teamDescription"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descripción del Equipo</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Ej: Equipo Sub-16, nivel intermedio, buena técnica pero problemas en defensa."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="trainingGoals"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Objetivos del Entrenamiento</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Ej: Mejorar la salida de balón bajo presión y las transiciones ofensivas."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="sessionFocus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Foco Principal</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Transiciones ataque-defensa"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="preferredSessionLengthMinutes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Duración de la sesión: {field.value} minutos
-                      </FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={30}
-                          max={120}
-                          step={5}
-                          value={[field.value]}
-                          onValueChange={(vals) => field.onChange(vals[0])}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full font-bold" disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Zap className="mr-2 h-4 w-4" />
-                  )}
-                  Generar Sesión
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold font-headline text-center">
-            Plan de Sesión Generado
-          </h2>
-          {loading && (
-            <div className="flex justify-center items-center py-10">
+      {loading ? (
+          <div className="flex justify-center items-center py-20">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div className="lg:col-span-2 space-y-8">
+                {/* Fase Inicial */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ListPlus/> Fase Inicial</CardTitle>
+                        <CardDescription>Selecciona 1 ejercicio para el calentamiento.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Select onValueChange={setInitialExercise} value={initialExercise}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un ejercicio de calentamiento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {warmUpExercises.map(ex => (
+                                    <SelectItem key={ex.id} value={ex.id}>{ex.name} ({ex.duration} min)</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                </Card>
+
+                {/* Fase Principal */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ListChecks/> Fase Principal</CardTitle>
+                        <CardDescription>Selecciona hasta 4 ejercicios. Puedes filtrar por categorías.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div>
+                            <h4 className="font-semibold mb-3 flex items-center gap-2"><Filter className="h-4 w-4"/>Filtrar por Categorías</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {mainCategories.map(category => (
+                                    <div key={category} className="flex items-center space-x-2">
+                                        <Checkbox 
+                                            id={`cat-${category}`} 
+                                            checked={selectedCategories.includes(category)}
+                                            onCheckedChange={() => handleCategoryToggle(category)}
+                                        />
+                                        <label htmlFor={`cat-${category}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            {category}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                            {filteredMainExercises.map(ex => (
+                                <div key={ex.id} className="flex items-center space-x-3">
+                                    <Checkbox 
+                                        id={ex.id} 
+                                        checked={mainExercises.includes(ex.id)}
+                                        onCheckedChange={() => handleMainExerciseToggle(ex.id)}
+                                        disabled={!mainExercises.includes(ex.id) && mainExercises.length >= 4}
+                                    />
+                                    <label htmlFor={ex.id} className="text-sm font-medium leading-none w-full">
+                                        {ex.name} <span className="text-muted-foreground">({ex.duration} min)</span>
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                 {/* Fase Final */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ListEnd/> Fase Final</CardTitle>
+                        <CardDescription>Selecciona 1 ejercicio para la vuelta a la calma.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <Select onValueChange={setFinalExercise} value={finalExercise}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un ejercicio de vuelta a la calma" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {coolDownExercises.map(ex => (
+                                    <SelectItem key={ex.id} value={ex.id}>{ex.name} ({ex.duration} min)</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                </Card>
             </div>
-          )}
-          {error && (
-            <Card className="bg-destructive/10 border-destructive">
-              <CardHeader>
-                <CardTitle className="text-destructive">Error</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{error}</p>
-              </CardContent>
-            </Card>
-          )}
-          {session && (
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle>¡Sesión Lista!</CardTitle>
-                <CardDescription>
-                  Aquí tienes el plan de entrenamiento generado por la IA.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible defaultValue="item-1">
-                  <AccordionItem value="item-1">
-                    <AccordionTrigger className="font-bold">Calentamiento</AccordionTrigger>
-                    <AccordionContent className="prose prose-sm max-w-none text-muted-foreground">
-                      {session.warmUp}
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-2">
-                    <AccordionTrigger className="font-bold">Ejercicios Principales</AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="list-disc pl-5 space-y-4 text-muted-foreground">
-                        {session.mainExercises.map((exercise, index) => (
-                          <li key={index}>{exercise}</li>
-                        ))}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-3">
-                    <AccordionTrigger className="font-bold">Vuelta a la Calma</AccordionTrigger>
-                    <AccordionContent className="prose prose-sm max-w-none text-muted-foreground">
-                      {session.coolDown}
-                    </AccordionContent>
-                  </AccordionItem>
-                   <AccordionItem value="item-4">
-                    <AccordionTrigger className="font-bold">Notas del Entrenador</AccordionTrigger>
-                    <AccordionContent className="prose prose-sm max-w-none text-muted-foreground">
-                     {session.coachNotes}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-          )}
-          {!session && !loading && !error && (
-             <Card className="flex flex-col items-center justify-center text-center py-16 px-6 bg-secondary/50 border-dashed">
-                <CardContent className="space-y-4">
-                   <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                    <Zap className="h-8 w-8 text-primary" />
-                  </div>
-                  <p className="text-muted-foreground">Tu sesión de entrenamiento aparecerá aquí una vez generada.</p>
-                </CardContent>
-              </Card>
-          )}
+
+            {/* Resumen Sesión */}
+            <div className="lg:sticky top-24">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ClipboardList/> Resumen de la Sesión</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div>
+                            <h4 className="font-semibold text-primary">Fase Inicial</h4>
+                             <p className="text-sm text-muted-foreground">{selectedSessionExercises.initial?.name || 'No seleccionado'}</p>
+                        </div>
+                        <Separator/>
+                        <div>
+                             <h4 className="font-semibold text-primary">Fase Principal ({selectedSessionExercises.main.length}/4)</h4>
+                             {selectedSessionExercises.main.length > 0 ? (
+                                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2">
+                                    {selectedSessionExercises.main.map(ex => <li key={ex!.id}>{ex!.name}</li>)}
+                                </ul>
+                             ) : (
+                                <p className="text-sm text-muted-foreground">No hay ejercicios seleccionados</p>
+                             )}
+                        </div>
+                        <Separator/>
+                        <div>
+                            <h4 className="font-semibold text-primary">Fase Final</h4>
+                            <p className="text-sm text-muted-foreground">{selectedSessionExercises.final?.name || 'No seleccionado'}</p>
+                        </div>
+                        <Separator/>
+                         <div className="text-lg font-bold">
+                            Duración Total: {totalDuration} minutos
+                        </div>
+
+                         <Button size="lg" className="w-full" onClick={handleSaveSession}>
+                           <Save className="mr-2 h-4 w-4"/> Guardar Sesión
+                         </Button>
+
+                    </CardContent>
+                </Card>
+            </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+
+    
