@@ -52,7 +52,7 @@ interface MatchDetails {
     timeLeft: number;
     period: '1ª Parte' | '2ª Parte' | 'Descanso';
     isActive: boolean;
-    isFinished: boolean; // New status
+    isFinished: boolean; 
     localPlayers?: Player[];
     visitorPlayers?: Player[];
     events: GoalEvent[];
@@ -95,7 +95,6 @@ export default function MarcadorEnVivoPage() {
                         id: d.id, 
                         name: d.data().name, 
                         number: d.data().number,
-                        // Initialize match stats to 0
                         goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
                     })).sort((a, b) => a.number - b.number);
 
@@ -146,15 +145,11 @@ export default function MarcadorEnVivoPage() {
     };
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
- const saveMatchData = async (finalize = false) => {
-    if (!match) return;
+ const finalizeMatch = async () => {
+    if (!match || match.isFinished) return;
     setIsSaving(true);
     
     const matchDocRef = doc(db, 'matches', id);
-    
-    const matchBeforeUpdateDoc = await getDoc(matchDocRef);
-    const matchBeforeUpdate = matchBeforeUpdateDoc.exists() ? (matchBeforeUpdateDoc.data() as MatchDetails) : null;
-
     const { id: matchId, ...matchData } = match;
 
     const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -164,68 +159,54 @@ export default function MarcadorEnVivoPage() {
         ...matchData,
         localScore,
         visitorScore,
-        isFinished: finalize || match.isFinished,
+        isFinished: true,
+        isActive: false
     };
     
     try {
-        if (finalize && match.teamId) { 
-            const teamDoc = await getDoc(doc(db, 'teams', match.teamId));
-            const teamName = teamDoc.data()?.name;
-            const isLocalTeam = teamName === match.localTeam;
-            const userPlayersCurrent = isLocalTeam ? match.localPlayers : match.visitorPlayers;
-            
-            const userPlayersBefore = matchBeforeUpdate 
-                ? (isLocalTeam ? matchBeforeUpdate.localPlayers : matchBeforeUpdate.visitorPlayers) 
-                : [];
-            
-            if (userPlayersCurrent) {
-                const batch = writeBatch(db);
+        const batch = writeBatch(db);
+        
+        // Step 1: Update the match document itself
+        batch.update(matchDocRef, dataToUpdate);
 
-                if (matchBeforeUpdate?.isFinished && userPlayersBefore) {
-                     userPlayersBefore.forEach(player => {
+        // Step 2: Update player stats in the main roster if teamId is available
+        if (match.teamId) { 
+            const teamDoc = await getDoc(doc(db, 'teams', match.teamId));
+            if (teamDoc.exists()) {
+                const teamName = teamDoc.data()?.name;
+                const isLocalTeam = teamName === match.localTeam;
+                const userPlayers = isLocalTeam ? match.localPlayers : match.visitorPlayers;
+                
+                if (userPlayers) {
+                    userPlayers.forEach(player => {
+                        // Ensure we only update players that are part of the user's team roster (not temp visitor players)
                         if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                             const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                             batch.update(playerRef, {
-                                pj: increment(-1),
-                                goals: increment(-(player.goals || 0)),
-                                faltas: increment(-(player.faltas || 0)),
-                                ta: increment(-(player.amarillas || 0)),
-                                tr: increment(-(player.rojas || 0)),
-                                paradas: increment(-(player.paradas || 0)),
-                                gRec: increment(-(player.gRec || 0))
+                                pj: increment(1),
+                                goals: increment(player.goals || 0),
+                                faltas: increment(player.faltas || 0),
+                                ta: increment(player.amarillas || 0),
+                                tr: increment(player.rojas || 0),
+                                paradas: increment(player.paradas || 0),
+                                gRec: increment(player.gRec || 0)
                             });
                         }
                     });
                 }
-                
-                userPlayersCurrent.forEach(player => {
-                    if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
-                        const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
-                        batch.update(playerRef, {
-                            pj: increment(1),
-                            goals: increment(player.goals || 0),
-                            faltas: increment(player.faltas || 0),
-                            ta: increment(player.amarillas || 0),
-                            tr: increment(player.rojas || 0),
-                            paradas: increment(player.paradas || 0),
-                            gRec: increment(player.gRec || 0)
-                        });
-                    }
-                });
-                await batch.commit();
             }
         }
         
-        await updateDoc(matchDocRef, dataToUpdate);
+        // Commit all batched writes
+        await batch.commit();
 
-        toast({ title: finalize ? "¡Partido Finalizado y Consolidado!" : "Cambios Guardados", description: finalize ? "Las estadísticas han sido sincronizadas." : "El estado del partido se ha guardado." });
+        toast({ title: "¡Partido Finalizado!", description: "Las estadísticas han sido guardadas y añadidas a los totales de los jugadores." });
         
-        if (finalize) {
-           setMatch(prev => prev ? {...prev, isFinished: true} : null);
-        }
+        // Update local state to reflect the finished status
+        setMatch(prev => prev ? {...prev, isFinished: true, isActive: false} : null);
 
     } catch (error) {
-        console.error("Error saving match:", error);
+        console.error("Error finalizing match:", error);
         toast({ title: "Error", description: "No se pudieron guardar los datos.", variant: "destructive" });
     } finally {
         setIsSaving(false);
@@ -234,6 +215,7 @@ export default function MarcadorEnVivoPage() {
 
 
  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
+    if (match?.isFinished) return;
     setMatch(prev => {
         if (!prev) return null;
 
@@ -279,6 +261,7 @@ export default function MarcadorEnVivoPage() {
 
   
    const handlePlayerInfoChange = (team: 'local' | 'visitor', playerIndex: number, field: 'name' | 'number', value: string | number) => {
+        if (match?.isFinished) return;
         setMatch(prev => {
             if (!prev) return null;
             const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -291,6 +274,7 @@ export default function MarcadorEnVivoPage() {
     };
 
     const addPlayer = (team: 'local' | 'visitor') => {
+        if (match?.isFinished) return;
         setMatch(prev => {
             if (!prev) return prev;
             const newPlayer: Player = {
@@ -312,9 +296,9 @@ export default function MarcadorEnVivoPage() {
     return (
         <TableCell className="text-center">
             <div className="flex items-center justify-center gap-1">
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, -1)} ><Minus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
                 <span>{value}</span>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, 1)} ><Plus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
             </div>
         </TableCell>
     )
@@ -327,10 +311,12 @@ export default function MarcadorEnVivoPage() {
   };
 
   const handleTimerToggle = () => {
+      if (match?.isFinished) return;
       setMatch(prev => prev ? {...prev, isActive: !prev.isActive } : null)
   }
 
   const handlePeriodChange = (period: '1ª Parte' | '2ª Parte') => {
+      if (match?.isFinished) return;
       setMatch(prev => {
         if (!prev || prev.period === period) return prev;
 
@@ -338,9 +324,6 @@ export default function MarcadorEnVivoPage() {
             return players?.map(p => ({
                 ...p,
                 faltas: 0,
-                paradas: 0,
-                gRec: 0,
-                vs1: 0,
             }));
         }
         
@@ -348,16 +331,19 @@ export default function MarcadorEnVivoPage() {
             return {
                 ...prev,
                 period,
+                timeLeft: 25 * 60,
+                isActive: false,
                 localPlayers: resetStats(prev.localPlayers),
                 visitorPlayers: resetStats(prev.visitorPlayers),
             };
         }
         
-        return {...prev, period };
+        return {...prev, period, timeLeft: 25 * 60, isActive: false };
       });
   }
   
   const resetTimer = () => {
+    if (match?.isFinished) return;
     setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25*60 } : null);
   }
 
@@ -385,10 +371,10 @@ export default function MarcadorEnVivoPage() {
     const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
     const players = match[teamKey] || [];
     
-    if (players.length === 0) {
+    if (players.length === 0 && !match.isFinished) {
         return (
             <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg m-4">
-                <p>Este es el equipo rival. Puedes añadir sus jugadores aquí.</p>
+                <p>Puedes añadir los jugadores del equipo rival aquí.</p>
                 <Button variant="outline" size="sm" onClick={() => addPlayer(team)} className="mt-4">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Añadir Jugador
@@ -417,7 +403,7 @@ export default function MarcadorEnVivoPage() {
                             </TableHead>
                             <TableHead className="text-center">Faltas</TableHead>
                             <TableHead className="text-center">Paradas</TableHead>
-                            <TableHead className="text-center">G.C.</TableHead>
+                            <TableHead className="text-center">GR</TableHead>
                             <TableHead className="text-center">1vs1</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -429,7 +415,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8 w-14 text-center" 
                                         value={player.number} 
                                         onChange={(e) => handlePlayerInfoChange(team, index, 'number', parseInt(e.target.value) || 0)} 
-                                        readOnly={(!player.id.startsWith('visitor-') && !player.id.startsWith('local-'))} 
+                                        readOnly={match.isFinished || (!player.id.startsWith('visitor-') && !player.id.startsWith('local-'))} 
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -437,7 +423,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8" 
                                         value={player.name} 
                                         onChange={(e) => handlePlayerInfoChange(team, index, 'name', e.target.value)} 
-                                        readOnly={(!player.id.startsWith('visitor-') && !player.id.startsWith('local-'))}
+                                        readOnly={match.isFinished || (!player.id.startsWith('visitor-') && !player.id.startsWith('local-'))}
                                     />
                                 </TableCell>
                                 <StatButtonCell team={team} playerIndex={index} stat="goals" />
@@ -452,12 +438,14 @@ export default function MarcadorEnVivoPage() {
                     </TableBody>
                 </Table>
                 
-                <div className="p-2 text-right">
-                    <Button variant="outline" size="sm" onClick={() => addPlayer(team)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Añadir Jugador
-                    </Button>
-                </div>
+                {!match.isFinished && (
+                    <div className="p-2 text-right">
+                        <Button variant="outline" size="sm" onClick={() => addPlayer(team)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Jugador
+                        </Button>
+                    </div>
+                )}
                 
             </div>
         </div>
@@ -480,27 +468,23 @@ export default function MarcadorEnVivoPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Button>
-                <Button onClick={() => saveMatchData(false)} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                    Guardar Cambios
-                </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button variant="destructive" disabled={isSaving}>
-                            <CheckCircle className="mr-2 h-4 w-4"/>
-                            Finalizar y Consolidar
+                         <Button variant="destructive" disabled={isSaving || match.isFinished}>
+                            {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                            {match.isFinished ? 'Partido Finalizado' : 'Finalizar Partido'}
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>¿Finalizar y Consolidar?</AlertDialogTitle>
+                            <AlertDialogTitle>¿Finalizar y guardar estadísticas?</AlertDialogTitle>
                             <AlertDialogDescription>
-                               Esta acción guardará las estadísticas del partido en los totales de tus jugadores. Si el partido ya estaba finalizado, las estadísticas anteriores se restarán y se sumarán las nuevas para asegurar un cálculo correcto.
+                               Esta acción guardará permanentemente las estadísticas del partido en los totales de tus jugadores. Una vez finalizado, el partido no se podrá volver a editar.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => saveMatchData(true)}>Sí, finalizar</AlertDialogAction>
+                            <AlertDialogAction onClick={finalizeMatch}>Sí, finalizar</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -520,21 +504,18 @@ export default function MarcadorEnVivoPage() {
                     {formatTime(match.timeLeft)}
                 </div>
                 <div className="flex items-center justify-center gap-4">
-                    <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0}>
+                    <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || match.isFinished}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {match.isActive ? 'Pausar' : 'Iniciar'}
                     </Button>
-                     <Button onClick={resetTimer} variant="outline">
+                     <Button onClick={resetTimer} variant="outline" disabled={match.isFinished}>
                         <RefreshCw className="mr-2"/>
                         Reiniciar
                     </Button>
                     <div className="flex items-center rounded-md border p-1">
-                        <Button onClick={() => handlePeriodChange('1ª Parte')} variant={match.period === '1ª Parte' ? 'secondary': 'ghost'} size="sm">1ª Parte</Button>
-                        <Button onClick={() => handlePeriodChange('2ª Parte')} variant={match.period === '2ª Parte' ? 'secondary': 'ghost'} size="sm">2ª Parte</Button>
+                        <Button onClick={() => handlePeriodChange('1ª Parte')} variant={match.period === '1ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished}>1ª Parte</Button>
+                        <Button onClick={() => handlePeriodChange('2ª Parte')} variant={match.period === '2ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished}>2ª Parte</Button>
                     </div>
-                    <Button variant="ghost" size="icon">
-                        <Settings />
-                    </Button>
                 </div>
                 
             </CardContent>
