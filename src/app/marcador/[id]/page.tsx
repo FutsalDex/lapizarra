@@ -83,29 +83,31 @@ export default function MarcadorEnVivoPage() {
             let visitorPlayers = data.visitorPlayers;
             
             // This block loads the roster for the user's team if it hasn't been loaded yet.
-            if (!data.isFinished && data.teamId) {
+            if (data.teamId) {
                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
                 if (teamDoc.exists()) {
                     const teamName = teamDoc.data().name;
                     const isLocalTeam = teamName === data.localTeam;
                     const isVisitorTeam = teamName === data.visitorTeam;
+                    
+                    if ((isLocalTeam && (!localPlayers || localPlayers.length === 0)) || (isVisitorTeam && (!visitorPlayers || visitorPlayers.length === 0))) {
+                        const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                        const playersSnapshot = await getDocs(playerQuery);
+                        const teamRoster = playersSnapshot.docs.map(d => ({
+                            id: d.id, 
+                            name: d.data().name, 
+                            number: d.data().number,
+                            // Initialize match stats to 0
+                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                        })).sort((a, b) => a.number - b.number);
 
-                    const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                    const playersSnapshot = await getDocs(playerQuery);
-                    const teamRoster = playersSnapshot.docs.map(d => ({
-                        id: d.id, 
-                        name: d.data().name, 
-                        number: d.data().number,
-                        // Initialize match stats to 0
-                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                    })).sort((a, b) => a.number - b.number);
-
-                    // Load roster into the correct team side if it's empty
-                    if (isLocalTeam && (!localPlayers || localPlayers.length === 0)) {
-                        localPlayers = teamRoster;
-                    }
-                    if (isVisitorTeam && (!visitorPlayers || visitorPlayers.length === 0)) {
-                        visitorPlayers = teamRoster;
+                        // Load roster into the correct team side if it's empty
+                        if (isLocalTeam && (!localPlayers || localPlayers.length === 0)) {
+                            localPlayers = teamRoster;
+                        }
+                        if (isVisitorTeam && (!visitorPlayers || visitorPlayers.length === 0)) {
+                            visitorPlayers = teamRoster;
+                        }
                     }
                 }
             }
@@ -153,6 +155,10 @@ export default function MarcadorEnVivoPage() {
     setIsSaving(true);
     
     const matchDocRef = doc(db, 'matches', id);
+    
+    // Fetch the match state from DB before we do anything to have the "before" state
+    const matchBeforeUpdate = (await getDoc(matchDocRef)).data() as MatchDetails;
+
     const { id: matchId, ...matchData } = match;
 
     const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -162,22 +168,39 @@ export default function MarcadorEnVivoPage() {
         ...matchData,
         localScore,
         visitorScore,
-        isFinished: finalize,
+        isFinished: finalize || match.isFinished,
     };
     
     try {
-        await updateDoc(matchDocRef, dataToUpdate);
-
-        // Only commit stats to player totals if the match is being finalized for the first time
-        if (finalize && match.teamId && !match.isFinished) { 
+        if (finalize && match.teamId) { 
             const teamDoc = await getDoc(doc(db, 'teams', match.teamId));
             const teamName = teamDoc.data()?.name;
-            const userPlayers = match.localTeam === teamName ? match.localPlayers : match.visitorPlayers;
+            const userPlayersCurrent = match.localTeam === teamName ? match.localPlayers : match.visitorPlayers;
+            const userPlayersBefore = matchBeforeUpdate.localTeam === teamName ? matchBeforeUpdate.localPlayers : matchBeforeUpdate.visitorPlayers;
 
-            if (userPlayers) {
+            if (userPlayersCurrent) {
                 const batch = writeBatch(db);
-                userPlayers.forEach(player => {
-                    // Only update players that are part of the user's team (not temp IDs for rivals)
+
+                // First, revert previous stats if the match was already finished
+                if (matchBeforeUpdate.isFinished && userPlayersBefore) {
+                     userPlayersBefore.forEach(player => {
+                        if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
+                            const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
+                            batch.update(playerRef, {
+                                pj: increment(-1),
+                                goals: increment(-(player.goals || 0)),
+                                faltas: increment(-(player.faltas || 0)),
+                                ta: increment(-(player.amarillas || 0)),
+                                tr: increment(-(player.rojas || 0)),
+                                paradas: increment(-(player.paradas || 0)),
+                                gRec: increment(-(player.gRec || 0))
+                            });
+                        }
+                    });
+                }
+                
+                // Now, add the new stats
+                userPlayersCurrent.forEach(player => {
                     if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                         const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                         batch.update(playerRef, {
@@ -195,6 +218,8 @@ export default function MarcadorEnVivoPage() {
             }
         }
         
+        await updateDoc(matchDocRef, dataToUpdate);
+
         toast({ title: finalize ? "¡Partido Finalizado!" : "Cambios Guardados", description: finalize ? "Las estadísticas han sido consolidadas." : "El estado del partido se ha guardado." });
         
         if (finalize) {
@@ -451,21 +476,21 @@ export default function MarcadorEnVivoPage() {
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isSaving || match.isFinished}>
+                         <Button variant="destructive" disabled={isSaving}>
                             {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                            {match.isFinished ? 'Partido Finalizado' : 'Finalizar Partido'}
+                            {match.isFinished ? 'Partido Finalizado (Re-Finalizar)' : 'Finalizar Partido'}
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>¿Finalizar el partido?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Esta acción guardará las estadísticas del partido en los totales de tus jugadores y bloqueará el marcador. No podrás hacer más cambios.
+                                Esta acción guardará las estadísticas del partido en los totales de tus jugadores. Si el partido ya estaba finalizado, las estadísticas anteriores se restarán y se sumarán las nuevas para asegurar un cálculo correcto.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => saveMatchData(true)}>Finalizar y Salir</AlertDialogAction>
+                            <AlertDialogAction onClick={() => saveMatchData(true)}>Finalizar y Consolidar</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -503,7 +528,7 @@ export default function MarcadorEnVivoPage() {
                 </div>
                  {match.isFinished && (
                     <div className="text-center mt-4 p-2 rounded-md bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700">
-                        <p className="font-semibold">Este partido ha finalizado. Las estadísticas han sido guardadas y no se pueden editar.</p>
+                        <p className="font-semibold">Este partido ya ha sido finalizado, pero puedes re-finalizarlo para actualizar las estadísticas globales si es necesario.</p>
                     </div>
                 )}
             </CardContent>
@@ -528,7 +553,3 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
-
-    
-
-    
