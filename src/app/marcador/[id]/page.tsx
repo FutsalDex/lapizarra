@@ -69,6 +69,12 @@ export default function MarcadorEnVivoPage() {
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const matchRef = useRef(match);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    matchRef.current = match;
+  }, [match]);
 
    // Fetch Match Data
   useEffect(() => {
@@ -81,29 +87,22 @@ export default function MarcadorEnVivoPage() {
 
             let localPlayers = data.localPlayers;
             let visitorPlayers = data.visitorPlayers;
-
-            if (data.teamId && (!localPlayers || localPlayers.length === 0 || !visitorPlayers || visitorPlayers.length === 0)) {
+            
+             // Only fetch roster if players are not already in the match document
+            if (data.teamId && (!localPlayers || localPlayers.length === 0)) {
                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
                 if (teamDoc.exists()) {
                     const teamName = teamDoc.data().name;
-                    const isLocalTeam = teamName === data.localTeam;
-                    const isVisitorTeam = teamName === data.visitorTeam;
-                    
-                    const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                    const playersSnapshot = await getDocs(playerQuery);
-                    const teamRoster = playersSnapshot.docs.map(d => ({
-                        id: d.id, 
-                        name: d.data().name, 
-                        number: d.data().number,
-                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                    })).sort((a, b) => a.number - b.number);
-
-                    if (isLocalTeam && (!localPlayers || localPlayers.length === 0)) {
-                        localPlayers = teamRoster;
-                    }
-                    if (isVisitorTeam && (!visitorPlayers || visitorPlayers.length === 0)) {
-                        visitorPlayers = teamRoster;
-                    }
+                     if (teamName === data.localTeam) {
+                        const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                        const playersSnapshot = await getDocs(playerQuery);
+                        localPlayers = playersSnapshot.docs.map(d => ({
+                            id: d.id, 
+                            name: d.data().name, 
+                            number: d.data().number,
+                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                        })).sort((a, b) => a.number - b.number);
+                     }
                 }
             }
             
@@ -126,6 +125,25 @@ export default function MarcadorEnVivoPage() {
 
     return () => unsubscribe();
 }, [id, toast]);
+
+  // Autosave timer
+  useEffect(() => {
+    const saveInterval = setInterval(async () => {
+        const currentMatch = matchRef.current;
+        if (currentMatch && !currentMatch.isFinished && !isSaving) {
+            try {
+                const matchDocRef = doc(db, 'matches', currentMatch.id);
+                // Destructure to avoid sending the whole object if not needed
+                const { id: matchId, ...dataToSave } = currentMatch;
+                await updateDoc(matchDocRef, dataToSave);
+            } catch (error) {
+                console.error("Autosave failed: ", error);
+            }
+        }
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [isSaving]);
 
   // Timer logic
   useEffect(() => {
@@ -179,7 +197,7 @@ export default function MarcadorEnVivoPage() {
                 
                 if (userPlayers) {
                     userPlayers.forEach(player => {
-                        // Ensure we only update players that are part of the user's team roster (not temp visitor players)
+                        // Ensure we only update players that are part of the user's team roster
                         if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                             const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                             batch.update(playerRef, {
@@ -370,18 +388,6 @@ export default function MarcadorEnVivoPage() {
   const renderTeamTable = (team: 'local' | 'visitor') => {
     const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
     const players = match[teamKey] || [];
-    
-    if (players.length === 0 && !match.isFinished) {
-        return (
-            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg m-4">
-                <p>Puedes añadir los jugadores del equipo rival aquí.</p>
-                <Button variant="outline" size="sm" onClick={() => addPlayer(team)} className="mt-4">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Añadir Jugador
-                </Button>
-            </div>
-        )
-    }
 
     return (
         <div className="mt-0">
@@ -461,7 +467,7 @@ export default function MarcadorEnVivoPage() {
                     <BarChartHorizontal className="text-primary"/>
                     Marcador y Estadísticas en Vivo
                 </h1>
-                <p className="text-muted-foreground">Gestiona el partido en tiempo real.</p>
+                <p className="text-muted-foreground">Gestiona el partido en tiempo real. Los cambios se guardan automáticamente.</p>
             </div>
             <div className="flex items-center gap-4">
                  <Button variant="outline" onClick={() => router.back()}>
@@ -479,12 +485,15 @@ export default function MarcadorEnVivoPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>¿Finalizar y guardar estadísticas?</AlertDialogTitle>
                             <AlertDialogDescription>
-                               Esta acción guardará permanentemente las estadísticas del partido en los totales de tus jugadores. Una vez finalizado, el partido no se podrá volver a editar.
+                               Esta acción consolidará permanentemente las estadísticas del partido en los totales de tus jugadores. Una vez finalizado, el partido no se podrá volver a editar.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={finalizeMatch}>Sí, finalizar</AlertDialogAction>
+                            <AlertDialogAction onClick={finalizeMatch} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Sí, finalizar
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -540,3 +549,5 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
+
+    
