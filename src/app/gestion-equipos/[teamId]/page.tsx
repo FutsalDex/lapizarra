@@ -35,6 +35,7 @@ interface Member {
     id: string;
     email: string;
     role: string;
+    name: string;
 }
 
 export default function TeamMembersPage() {
@@ -205,6 +206,7 @@ export default function TeamMembersPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>Nombre</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Rol</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
@@ -213,12 +215,14 @@ export default function TeamMembersPage() {
                     <TableBody>
                         {/* Owner */}
                         <TableRow>
-                            <TableCell className="font-medium">{user?.email}</TableCell>
+                            <TableCell className="font-medium">{user?.displayName}</TableCell>
+                            <TableCell>{user?.email}</TableCell>
                             <TableCell>Propietario</TableCell>
                             <TableCell className="text-right"></TableCell>
                         </TableRow>
                         {members.map(member => (
                              <TableRow key={member.id}>
+                                <TableCell>{member.name}</TableCell>
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>{member.role}</TableCell>
                                 <TableCell className="text-right">

@@ -76,6 +76,7 @@ export default function MisInvitacionesPage() {
                 teamId: invitation.teamId,
                 userId: user.uid,
                 email: user.email,
+                name: user.displayName || 'Sin Nombre',
                 role: invitation.role,
                 joinedAt: new Date(),
             });
