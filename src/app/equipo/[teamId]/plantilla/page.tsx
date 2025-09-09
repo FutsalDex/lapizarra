@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, PlusCircle, Trash2, Edit, ArrowLeft } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Edit, ArrowLeft, Save } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -45,18 +46,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const initialPlayers = [
-    { id: '1', name: 'Álex', position: 'Cierre', number: 5, goals: 12, assists: 8 },
-    { id: '2', name: 'Javier', position: 'Ala', number: 10, goals: 25, assists: 15 },
-    { id: '3', name: 'Marta', position: 'Pívot', number: 9, goals: 30, assists: 5 },
-    { id: '4', name: 'Carlos', position: 'Portero', number: 1, goals: 0, assists: 1 },
-    { id: '5', name: 'Lucía', position: 'Ala', number: 7, goals: 18, assists: 20 },
+    { id: '1', number: 1, name: 'Manel', position: 'Portero', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 8, gRec: 5, smvp: 4 },
+    { id: '2', number: 2, name: 'Victor', position: 'Cierre', active: true, pj: 3, goals: 1, ta: 0, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '3', number: 3, name: 'Marc Muñoz', position: 'Ala-Pívot', active: true, pj: 5, goals: 1, ta: 1, tr: 0, faltas: 0, paradas: 2, gRec: 0, smvp: 0 },
+    { id: '4', number: 4, name: 'Marc Montoro', position: 'Cierre', active: true, pj: 3, goals: 1, ta: 0, tr: 0, faltas: 4, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '5', number: 5, name: 'Roger', position: 'Pívot', active: true, pj: 5, goals: 2, ta: 0, tr: 0, faltas: 2, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '6', number: 6, name: 'Marc Romeia', position: 'Ala', active: true, pj: 3, goals: 2, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '7', number: 7, name: 'Hugo', position: 'Pívot', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '8', number: 8, name: 'Dani', position: 'Ala', active: true, pj: 3, goals: 1, ta: 1, tr: 0, faltas: 3, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '9', number: 9, name: 'Iker Rando', position: 'Ala', active: true, pj: 5, goals: 4, ta: 1, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '10', number: 10, name: 'Salva', position: 'Ala-Pívot', active: true, pj: 5, goals: 1, ta: 1, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0 },
+    { id: '11', number: 11, name: 'Lucen', position: 'Portero', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 7, gRec: 2, smvp: 4 },
 ];
 
 interface Team {
+  id: string;
   name: string;
+  club: string;
+  competition?: string;
 }
 
 export default function TeamRosterPage() {
@@ -72,152 +85,146 @@ export default function TeamRosterPage() {
         const teamDocRef = doc(db, 'teams', teamId);
         const unsubscribe = onSnapshot(teamDocRef, (doc) => {
             if (doc.exists()) {
-                setTeam(doc.data() as Team);
+                setTeam({ id: doc.id, ...doc.data() } as Team);
             }
             setLoading(false);
         });
         return () => unsubscribe();
     }, [teamId]);
 
+    const handleActiveChange = (playerId: string, checked: boolean) => {
+        setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, active: checked} : p));
+    }
+
     if (loading) {
         return (
-             <div className="container mx-auto max-w-6xl py-12 px-4 space-y-8">
+             <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
                 <Skeleton className="h-10 w-1/3" />
-                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-96 w-full mt-8" />
             </div>
         )
     }
+    
+    if (!team) {
+        return <div>Equipo no encontrado.</div>
+    }
 
   return (
-    <div className="container mx-auto max-w-6xl py-12 px-4">
-       <div className="flex justify-between items-center mb-12">
+    <div className="container mx-auto max-w-7xl py-12 px-4">
+       <div className="flex justify-between items-center mb-8">
             <div className="text-left">
-                <div className="mb-4">
-                    <Button asChild variant="outline">
-                    <Link href={`/equipo/${teamId}`}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver al Panel del Equipo
-                    </Link>
-                    </Button>
-                </div>
                 <div className="flex items-center gap-4">
                     <Users className="h-10 w-10 text-primary" />
                     <div>
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
-                        Plantilla de {team?.name || '...'}
+                        Mi Plantilla
                     </h1>
                     <p className="text-lg text-muted-foreground mt-1">
-                        Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas.
+                        Gestiona la plantilla de tu equipo y consulta sus estadísticas de la temporada.
                     </p>
                     </div>
                 </div>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button size="lg">
-                        <PlusCircle className="mr-2 h-5 w-5" />
-                        Añadir Jugador
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
-                        <DialogDescription>
-                            Introduce los datos del nuevo jugador de tu plantilla.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="name" className="text-right">Nombre</Label>
-                            <Input id="name" className="col-span-3" />
-                        </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="position" className="text-right">Posición</Label>
-                            <Input id="position" className="col-span-3" />
-                        </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="number" className="text-right">Dorsal</Label>
-                            <Input id="number" type="number" className="col-span-3" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="submit" onClick={() => setOpen(false)}>Guardar Jugador</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+             <Button asChild variant="outline">
+                <Link href={`/equipo/${teamId}`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver al Panel
+                </Link>
+            </Button>
       </div>
+
+        <Card className="mb-8">
+            <CardHeader>
+                <CardTitle>Información del Equipo</CardTitle>
+                <CardDescription>Define los datos de tu club. Esta información se usará para rellenar automáticamente los datos en las estadísticas de los partidos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="club-name">Club</Label>
+                        <Input id="club-name" defaultValue={team.club} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="team-name">Equipo</Label>
+                        <Input id="team-name" defaultValue={team.name} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="main-championship">Campeonato Principal</Label>
+                        <Input id="main-championship" defaultValue={team.competition || 'TERCERA DIVISION JUVENIL - GRUPO 5'} />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
 
 
       <Card>
         <CardHeader>
-          <CardTitle>Listado de Jugadores</CardTitle>
-          <CardDescription>Visualiza y gestiona los miembros de tu equipo.</CardDescription>
+          <CardTitle>Plantilla del Equipo</CardTitle>
+          <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Solo los jugadores "Activos" aparecerán en el módulo de partidos.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="rounded-md border">
              <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Posición</TableHead>
-                    <TableHead className="text-center">Dorsal</TableHead>
-                    <TableHead className="text-center">Goles</TableHead>
-                    <TableHead className="text-center">Asistencias</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                        <TableHead className="w-[5%]">Dorsal</TableHead>
+                        <TableHead className="w-[20%]">Nombre</TableHead>
+                        <TableHead className="w-[15%]">Posición</TableHead>
+                        <TableHead className="w-[5%]">Activo</TableHead>
+                        <TableHead className="text-center">PJ</TableHead>
+                        <TableHead className="text-center">Goles</TableHead>
+                        <TableHead className="text-center">T.A.</TableHead>
+                        <TableHead className="text-center">T.R.</TableHead>
+                        <TableHead className="text-center">Faltas</TableHead>
+                        <TableHead className="text-center">Paradas</TableHead>
+                        <TableHead className="text-center">G. Rec.</TableHead>
+                        <TableHead className="text-center">MVP</TableHead>
+                        <TableHead className="text-right w-[10%]">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {players.map((player) => (
                         <TableRow key={player.id}>
-                            <TableCell className="font-medium">{player.name}</TableCell>
-                            <TableCell>{player.position}</TableCell>
-                            <TableCell className="text-center">{player.number}</TableCell>
+                            <TableCell><Input defaultValue={player.number} className="h-8 w-14 text-center" /></TableCell>
+                            <TableCell><Input defaultValue={player.name} className="h-8" /></TableCell>
+                            <TableCell>
+                                <Select defaultValue={player.position}>
+                                    <SelectTrigger className="h-8">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Portero">Portero</SelectItem>
+                                        <SelectItem value="Cierre">Cierre</SelectItem>
+                                        <SelectItem value="Ala">Ala</SelectItem>
+                                        <SelectItem value="Pívot">Pívot</SelectItem>
+                                        <SelectItem value="Ala-Pívot">Ala-Pívot</SelectItem>
+                                        <SelectItem value="Universal">Universal</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
+                            <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handleActiveChange(player.id, checked)} /></TableCell>
+                            <TableCell className="text-center">{player.pj}</TableCell>
                             <TableCell className="text-center">{player.goals}</TableCell>
-                            <TableCell className="text-center">{player.assists}</TableCell>
+                            <TableCell className="text-center">{player.ta}</TableCell>
+                            <TableCell className="text-center">{player.tr}</TableCell>
+                            <TableCell className="text-center">{player.faltas}</TableCell>
+                            <TableCell className="text-center">{player.paradas}</TableCell>
+                            <TableCell className="text-center">{player.gRec}</TableCell>
+                            <TableCell className="text-center">{player.smvp}</TableCell>
                             <TableCell className="text-right">
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                        <DialogTitle>Editar Jugador</DialogTitle>
-                                        <DialogDescription>
-                                            Actualiza los datos del jugador.
-                                        </DialogDescription>
-                                        </DialogHeader>
-                                        {/* Edit form would go here */}
-                                        <DialogFooter>
-                                            <Button type="submit">Guardar Cambios</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                 <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente al jugador de la plantilla.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction>Continuar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                 <Button variant="ghost" size="icon" className="hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
+            </div>
+            <div className="flex justify-between mt-4">
+                 <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
+                 <Button><Save className="mr-2 h-4 w-4" />Guardar Equipo</Button>
             </div>
         </CardContent>
       </Card>
@@ -225,4 +232,3 @@ export default function TeamRosterPage() {
   );
 }
 
-    
