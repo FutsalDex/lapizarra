@@ -40,6 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Exercise {
   id: string;
@@ -232,8 +243,28 @@ export default function MisSesionesPage() {
                     <CardFooter className="flex-col items-stretch space-y-2">
                         <Button variant="outline"><Eye className="mr-2 h-4 w-4" />Ver Ficha Detallada</Button>
                         <div className="grid grid-cols-2 gap-2">
-                             <Button variant="secondary"><Edit className="mr-2 h-4 w-4" />Editar</Button>
-                             <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Borrar</Button>
+                            <Button asChild variant="secondary">
+                                <Link href={`/crear-sesion?sessionId=${session.id}`}>
+                                    <Edit className="mr-2 h-4 w-4" />Editar
+                                </Link>
+                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Borrar</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar sesión?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Se borrará la sesión de entrenamiento permanentemente.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction>Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </CardFooter>
                 </Card>
@@ -243,3 +274,5 @@ export default function MisSesionesPage() {
     </div>
   );
 }
+
+    

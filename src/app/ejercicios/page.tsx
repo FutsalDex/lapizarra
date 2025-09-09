@@ -26,6 +26,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 
 interface Exercise {
@@ -282,9 +283,11 @@ export default function EjerciciosPage() {
             </CardContent>
             <CardFooter className="bg-card border-t p-3">
                 <div className="w-full flex justify-between items-center">
-                    <Button variant="outline">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Ficha
+                    <Button asChild variant="outline">
+                        <Link href={`/ejercicios/${exercise.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Ficha
+                        </Link>
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)}>
                         <Heart className={`h-5 w-5 ${favorites.includes(exercise.id) ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
@@ -304,3 +307,4 @@ export default function EjerciciosPage() {
   );
 }
 
+    

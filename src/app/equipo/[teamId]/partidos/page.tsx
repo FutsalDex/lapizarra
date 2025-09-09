@@ -11,6 +11,17 @@ import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Match {
   id: string;
@@ -121,12 +132,30 @@ export default function TeamMatchesPage() {
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/marcador/${match.id}`}><BarChart2 className="mr-2 h-4 w-4" />Estadísticas</Link>
                 </Button>
-                <Button variant="ghost" size="icon" disabled>
-                    <Eye className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" disabled>
-                    <Trash2 className="h-5 w-5 text-destructive" />
-                </Button>
+                <AddMatchDialog>
+                    <Button variant="ghost" size="icon">
+                        <Eye className="h-5 w-5" />
+                    </Button>
+                </AddMatchDialog>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-5 w-5" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar partido?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer y borrará permanentemente los datos de este partido.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction>Eliminar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
               </CardFooter>
             </Card>
           ))}
@@ -135,3 +164,5 @@ export default function TeamMatchesPage() {
     </div>
   );
 }
+
+    

@@ -35,6 +35,17 @@ import Link from 'next/link';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const initialPlayers = [
     { id: '1', name: 'Álex', position: 'Cierre', number: 5, goals: 12, assists: 8 },
@@ -164,12 +175,44 @@ export default function TeamRosterPage() {
                             <TableCell className="text-center">{player.goals}</TableCell>
                             <TableCell className="text-center">{player.assists}</TableCell>
                             <TableCell className="text-right">
-                                <Button variant="ghost" size="icon">
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                                 <Button variant="ghost" size="icon" className="text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                        <DialogTitle>Editar Jugador</DialogTitle>
+                                        <DialogDescription>
+                                            Actualiza los datos del jugador.
+                                        </DialogDescription>
+                                        </DialogHeader>
+                                        {/* Edit form would go here */}
+                                        <DialogFooter>
+                                            <Button type="submit">Guardar Cambios</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente al jugador de la plantilla.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction>Continuar</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -181,3 +224,5 @@ export default function TeamRosterPage() {
     </div>
   );
 }
+
+    
