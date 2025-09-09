@@ -11,10 +11,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send, Clipboard, ClipboardCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Team {
   name: string;
@@ -41,6 +50,10 @@ export default function TeamMembersPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
+
+  const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!teamId) return;
@@ -84,7 +97,7 @@ export default function TeamMembersPage() {
     }
     setInviting(true);
     try {
-        await addDoc(collection(db, 'invitations'), {
+        const invitationDoc = await addDoc(collection(db, 'invitations'), {
             teamId,
             teamName: team?.name,
             invitedByUser: user?.uid,
@@ -93,16 +106,27 @@ export default function TeamMembersPage() {
             status: 'pending',
             createdAt: serverTimestamp(),
         });
-        toast({ title: "¡Invitación Enviada!", description: `Se ha enviado una invitación a ${inviteEmail}.` });
+
+        const generatedLink = `${window.location.origin}/invitacion/${invitationDoc.id}`;
+        setInviteLink(generatedLink);
+        setShowInviteLinkDialog(true);
+
+        toast({ title: "¡Invitación Creada!", description: `Comparte el enlace con ${inviteEmail}.` });
         setInviteEmail('');
         setInviteRole('');
     } catch (error) {
-        console.error("Error sending invitation: ", error);
-        toast({ title: "Error", description: "Hubo un problema al enviar la invitación.", variant: "destructive" });
+        console.error("Error creating invitation: ", error);
+        toast({ title: "Error", description: "Hubo un problema al crear la invitación.", variant: "destructive" });
     } finally {
         setInviting(false);
     }
   }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setIsLinkCopied(true);
+    setTimeout(() => setIsLinkCopied(false), 2000); // Reset after 2 seconds
+  };
   
 
   if (loading) {
@@ -114,6 +138,7 @@ export default function TeamMembersPage() {
   }
 
   return (
+    <>
     <div className="container mx-auto max-w-4xl py-12 px-4 space-y-8">
       <div>
         <Button asChild variant="outline" className="mb-4">
@@ -129,7 +154,7 @@ export default function TeamMembersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserPlus />Invitar Nuevo Miembro</CardTitle>
-          <CardDescription>Invita a otros entrenadores o miembros del cuerpo técnico a colaborar.</CardDescription>
+          <CardDescription>Crea un enlace de invitación para que otros entrenadores o miembros del cuerpo técnico se unan.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -164,7 +189,7 @@ export default function TeamMembersPage() {
             </div>
             <Button type="submit" disabled={inviting}>
                 {inviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                Enviar Invitación
+                Crear Invitación
             </Button>
           </form>
         </CardContent>
@@ -212,5 +237,27 @@ export default function TeamMembersPage() {
         </CardContent>
       </Card>
     </div>
+
+    <AlertDialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Enlace de Invitación Creado</AlertDialogTitle>
+            <AlertDialogDescription>
+                Copia este enlace y compártelo con el nuevo miembro. El enlace le permitirá unirse a tu equipo.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="relative rounded-md bg-muted px-4 py-2 font-mono text-sm break-all">
+                {inviteLink}
+            </div>
+            <AlertDialogFooter>
+                <Button variant="outline" onClick={copyToClipboard}>
+                    {isLinkCopied ? <ClipboardCheck className="mr-2 h-4 w-4" /> : <Clipboard className="mr-2 h-4 w-4" />}
+                    {isLinkCopied ? '¡Copiado!' : 'Copiar Enlace'}
+                </Button>
+                <AlertDialogAction onClick={() => setShowInviteLinkDialog(false)}>Cerrar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
