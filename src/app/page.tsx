@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center text-center py-16 md:py-24 lg:py-32 px-4">
       <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline text-slate-800">
-        FutsalDex
+        LaPizarra
       </h1>
       <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed mx-auto mt-4">
         Tu compañero definitivo para el entrenamiento de fútbol sala. Descubre

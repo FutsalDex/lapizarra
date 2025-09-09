@@ -54,7 +54,7 @@ export default function Header() {
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold text-2xl font-headline inline-block">
-              FutsalDex
+              LaPizarra
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -126,7 +126,7 @@ export default function Header() {
               <SheetClose asChild>
                 <Link href="/" className="flex items-center space-x-2 mb-6">
                    <span className="font-bold text-2xl font-headline inline-block">
-                    FutsalDex
+                    LaPizarra
                   </span>
                 </Link>
               </SheetClose>
