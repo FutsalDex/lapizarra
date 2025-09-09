@@ -30,11 +30,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
+import TeamForm from './_components/TeamForm';
 
 interface Team {
     id: string;
     name: string;
     club: string;
+    competition?: string;
     ownerId: string;
 }
 
@@ -114,7 +116,7 @@ export default function GestionEquiposPage() {
                     <CardDescription>Añade un nuevo equipo para empezar a gestionarlo.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <CreateTeamForm />
+                    <TeamForm />
                 </CardContent>
             </Card>
         </div>
@@ -156,6 +158,11 @@ export default function GestionEquiposPage() {
                                                 Miembros
                                             </Link>
                                         </Button>
+                                        <TeamForm teamData={team}>
+                                           <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </TeamForm>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
