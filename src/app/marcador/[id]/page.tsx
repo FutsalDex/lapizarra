@@ -175,6 +175,25 @@ export default function MarcadorEnVivoPage() {
     return () => unsubscribe();
   }, [id, toast]);
   
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (match?.isActive && match.timeLeft > 0) {
+      interval = setInterval(() => {
+        setMatch(prevMatch => {
+          if (prevMatch && prevMatch.timeLeft > 0) {
+            return { ...prevMatch, timeLeft: prevMatch.timeLeft - 1 };
+          }
+          return prevMatch;
+        });
+      }, 1000);
+    } else if (match && !match.isActive && match.timeLeft !== 0) {
+      if (interval) clearInterval(interval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [match?.isActive, match?.timeLeft]);
+
   const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name'>, delta: 1 | -1) => {
       setMatch(prev => {
           if (!prev) return null;
