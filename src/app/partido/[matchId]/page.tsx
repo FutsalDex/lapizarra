@@ -189,7 +189,7 @@ export default function MatchDetailsPage() {
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
                                     <TableHead>Par.</TableHead>
-                                    <TableHead>GR</TableHead>
+                                    <TableHead>GC</TableHead>
                                     <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -246,7 +246,7 @@ export default function MatchDetailsPage() {
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
                                     <TableHead>Par.</TableHead>
-                                    <TableHead>GR</TableHead>
+                                    <TableHead>GC</TableHead>
                                     <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -274,3 +274,5 @@ export default function MatchDetailsPage() {
     </div>
   );
 }
+
+    

@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -21,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2, RefreshCw } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
@@ -31,17 +30,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 
 interface Team {
@@ -184,40 +172,6 @@ export default function TeamRosterPage() {
          }
     }
 
-    const handleResetStats = async () => {
-        setIsSaving(true);
-        const batch = writeBatch(db);
-        players.forEach(player => {
-            const playerRef = doc(db, 'teams', teamId, 'players', player.id);
-            batch.update(playerRef, {
-                pj: 0,
-                goals: 0,
-                assists: 0,
-                ta: 0,
-                tr: 0,
-                faltas: 0,
-                paradas: 0,
-                gRec: 0
-            });
-        });
-        try {
-            await batch.commit();
-            toast({
-                title: "Estadísticas Reseteadas",
-                description: "Todas las estadísticas de los jugadores han sido puestas a cero."
-            });
-        } catch (error) {
-            console.error("Error resetting stats: ", error);
-            toast({
-                title: "Error",
-                description: "No se pudieron resetear las estadísticas.",
-                variant: "destructive"
-            });
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
 
     if (loading) {
         return (
@@ -323,7 +277,7 @@ export default function TeamRosterPage() {
                         <TableHead className="text-center">T.R.</TableHead>
                         <TableHead className="text-center">Faltas</TableHead>
                         <TableHead className="text-center">Paradas</TableHead>
-                        <TableHead className="text-center">GR</TableHead>
+                        <TableHead className="text-center">GC</TableHead>
                         <TableHead className="text-right w-[10%]">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -374,29 +328,9 @@ export default function TeamRosterPage() {
                 </Button>
             </div>
         </CardContent>
-        <CardFooter className="pt-6">
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive"><RefreshCw className="mr-2 h-4 w-4"/>Resetear Estadísticas</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>¿Resetear estadísticas?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción pondrá a CERO todas las estadísticas (PJ, Goles, etc.) de todos los jugadores de la plantilla. Esta acción no se puede deshacer.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleResetStats} disabled={isSaving}>
-                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            Sí, resetear
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </CardFooter>
       </Card>
     </div>
   );
 }
+
+    

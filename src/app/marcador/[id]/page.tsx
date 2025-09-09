@@ -171,13 +171,12 @@ export default function MarcadorEnVivoPage() {
     setIsSaving(true);
     
     const matchDocRef = doc(db, 'matches', id);
-    const { id: matchId, ...matchData } = match;
 
-    const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
-    const visitorScore = matchData.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+    const localScore = match.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+    const visitorScore = match.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     
-    const dataToUpdate: Partial<MatchDetails> = {
-        ...matchData,
+    const dataToUpdate = {
+        ...match,
         localScore,
         visitorScore,
         isFinished: true,
@@ -187,10 +186,8 @@ export default function MarcadorEnVivoPage() {
     try {
         const batch = writeBatch(db);
         
-        // Step 1: Update the match document itself
         batch.update(matchDocRef, dataToUpdate);
 
-        // Step 2: Update player stats in the main roster if teamId is available
         if (match.teamId) { 
             const teamDoc = await getDoc(doc(db, 'teams', match.teamId));
             if (teamDoc.exists()) {
@@ -200,7 +197,6 @@ export default function MarcadorEnVivoPage() {
                 
                 if (userPlayers) {
                     userPlayers.forEach(player => {
-                        // Ensure we only update players that are part of the user's team roster
                         if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                             const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                             batch.update(playerRef, {
@@ -219,12 +215,10 @@ export default function MarcadorEnVivoPage() {
             }
         }
         
-        // Commit all batched writes
         await batch.commit();
 
         toast({ title: "¡Partido Finalizado!", description: "Las estadísticas han sido guardadas y añadidas a los totales de los jugadores." });
         
-        // Update local state to reflect the finished status
         setMatch(prev => prev ? {...prev, isFinished: true, isActive: false} : null);
 
     } catch (error) {
@@ -414,7 +408,7 @@ export default function MarcadorEnVivoPage() {
                             </TableHead>
                             <TableHead className="text-center">Faltas</TableHead>
                             <TableHead className="text-center">Paradas</TableHead>
-                            <TableHead className="text-center">GR</TableHead>
+                            <TableHead className="text-center">GC</TableHead>
                             <TableHead className="text-center">1vs1</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -561,3 +555,5 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
+
+    
