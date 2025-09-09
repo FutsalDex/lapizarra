@@ -69,6 +69,7 @@ export default function MarcadorEnVivoPage() {
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const matchRef = useRef(match);
   
   // Keep ref in sync with state
@@ -136,6 +137,8 @@ export default function MarcadorEnVivoPage() {
                 // Destructure to avoid sending the whole object if not needed
                 const { id: matchId, ...dataToSave } = currentMatch;
                 await updateDoc(matchDocRef, dataToSave);
+                setShowSavedIndicator(true);
+                setTimeout(() => setShowSavedIndicator(false), 2000);
             } catch (error) {
                 console.error("Autosave failed: ", error);
             }
@@ -164,7 +167,7 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
  const finalizeMatch = async () => {
-    if (!match || match.isFinished) return;
+    if (!match) return;
     setIsSaving(true);
     
     const matchDocRef = doc(db, 'matches', id);
@@ -470,14 +473,20 @@ export default function MarcadorEnVivoPage() {
                 <p className="text-muted-foreground">Gestiona el partido en tiempo real. Los cambios se guardan automáticamente.</p>
             </div>
             <div className="flex items-center gap-4">
+                 {showSavedIndicator && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 transition-opacity duration-300">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Guardado</span>
+                    </div>
+                 )}
                  <Button variant="outline" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button variant="destructive" disabled={isSaving || match.isFinished}>
-                            {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                         <Button variant="destructive" onClick={finalizeMatch} disabled={isSaving || match.isFinished}>
+                            {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : (isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<CheckCircle className="mr-2 h-4 w-4"/>)}
                             {match.isFinished ? 'Partido Finalizado' : 'Finalizar Partido'}
                         </Button>
                     </AlertDialogTrigger>
