@@ -151,62 +151,62 @@ export default function MarcadorEnVivoPage() {
 
 
   // Match data and timer logic
-  useEffect(() => {
-    if (!id) return;
-    const matchDocRef = doc(db, 'matches', id);
+    useEffect(() => {
+        if (!id) return;
+        const matchDocRef = doc(db, 'matches', id);
 
-    const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data() as Omit<MatchDetails, 'id'>;
+        const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data() as Omit<MatchDetails, 'id'>;
 
-            let localPlayers = data.localPlayers || [];
-            let visitorPlayers = data.visitorPlayers || [];
+                let localPlayers = data.localPlayers;
+                let visitorPlayers = data.visitorPlayers;
 
-            // Fetch team data to know which side our players are on
-            if (data.teamId) {
-                const teamDocRef = doc(db, 'teams', data.teamId);
-                const teamDoc = await getDoc(teamDocRef);
-                if (teamDoc.exists()) {
-                    const teamName = teamDoc.data().name;
-                    const isLocalTeam = teamName === data.localTeam;
-                    const isVisitorTeam = teamName === data.visitorTeam;
+                // This complex logic ensures we only fetch the user's team once,
+                // and correctly place them as local or visitor.
+                if (data.teamId && (!localPlayers || !visitorPlayers)) {
+                    const teamDocRef = doc(db, 'teams', data.teamId);
+                    const teamDoc = await getDoc(teamDocRef);
+                    if (teamDoc.exists()) {
+                        const teamName = teamDoc.data().name;
+                        const isLocalTeam = teamName === data.localTeam;
+                        const isVisitorTeam = teamName === data.visitorTeam;
 
-                    if (isLocalTeam && localPlayers.length === 0) {
                         const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playersQuery);
-                        localPlayers = playersSnapshot.docs.map(d => ({
+                        const userTeamPlayers = playersSnapshot.docs.map(d => ({
                             id: d.id, name: d.data().name, number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
                         })).sort((a, b) => a.number - b.number);
-                    } else if (isVisitorTeam && visitorPlayers.length === 0) {
-                        const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                        const playersSnapshot = await getDocs(playersQuery);
-                        visitorPlayers = playersSnapshot.docs.map(d => ({
-                            id: d.id, name: d.data().name, number: d.data().number,
-                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
-                        })).sort((a, b) => a.number - b.number);
+
+                        if (isLocalTeam && !localPlayers) {
+                            localPlayers = userTeamPlayers;
+                        } else if (isVisitorTeam && !visitorPlayers) {
+                            visitorPlayers = userTeamPlayers;
+                        }
                     }
                 }
+                
+                setMatch({
+                    id: docSnap.id,
+                    ...data,
+                    localPlayers: localPlayers || [],
+                    visitorPlayers: visitorPlayers || [],
+                    timeLeft: data.timeLeft ?? 25 * 60,
+                    period: data.period ?? '1ª Parte',
+                    isActive: data.isActive ?? false,
+                    events: data.events || []
+                });
+
+
+            } else {
+                toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
             }
+            setLoading(false);
+        });
 
-            setMatch({
-                id: docSnap.id,
-                ...data,
-                localPlayers,
-                visitorPlayers,
-                timeLeft: data.timeLeft ?? 25 * 60,
-                period: data.period ?? '1ª Parte',
-                isActive: data.isActive ?? false,
-                events: data.events || []
-            });
-        } else {
-            toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
-        }
-        setLoading(false);
-    });
-
-    return () => unsubscribe();
-}, [id, toast]);
+        return () => unsubscribe();
+    }, [id, toast]);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -271,26 +271,30 @@ export default function MarcadorEnVivoPage() {
 }
 
   
-   const handleVisitorPlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
+   const handlePlayerInfoChange = (team: 'local' | 'visitor', playerIndex: number, field: 'name' | 'number', value: string | number) => {
         setMatch(prev => {
-            if (!prev || !prev.visitorPlayers) return prev;
-            const updatedPlayers = [...prev.visitorPlayers];
+            if (!prev) return null;
+            const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
+            if (!prev[teamKey]) return prev;
+            
+            const updatedPlayers = [...prev[teamKey]!];
             updatedPlayers[playerIndex] = { ...updatedPlayers[playerIndex], [field]: value };
-            return { ...prev, visitorPlayers: updatedPlayers };
+            return { ...prev, [teamKey]: updatedPlayers };
         });
     };
 
-    const addVisitorPlayer = () => {
+    const addPlayer = (team: 'local' | 'visitor') => {
         setMatch(prev => {
             if (!prev) return prev;
             const newPlayer: Player = {
-                id: `visitor-${Date.now()}`,
+                id: `${team}-${Date.now()}`,
                 name: 'Nuevo Jugador',
                 number: 0,
                 goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0
             };
-            const visitorPlayers = [...(prev.visitorPlayers || []), newPlayer];
-            return { ...prev, visitorPlayers };
+            const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
+            const players = [...(prev[teamKey] || []), newPlayer];
+            return { ...prev, [teamKey]: players };
         });
     };
 
@@ -370,6 +374,80 @@ export default function MarcadorEnVivoPage() {
   const localScore = match.localPlayers?.reduce((acc, p) => acc + p.goals, 0) || 0;
   const visitorScore = match.visitorPlayers?.reduce((acc, p) => acc + p.goals, 0) || 0;
 
+  const renderTeamTable = (team: 'local' | 'visitor') => {
+    const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
+    const players = match[teamKey] || [];
+    const isUserTeam = players.some(p => !p.id.startsWith('local-') && !p.id.startsWith('visitor-'));
+
+
+    return (
+        <div className="mt-0">
+            <div className={cn("p-2", team === 'local' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                <h3 className="font-bold text-center">JUGADORES - {team === 'local' ? match.localTeam : match.visitorTeam}</h3>
+            </div>
+            <div className="rounded-b-md border border-t-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Dorsal</TableHead>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead className="text-center">Goles</TableHead>
+                            <TableHead className="text-center">
+                                <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
+                            </TableHead>
+                            <TableHead className="text-center">
+                                <div className="inline-block w-4 h-5 bg-red-600 border border-black"></div>
+                            </TableHead>
+                            <TableHead className="text-center">Faltas</TableHead>
+                            <TableHead className="text-center">Paradas</TableHead>
+                            <TableHead className="text-center">G.C.</TableHead>
+                            <TableHead className="text-center">1vs1</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {players.map((player, index) => (
+                            <TableRow key={player.id}>
+                                <TableCell>
+                                    <Input 
+                                        className="h-8 w-14 text-center" 
+                                        value={player.number} 
+                                        onChange={(e) => handlePlayerInfoChange(team, index, 'number', parseInt(e.target.value) || 0)} 
+                                        readOnly={isUserTeam} 
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Input 
+                                        className="h-8" 
+                                        value={player.name} 
+                                        onChange={(e) => handlePlayerInfoChange(team, index, 'name', e.target.value)} 
+                                        readOnly={isUserTeam} 
+                                    />
+                                </TableCell>
+                                <StatButtonCell team={team} playerIndex={index} stat="goals" />
+                                <StatButtonCell team={team} playerIndex={index} stat="amarillas" />
+                                <StatButtonCell team={team} playerIndex={index} stat="rojas" />
+                                <StatButtonCell team={team} playerIndex={index} stat="faltas" />
+                                <StatButtonCell team={team} playerIndex={index} stat="paradas" />
+                                <StatButtonCell team={team} playerIndex={index} stat="golesContra" />
+                                <StatButtonCell team={team} playerIndex={index} stat="vs1" />
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                {!isUserTeam && (
+                    <div className="p-2 text-right">
+                        <Button variant="outline" size="sm" onClick={() => addPlayer(team)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Jugador
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
         <div className="flex justify-between items-center">
@@ -436,110 +514,10 @@ export default function MarcadorEnVivoPage() {
                 <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
             </TabsList>
             <TabsContent value="local" className="m-0">
-                 <div className="mt-0">
-                    <div className="bg-primary text-primary-foreground p-2">
-                        <h3 className="font-bold text-center">JUGADORES - {match.localTeam}</h3>
-                    </div>
-                    <div className="rounded-b-md border border-t-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Dorsal</TableHead>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead className="text-center">Goles</TableHead>
-                                    <TableHead className="text-center">
-                                        <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
-                                    </TableHead>
-                                     <TableHead className="text-center">
-                                        <div className="inline-block w-4 h-5 bg-red-600 border border-black"></div>
-                                    </TableHead>
-                                    <TableHead className="text-center">Faltas</TableHead>
-                                    <TableHead className="text-center">Paradas</TableHead>
-                                    <TableHead className="text-center">G.C.</TableHead>
-                                    <TableHead className="text-center">1vs1</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                             <TableBody>
-                                {match.localPlayers?.map((player, index) => (
-                                    <TableRow key={player.id}>
-                                        <TableCell><Input className="h-8 w-14 text-center" value={player.number} readOnly/></TableCell>
-                                        <TableCell><Input className="h-8" value={player.name} readOnly /></TableCell>
-                                        <StatButtonCell team="local" playerIndex={index} stat="goals" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="amarillas" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="rojas" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="faltas" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="paradas" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="golesContra" />
-                                        <StatButtonCell team="local" playerIndex={index} stat="vs1" />
-                                    </TableRow>
-                                ))}
-                                 {(match.localPlayers?.length === 0) && (
-                                    <TableRow>
-                                        <TableCell colSpan={9} className="text-center text-muted-foreground p-4">
-                                            <p>Este es el equipo rival. Puedes añadir sus jugadores en la pestaña "{match.visitorTeam}"</p>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </div>
+                {renderTeamTable('local')}
             </TabsContent>
             <TabsContent value="visitor" className="m-0">
-                <div className="mt-0">
-                    <div className="bg-muted text-muted-foreground p-2">
-                        <h3 className="font-bold text-center">JUGADORES - {match.visitorTeam}</h3>
-                    </div>
-                     <div className="rounded-b-md border border-t-0">
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Dorsal</TableHead>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead className="text-center">Goles</TableHead>
-                                    <TableHead className="text-center">
-                                        <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
-                                    </TableHead>
-                                     <TableHead className="text-center">
-                                        <div className="inline-block w-4 h-5 bg-red-600 border border-black"></div>
-                                    </TableHead>
-                                    <TableHead className="text-center">Faltas</TableHead>
-                                    <TableHead className="text-center">Paradas</TableHead>
-                                    <TableHead className="text-center">G.C.</TableHead>
-                                    <TableHead className="text-center">1vs1</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                             <TableBody>
-                                {match.visitorPlayers?.map((player, index) => (
-                                    <TableRow key={player.id}>
-                                        <TableCell><Input className="h-8 w-14 text-center" value={player.number} onChange={(e) => handleVisitorPlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} /></TableCell>
-                                        <TableCell><Input className="h-8" value={player.name} onChange={(e) => handleVisitorPlayerInfoChange(index, 'name', e.target.value)} /></TableCell>
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="goals" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="amarillas" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="rojas" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="faltas" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="paradas" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="golesContra" />
-                                        <StatButtonCell team="visitor" playerIndex={index} stat="vs1" />
-                                    </TableRow>
-                                ))}
-                                {(match.visitorPlayers?.length === 0) && (
-                                     <TableRow>
-                                        <TableCell colSpan={9} className="text-center text-muted-foreground p-4">
-                                            <p>Este es el equipo rival. Puedes añadir sus jugadores a continuación.</p>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                        <div className="p-2 text-right">
-                             <Button variant="outline" size="sm" onClick={addVisitorPlayer}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Añadir Jugador Visitante
-                            </Button>
-                        </div>
-                     </div>
-                </div>
+                {renderTeamTable('visitor')}
             </TabsContent>
            </Tabs>
         </CardContent>
