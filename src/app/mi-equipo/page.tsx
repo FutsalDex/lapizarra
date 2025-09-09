@@ -20,6 +20,7 @@ import {
   BarChart3,
   LifeBuoy,
   ArrowRight,
+  ShieldPlus,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
@@ -68,6 +69,12 @@ const modules = [
     href: '/mis-estadisticas',
   },
    {
+    title: 'Gestión de Equipos',
+    description: 'Crea nuevos equipos e invita a otros miembros de tu cuerpo técnico para colaborar.',
+    icon: ShieldPlus,
+    href: '/gestion-equipos',
+  },
+   {
     title: 'Soporte Técnico',
     description: 'Chatea con nuestro entrenador por IA configurado para darte respuestas sobre dudas, órdenes, etc.',
     icon: LifeBuoy,
@@ -89,7 +96,7 @@ export default function MiEquipoPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {modules.map((item) => (
           <Card key={item.title} className="flex flex-col hover:shadow-lg transition-shadow">
             <CardHeader className="flex-row items-center gap-4 space-y-0">
