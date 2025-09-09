@@ -127,7 +127,10 @@ export default function EjerciciosPage() {
           </div>
             <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={loading}>
               <SelectTrigger className="w-full h-11">
-                <SelectValue placeholder="Todas las Fases" />
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Todas las Fases" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 {phases.map((phase) => (
@@ -139,7 +142,10 @@ export default function EjerciciosPage() {
             </Select>
             <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={loading}>
               <SelectTrigger className="w-full h-11">
-                <SelectValue placeholder="Todas las Categorías" />
+                 <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Todas las Categorías" />
+                 </div>
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
@@ -151,7 +157,10 @@ export default function EjerciciosPage() {
             </Select>
             <Select value={selectedAge} onValueChange={setSelectedAge} disabled={loading}>
               <SelectTrigger className="w-full h-11">
-                <SelectValue placeholder="Todas las Edades" />
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Todas las Edades" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                  {ages.map((age) => (
