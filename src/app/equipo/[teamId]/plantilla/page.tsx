@@ -60,7 +60,6 @@ interface Player {
     faltas: number;
     paradas: number;
     gRec: number;
-    smvp: number;
 }
 
 
@@ -147,8 +146,7 @@ export default function TeamRosterPage() {
                 tr: 0, 
                 faltas: 0, 
                 paradas: 0, 
-                gRec: 0, 
-                smvp: 0
+                gRec: 0
             });
              toast({ title: "Jugador Añadido", description: "Se ha añadido un nuevo jugador a la plantilla." });
         } catch (error) {
@@ -275,8 +273,7 @@ export default function TeamRosterPage() {
                         <TableHead className="text-center">T.R.</TableHead>
                         <TableHead className="text-center">Faltas</TableHead>
                         <TableHead className="text-center">Paradas</TableHead>
-                        <TableHead className="text-center">G. Rec.</TableHead>
-                        <TableHead className="text-center">MVP</TableHead>
+                        <TableHead className="text-center">GR</TableHead>
                         <TableHead className="text-right w-[10%]">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -308,7 +305,6 @@ export default function TeamRosterPage() {
                             <TableCell className="text-center">{player.faltas || 0}</TableCell>
                             <TableCell className="text-center">{player.paradas || 0}</TableCell>
                             <TableCell className="text-center">{player.gRec || 0}</TableCell>
-                            <TableCell className="text-center">{player.smvp || 0}</TableCell>
                             <TableCell className="text-right">
                                  <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
                                     <Trash2 className="h-4 w-4" />

@@ -100,7 +100,6 @@ export default function MarcadorEnVivoPage() {
             if(userPlayers) {
                 const batch = writeBatch(db);
                 userPlayers.forEach(player => {
-                    // Only update players that belong to the user's team (don't have visitor/local temporary IDs)
                     if (!player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                         const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
                         batch.update(playerRef, {
@@ -110,8 +109,7 @@ export default function MarcadorEnVivoPage() {
                             ta: increment(player.amarillas),
                             tr: increment(player.rojas),
                             paradas: increment(player.paradas),
-                            gRec: increment(player.golesContra),
-                            smvp: increment(player.vs1), 
+                            gRec: increment(player.golesContra)
                         });
                     }
                 });
@@ -171,7 +169,7 @@ export default function MarcadorEnVivoPage() {
                     const teamName = teamDoc.data().name;
                     const isLocalTeam = teamName === data.localTeam;
                     const isVisitorTeam = teamName === data.visitorTeam;
-
+                    
                     if (isLocalTeam && !localPlayers?.length) {
                          const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playersQuery);
@@ -526,5 +524,3 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
-
-    
