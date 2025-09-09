@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +44,7 @@ import { es } from 'date-fns/locale';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const matchSchema = z.object({
@@ -58,6 +59,11 @@ const matchSchema = z.object({
 
 type MatchFormValues = z.infer<typeof matchSchema>;
 
+interface TeamData {
+    name: string;
+    competition?: string;
+}
+
 interface AddMatchDialogProps {
   children: React.ReactNode;
   teamId: string;
@@ -69,6 +75,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [teamData, setTeamData] = useState<TeamData | null>(null);
 
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
@@ -83,14 +90,42 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
     },
   });
 
+   useEffect(() => {
+    const fetchTeamData = async () => {
+        if (!teamId) return;
+        const teamDocRef = doc(db, 'teams', teamId);
+        const teamDoc = await getDoc(teamDocRef);
+        if(teamDoc.exists()) {
+            const data = teamDoc.data() as TeamData;
+            setTeamData(data);
+            form.setValue('competition', data.competition || '');
+        }
+    }
+
+    if (open) {
+        fetchTeamData();
+    }
+   }, [teamId, open, form]);
+
+
   useEffect(() => {
     if (matchData && open) {
         form.reset({
             ...matchData,
             date: new Date(matchData.date),
         });
+    } else if (teamData) {
+        form.reset({
+            localTeam: '',
+            visitorTeam: '',
+            date: new Date(),
+            time: '',
+            matchType: '',
+            competition: teamData.competition || '',
+            matchday: '',
+        })
     }
-  }, [matchData, form, open]);
+  }, [matchData, teamData, form, open]);
 
 
   const onSubmit = async (data: MatchFormValues) => {
@@ -140,7 +175,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{matchData?.id ? 'Editar Partido' : 'Añadir Nuevo Partido'}</DialogTitle>
           <DialogDescription>
@@ -148,80 +183,85 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="localTeam" className="text-right">Equipo Local</Label>
-              <FormField
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <FormField
                 control={form.control}
                 name="localTeam"
                 render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormControl><Input {...field} /></FormControl>
+                  <FormItem>
+                    <FormLabel>Equipo Local</FormLabel>
+                    <div className="flex items-center gap-2">
+                         <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <Button type="button" variant="outline" onClick={() => form.setValue('localTeam', teamData?.name || '')}>Mi Equipo</Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="visitorTeam" className="text-right">Equipo Visitante</Label>
-                <FormField
+              <FormField
+                control={form.control}
+                name="visitorTeam"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Equipo Visitante</FormLabel>
+                    <div className="flex items-center gap-2">
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                         <Button type="button" variant="outline" onClick={() => form.setValue('visitorTeam', teamData?.name || '')}>Mi Equipo</Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField
                     control={form.control}
-                    name="visitorTeam"
+                    name="date"
                     render={({ field }) => (
-                    <FormItem className="col-span-2">
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
+                        <FormItem className="flex flex-col">
+                         <FormLabel>Fecha</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}
+                                >
+                                {field.value ? (format(field.value, "dd/MM/yyyy")) : (<span>Elige fecha</span>)}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
+                            </PopoverContent>
+                        </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="time"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Hora</FormLabel>
+                            <FormControl><Input type="time" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )}
                 />
             </div>
-             <div className="grid grid-cols-3 items-center gap-4">
-                <Label className="text-right">Fecha y Hora</Label>
-                <div className="col-span-2 grid grid-cols-2 gap-2">
-                    <FormField
-                        control={form.control}
-                        name="date"
-                        render={({ field }) => (
-                            <FormItem>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}
-                                    >
-                                    {field.value ? (format(field.value, "dd/MM/yyyy")) : (<span>Elige fecha</span>)}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
-                                </PopoverContent>
-                            </Popover>
-                             <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="time"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl><Input type="time" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-                <Label className="text-right">Tipo de Partido</Label>
-                 <FormField
+             <FormField
                     control={form.control}
                     name="matchType"
                     render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem>
+                        <FormLabel>Tipo de Partido</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
@@ -237,38 +277,39 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                     </FormItem>
                     )}
                 />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="competition" className="text-right">Competición</Label>
-                <FormField
+
+             <div className="grid grid-cols-2 gap-4">
+                 <FormField
                     control={form.control}
                     name="competition"
                     render={({ field }) => (
-                    <FormItem className="col-span-2">
-                        <FormControl><Input {...field} /></FormControl>
+                    <FormItem>
+                        <FormLabel>Competición</FormLabel>
+                        <FormControl><Input {...field} disabled /></FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
                 />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor="matchday" className="text-right">Jornada</Label>
-                <FormField
+                 <FormField
                     control={form.control}
                     name="matchday"
                     render={({ field }) => (
-                    <FormItem className="col-span-2">
-                        <FormControl><Input {...field} /></FormControl>
+                    <FormItem>
+                         <FormLabel>Jornada</FormLabel>
+                        <FormControl><Input placeholder="Ej: Jornada 5" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
                 />
             </div>
-
-            <DialogFooter>
+            
+            <DialogFooter className="pt-4">
+                 <DialogClose asChild>
+                    <Button type="button" variant="ghost">Cancelar</Button>
+                 </DialogClose>
                 <Button type="submit" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {matchData?.id ? 'Guardar Cambios' : 'Crear Partido'}
+                    {matchData?.id ? 'Guardar Cambios' : 'Guardar y Editar'}
                 </Button>
             </DialogFooter>
           </form>
@@ -277,5 +318,3 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
     </Dialog>
   );
 }
-
-    
