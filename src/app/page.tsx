@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,12 +45,14 @@ export default function Home() {
              <p className="text-sm text-muted-foreground pt-1">¿Quieres probar antes de suscribirte?</p>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground font-semibold mb-2">Como invitado, puedes:</p>
-            <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              <li>Explorar una selección de <span className="font-bold text-primary">15 ejercicios</span> de nuestra biblioteca.</li>
-              <li>Navegar y visualizar todas las herramientas que te ofrecemos</li>
-              <li>Y si te registras disfruta de <span className="font-bold text-primary">48 horas</span> de todos los ejercicios y herramientas, antes de decidir tu suscripción</li>
-            </ul>
+            <div className="text-muted-foreground space-y-2">
+                <p className="font-semibold mb-2">Como invitado, puedes:</p>
+                <ul className="list-disc list-inside space-y-2">
+                    <li>Explorar una selección de <span className="font-bold text-primary">15 ejercicios</span> de nuestra biblioteca.</li>
+                    <li>Navegar y visualizar todas las herramientas que te ofrecemos</li>
+                    <li>Y si te registras disfruta de <span className="font-bold text-primary">48 horas</span> de todos los ejercicios y herramientas, antes de decidir tu suscripción</li>
+                </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
