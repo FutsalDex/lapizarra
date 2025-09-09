@@ -141,7 +141,14 @@ export default function TeamRosterPage() {
                 number: 99,
                 position: 'Ala',
                 active: true,
-                pj: 0, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0
+                pj: 0, 
+                goals: 0, 
+                ta: 0, 
+                tr: 0, 
+                faltas: 0, 
+                paradas: 0, 
+                gRec: 0, 
+                smvp: 0
             });
              toast({ title: "Jugador Añadido", description: "Se ha añadido un nuevo jugador a la plantilla." });
         } catch (error) {
@@ -294,14 +301,14 @@ export default function TeamRosterPage() {
                                 </Select>
                             </TableCell>
                             <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handlePlayerChange(player.id, 'active', checked)} /></TableCell>
-                            <TableCell className="text-center">{player.pj}</TableCell>
-                            <TableCell className="text-center">{player.goals}</TableCell>
-                            <TableCell className="text-center">{player.ta}</TableCell>
-                            <TableCell className="text-center">{player.tr}</TableCell>
-                            <TableCell className="text-center">{player.faltas}</TableCell>
-                            <TableCell className="text-center">{player.paradas}</TableCell>
-                            <TableCell className="text-center">{player.gRec}</TableCell>
-                            <TableCell className="text-center">{player.smvp}</TableCell>
+                            <TableCell className="text-center">{player.pj || 0}</TableCell>
+                            <TableCell className="text-center">{player.goals || 0}</TableCell>
+                            <TableCell className="text-center">{player.ta || 0}</TableCell>
+                            <TableCell className="text-center">{player.tr || 0}</TableCell>
+                            <TableCell className="text-center">{player.faltas || 0}</TableCell>
+                            <TableCell className="text-center">{player.paradas || 0}</TableCell>
+                            <TableCell className="text-center">{player.gRec || 0}</TableCell>
+                            <TableCell className="text-center">{player.smvp || 0}</TableCell>
                             <TableCell className="text-right">
                                  <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
                                     <Trash2 className="h-4 w-4" />
@@ -324,5 +331,3 @@ export default function TeamRosterPage() {
     </div>
   );
 }
-
-    
