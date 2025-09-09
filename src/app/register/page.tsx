@@ -78,6 +78,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
@@ -95,6 +96,8 @@ export default function RegisterPage() {
         return 'El formato del correo electrónico no es válido.';
       case 'auth/weak-password':
         return 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
+      case 'auth/operation-not-allowed':
+        return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
       default:
         return 'Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.';
     }

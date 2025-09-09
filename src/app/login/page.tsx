@@ -69,6 +69,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
@@ -88,6 +89,8 @@ export default function LoginPage() {
         return 'Correo electrónico o contraseña incorrectos.';
       case 'auth/too-many-requests':
         return 'Demasiados intentos de inicio de sesión. Inténtalo de nuevo más tarde.';
+       case 'auth/operation-not-allowed':
+        return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
       default:
         return 'Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.';
     }
