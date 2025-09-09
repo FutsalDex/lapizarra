@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ interface Team {
   name: string;
   club: string;
   ownerId: string;
+  ownerRole: string;
 }
 
 interface Member {
@@ -37,6 +38,19 @@ interface Member {
     role: string;
     name: string;
 }
+
+const roles = [
+    'Entrenador',
+    '2º Entrenador',
+    'Delegado',
+    'Preparador Físico',
+    'Analista Táctico/Scouting',
+    'Fisioterapeuta',
+    'Médico',
+    'Psicólogo',
+    'Nutricionista'
+];
+
 
 export default function TeamMembersPage() {
   const params = useParams();
@@ -57,36 +71,35 @@ export default function TeamMembersPage() {
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   useEffect(() => {
-    if (!teamId) return;
+    if (!teamId || !user) return;
 
     const teamDocRef = doc(db, 'teams', teamId);
-    const getTeamData = async () => {
-      const teamDoc = await getDoc(teamDocRef);
+    
+    const unsubscribeTeam = onSnapshot(teamDocRef, (teamDoc) => {
       if (teamDoc.exists()) {
         const teamData = teamDoc.data() as Team;
-        // Basic authorization: only owner can view for now
-        if (user && teamData.ownerId === user.uid) {
-            setTeam(teamData);
+        if (teamData.ownerId === user.uid) {
+            setTeam({ ownerRole: 'Propietario', ...teamData});
         } else {
-             // Redirect if not authorized
             router.push('/gestion-equipos');
         }
       } else {
         router.push('/gestion-equipos');
       }
       setLoading(false);
-    };
-
-    getTeamData();
+    });
     
     // Listener for members
     const membersQuery = query(collection(db, 'teamMembers'), where('teamId', '==', teamId));
-    const unsubscribe = onSnapshot(membersQuery, (snapshot) => {
+    const unsubscribeMembers = onSnapshot(membersQuery, (snapshot) => {
         const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
         setMembers(membersData);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribeTeam();
+        unsubscribeMembers();
+    };
 
   }, [teamId, user, router]);
 
@@ -121,6 +134,19 @@ export default function TeamMembersPage() {
     } finally {
         setInviting(false);
     }
+  }
+
+  const handleOwnerRoleChange = async (newRole: string) => {
+      if (!teamId) return;
+      const teamDocRef = doc(db, 'teams', teamId);
+      try {
+          await updateDoc(teamDocRef, { ownerRole: newRole });
+          setTeam(prev => prev ? { ...prev, ownerRole: newRole } : null);
+          toast({ title: 'Rol actualizado', description: `Tu nuevo rol en el equipo es ${newRole}.`});
+      } catch (error) {
+          console.error("Error updating owner role:", error);
+          toast({ title: 'Error', description: 'No se pudo actualizar tu rol.', variant: 'destructive'});
+      }
   }
 
   const copyToClipboard = () => {
@@ -176,15 +202,9 @@ export default function TeamMembersPage() {
                        </div>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="Entrenador">Entrenador</SelectItem>
-                        <SelectItem value="2º Entrenador">2º Entrenador</SelectItem>
-                        <SelectItem value="Delegado">Delegado</SelectItem>
-                        <SelectItem value="Preparador Físico">Preparador Físico</SelectItem>
-                        <SelectItem value="Analista Táctico/Scouting">Analista Táctico/Scouting</SelectItem>
-                        <SelectItem value="Fisioterapeuta">Fisioterapeuta</SelectItem>
-                        <SelectItem value="Médico">Médico</SelectItem>
-                        <SelectItem value="Psicólogo">Psicólogo</SelectItem>
-                        <SelectItem value="Nutricionista">Nutricionista</SelectItem>
+                        {roles.map(role => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                        ))}
                     </SelectContent>
                  </Select>
             </div>
@@ -215,14 +235,26 @@ export default function TeamMembersPage() {
                     <TableBody>
                         {/* Owner */}
                         <TableRow>
-                            <TableCell className="font-medium">{user?.displayName}</TableCell>
+                            <TableCell className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</TableCell>
                             <TableCell>{user?.email}</TableCell>
-                            <TableCell>Propietario</TableCell>
+                            <TableCell>
+                                <Select value={team.ownerRole} onValueChange={handleOwnerRoleChange}>
+                                    <SelectTrigger className="w-[200px]">
+                                        <SelectValue placeholder="Selecciona un rol" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Propietario">Propietario</SelectItem>
+                                        {roles.map(role => (
+                                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
                             <TableCell className="text-right"></TableCell>
                         </TableRow>
                         {members.map(member => (
                              <TableRow key={member.id}>
-                                <TableCell>{member.name}</TableCell>
+                                <TableCell>{member.name || member.email?.split('@')[0]}</TableCell>
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>{member.role}</TableCell>
                                 <TableCell className="text-right">
