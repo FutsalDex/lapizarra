@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -185,6 +186,9 @@ export default function MatchDetailsPage() {
                                     <TableHead>TA</TableHead>
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
+                                    <TableHead>Par.</TableHead>
+                                    <TableHead>G.C.</TableHead>
+                                    <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -196,6 +200,9 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.amarillas}</TableCell>
                                     <TableCell>{player.rojas}</TableCell>
                                     <TableCell>{player.faltas}</TableCell>
+                                    <TableCell>{player.paradas}</TableCell>
+                                    <TableCell>{player.golesContra}</TableCell>
+                                    <TableCell>{player.vs1}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
@@ -234,6 +241,9 @@ export default function MatchDetailsPage() {
                                     <TableHead>TA</TableHead>
                                     <TableHead>TR</TableHead>
                                     <TableHead>F</TableHead>
+                                    <TableHead>Par.</TableHead>
+                                    <TableHead>G.C.</TableHead>
+                                    <TableHead>1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -245,6 +255,9 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.amarillas}</TableCell>
                                     <TableCell>{player.rojas}</TableCell>
                                     <TableCell>{player.faltas}</TableCell>
+                                    <TableCell>{player.paradas}</TableCell>
+                                    <TableCell>{player.golesContra}</TableCell>
+                                    <TableCell>{player.vs1}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
