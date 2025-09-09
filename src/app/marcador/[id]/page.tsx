@@ -102,6 +102,7 @@ export default function MarcadorEnVivoPage() {
                     tr: increment(player.rojas),
                     paradas: increment(player.paradas),
                     gRec: increment(player.golesContra),
+                    vs1: increment(player.vs1),
                  });
             });
             await batch.commit();
@@ -207,47 +208,50 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft]);
 
 
-  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists'>, delta: 1 | -1) => {
-      setMatch(prev => {
-          if (!prev || prev.period === 'Descanso') return null;
-          const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
-          const players = prev[teamKey] ? [...prev[teamKey]!] : [];
-          const player = players[playerIndex];
-          if (!player) return prev;
+ const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' | 'number'>, delta: 1 | -1) => {
+    setMatch(prev => {
+        if (!prev || prev.period === 'Descanso') return prev;
 
-          const currentStatValue = player[stat];
-          if (typeof currentStatValue !== 'number') return prev;
-          
-          if (delta === -1 && currentStatValue === 0) return prev;
+        const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = prev[teamKey] ? [...prev[teamKey]!] : [];
+        const player = players[playerIndex];
 
-          players[playerIndex] = { ...player, [stat]: currentStatValue + delta };
-          
-          let newEvents = prev.events ? [...prev.events] : [];
+        if (!player) return prev;
 
-          if (stat === 'goals' && delta === 1) {
-              const totalTime = 25 * 60;
-              const timeElapsedInPeriod = totalTime - prev.timeLeft;
-              let minute = Math.floor(timeElapsedInPeriod / 60);
-              if (prev.period === '2ª Parte') {
-                  minute += 25;
-              }
-              
-              const goalEvent: GoalEvent = {
-                  type: 'goal',
-                  playerId: player.id,
-                  playerName: player.name,
-                  team: team,
-                  minute: minute,
-                  period: prev.period,
-                  teamId: team === 'local' ? prev.teamId : `visitor-${prev.id}`
-              };
-              newEvents.push(goalEvent);
-          }
+        const currentStatValue = player[stat];
+        if (typeof currentStatValue !== 'number') return prev;
+        
+        const newValue = currentStatValue + delta;
+        if (newValue < 0) return prev;
 
+        players[playerIndex] = { ...player, [stat]: newValue };
+        
+        let newEvents = prev.events ? [...prev.events] : [];
 
-          return { ...prev, [teamKey]: players, events: newEvents };
-      });
-  }
+        if (stat === 'goals' && delta === 1) {
+            const totalTime = 25 * 60;
+            const timeElapsedInPeriod = totalTime - prev.timeLeft;
+            let minute = Math.floor(timeElapsedInPeriod / 60);
+            if (prev.period === '2ª Parte') {
+                minute += 25;
+            }
+            
+            const goalEvent: GoalEvent = {
+                type: 'goal',
+                playerId: player.id,
+                playerName: player.name,
+                team: team,
+                minute: minute,
+                period: prev.period,
+                teamId: team === 'local' ? prev.teamId : `visitor-${prev.id}`
+            };
+            newEvents.push(goalEvent);
+        }
+
+        return { ...prev, [teamKey]: players, events: newEvents };
+    });
+}
+
   
    const handleVisitorPlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
         setMatch(prev => {
@@ -272,7 +276,7 @@ export default function MarcadorEnVivoPage() {
         });
     };
 
-  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' > }) => {
+  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' | 'number' > }) => {
     const player = match?.[team === 'local' ? 'localPlayers' : 'visitorPlayers']?.[playerIndex];
     const value = player?.[stat] ?? 0;
 
