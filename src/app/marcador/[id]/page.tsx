@@ -172,19 +172,22 @@ export default function MarcadorEnVivoPage() {
                     const isLocalTeam = teamName === data.localTeam;
                     const isVisitorTeam = teamName === data.visitorTeam;
 
-                    if ((isLocalTeam && !localPlayers) || (isVisitorTeam && !visitorPlayers)) {
-                        const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                    if (isLocalTeam && !localPlayers?.length) {
+                         const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playersQuery);
-                        const userTeamPlayers = playersSnapshot.docs.map(d => ({
+                        localPlayers = playersSnapshot.docs.map(d => ({
                             id: d.id, name: d.data().name, number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
                         })).sort((a, b) => a.number - b.number);
-                        
-                        if (isLocalTeam && !localPlayers) {
-                            localPlayers = userTeamPlayers;
-                        } else if (isVisitorTeam && !visitorPlayers) {
-                            visitorPlayers = userTeamPlayers;
-                        }
+                    }
+                    
+                    if (isVisitorTeam && !visitorPlayers?.length) {
+                        const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                        const playersSnapshot = await getDocs(playersQuery);
+                        visitorPlayers = playersSnapshot.docs.map(d => ({
+                            id: d.id, name: d.data().name, number: d.data().number,
+                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
+                        })).sort((a, b) => a.number - b.number);
                     }
                 }
             }
@@ -223,7 +226,7 @@ export default function MarcadorEnVivoPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [match?.isActive]);
+  }, [match?.isActive, match?.timeLeft]);
 
 
  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
@@ -523,3 +526,5 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
+
+    
