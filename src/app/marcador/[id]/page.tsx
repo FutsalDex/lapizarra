@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Save, Loader2 } from 'lucide-react';
+import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Save, Loader2, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -67,28 +67,31 @@ export default function MarcadorEnVivoPage() {
         setSaveStatus('saving');
         const matchDocRef = doc(db, 'matches', id);
         
-        const batch = writeBatch(db);
+        const { id: matchId, ...matchData } = matchRef.current;
+
+        const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+        const visitorScore = matchData.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
         
         // Update match document
-        const { id: matchId, localPlayers, visitorPlayers, ...matchData } = matchRef.current;
-        batch.update(matchDocRef, {
+        await updateDoc(matchDocRef, {
             ...matchData,
-            localScore: localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0,
-            visitorScore: visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0,
+            localScore,
+            visitorScore,
         });
         
-        // Update players subcollection
-        if(localPlayers) {
-            localPlayers.forEach(player => {
-                const playerRef = doc(db, 'teams', matchRef.current!.teamId, 'players', player.id);
+        
+        // We only update our team players stats in the main roster document
+        if(matchData.localPlayers) {
+            const batch = writeBatch(db);
+            matchData.localPlayers.forEach(player => {
+                const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
                  batch.update(playerRef, {
                     goals: player.goals,
                     faltas: player.faltas,
                  });
             });
+            await batch.commit();
         }
-        
-        await batch.commit();
 
         setSaveStatus('saved');
         if (showToast) {
@@ -160,7 +163,7 @@ export default function MarcadorEnVivoPage() {
     return () => unsubscribe();
   }, [id, toast]);
   
-  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'number'>, delta: 1 | -1) => {
+  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name'>, delta: 1 | -1) => {
       setMatch(prev => {
           if (!prev) return null;
           const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -177,8 +180,31 @@ export default function MarcadorEnVivoPage() {
           return { ...prev, [teamKey]: players };
       });
   }
+  
+   const handleVisitorPlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
+        setMatch(prev => {
+            if (!prev || !prev.visitorPlayers) return prev;
+            const updatedPlayers = [...prev.visitorPlayers];
+            updatedPlayers[playerIndex] = { ...updatedPlayers[playerIndex], [field]: value };
+            return { ...prev, visitorPlayers: updatedPlayers };
+        });
+    };
 
-  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'number'> }) => {
+    const addVisitorPlayer = () => {
+        setMatch(prev => {
+            if (!prev) return prev;
+            const newPlayer: Player = {
+                id: `visitor-${Date.now()}`,
+                name: 'Nuevo Jugador',
+                number: 0,
+                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0
+            };
+            const visitorPlayers = [...(prev.visitorPlayers || []), newPlayer];
+            return { ...prev, visitorPlayers };
+        });
+    };
+
+  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' > }) => {
     const player = match?.[team === 'local' ? 'localPlayers' : 'visitorPlayers']?.[playerIndex];
     const value = player?.[stat] ?? 0;
 
@@ -345,7 +371,40 @@ export default function MarcadorEnVivoPage() {
                         <h3 className="font-bold text-center">JUGADORES - {match.visitorTeam}</h3>
                     </div>
                      <div className="rounded-b-md border border-t-0">
-                        <p className="p-8 text-center text-muted-foreground">La gestión de estadísticas para el equipo visitante estará disponible próximamente.</p>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Dorsal</TableHead>
+                                    <TableHead>Nombre</TableHead>
+                                    <TableHead className="text-center">Goles</TableHead>
+                                    <TableHead className="text-center">
+                                        <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
+                                    </TableHead>
+                                     <TableHead className="text-center">
+                                        <div className="inline-block w-4 h-5 bg-red-600 border border-black"></div>
+                                    </TableHead>
+                                    <TableHead className="text-center">Faltas</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                             <TableBody>
+                                {match.visitorPlayers?.map((player, index) => (
+                                    <TableRow key={player.id}>
+                                        <TableCell><Input className="h-8 w-14 text-center" value={player.number} onChange={(e) => handleVisitorPlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} /></TableCell>
+                                        <TableCell><Input className="h-8" value={player.name} onChange={(e) => handleVisitorPlayerInfoChange(index, 'name', e.target.value)} /></TableCell>
+                                        <StatButtonCell team="visitor" playerIndex={index} stat="goals" />
+                                        <StatButtonCell team="visitor" playerIndex={index} stat="amarillas" />
+                                        <StatButtonCell team="visitor" playerIndex={index} stat="rojas" />
+                                        <StatButtonCell team="visitor" playerIndex={index} stat="faltas" />
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        <div className="p-2 text-right">
+                             <Button variant="outline" size="sm" onClick={addVisitorPlayer}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Añadir Jugador Visitante
+                            </Button>
+                        </div>
                      </div>
                 </div>
             </TabsContent>
