@@ -8,7 +8,7 @@ import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "LaPizarra - Tu Asistente de Futsal",
+  title: "FutsalDex - Tu Asistente de Futsal",
   description:
     "Plataforma integral para entrenadores de fútbol sala. Planifica, gestiona y analiza con IA.",
 };

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { Goal, Menu, LogOut, User, Shield } from "lucide-react";
+import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,9 +25,11 @@ import { auth } from "@/lib/firebase";
 
 
 const baseNav = [
-  { title: "Ejercicios", href: "/ejercicios" },
-  { title: "Crear Sesión", href: "/crear-sesion" },
-  { title: "Mi Equipo", href: "/mi-equipo" },
+  { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
+  { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
+  { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
+  { title: "Favoritos", href: "#", icon: Heart },
+  { title: "Suscripción", href: "#", icon: Star },
 ];
 
 const adminNav = [
@@ -47,21 +49,20 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-primary text-primary-foreground">
+      <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Goal className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline inline-block">
-              LaPizarra
+            <span className="font-bold text-2xl font-headline inline-block">
+              FutsalDex
             </span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             {mainNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-2"
+                className="transition-colors hover:text-white/80 text-white/90 flex items-center gap-2"
               >
                 {item.icon && <item.icon className="h-4 w-4" />}
                 {item.title}
@@ -74,10 +75,10 @@ export default function Header() {
           {user ? (
              <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/20">
+                  <Avatar className="h-9 w-9 border-2 border-white/50">
                     <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || ''} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary-foreground text-primary">
                       {isAdmin ? <Shield className="h-5 w-5" /> : (user.email ? user.email.charAt(0).toUpperCase() : <User />)}
                     </AvatarFallback>
                   </Avatar>
@@ -103,11 +104,11 @@ export default function Header() {
             </DropdownMenu>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
-              <Button variant="ghost" asChild>
-                <Link href="/login">Iniciar Sesión</Link>
+              <Button variant="ghost" asChild className="hover:bg-white/20 hover:text-white">
+                <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</Link>
               </Button>
-              <Button asChild>
-                <Link href="/register">Registrarse</Link>
+              <Button asChild variant="secondary" className="bg-white text-primary hover:bg-white/90">
+                <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
               </Button>
             </div>
           )}
@@ -115,18 +116,17 @@ export default function Header() {
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
-                className="md:hidden px-2"
+                className="md:hidden px-2 hover:bg-white/20"
                 aria-label="Toggle Menu"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="pr-0 flex flex-col">
+            <SheetContent side="left" className="pr-0 flex flex-col bg-primary text-primary-foreground">
               <SheetClose asChild>
                 <Link href="/" className="flex items-center space-x-2 mb-6">
-                  <Goal className="h-6 w-6 text-primary" />
-                  <span className="font-bold font-headline inline-block">
-                    LaPizarra
+                   <span className="font-bold text-2xl font-headline inline-block">
+                    FutsalDex
                   </span>
                 </Link>
               </SheetClose>
@@ -135,9 +135,9 @@ export default function Header() {
                   <SheetClose asChild key={item.href}>
                     <Link
                       href={item.href}
-                      className="transition-colors hover:text-foreground/80 text-foreground/60 p-2 rounded-md flex items-center gap-2"
+                      className="transition-colors hover:text-white/80 p-2 rounded-md flex items-center gap-2"
                     >
-                       {item.icon && <item.icon className="h-4 w-4" />}
+                       {item.icon && <item.icon className="h-5 w-5" />}
                       {item.title}
                     </Link>
                   </SheetClose>
@@ -146,20 +146,20 @@ export default function Header() {
               <div className="mt-auto flex flex-col space-y-2">
                 {user ? (
                    <SheetClose asChild>
-                     <Button onClick={handleLogout} variant="outline">
+                     <Button onClick={handleLogout} variant="secondary" className="bg-white text-primary hover:bg-white/90">
                        Cerrar Sesión
                      </Button>
                    </SheetClose>
                 ) : (
                   <>
                   <SheetClose asChild>
-                    <Button variant="ghost" asChild>
-                      <Link href="/login">Iniciar Sesión</Link>
+                    <Button variant="ghost" asChild className="hover:bg-white/20 justify-start">
+                      <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</Link>
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Button asChild>
-                      <Link href="/register">Registrarse</Link>
+                    <Button asChild variant="secondary" className="bg-white text-primary hover:bg-white/90 justify-start">
+                      <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
                     </Button>
                   </SheetClose>
                   </>
