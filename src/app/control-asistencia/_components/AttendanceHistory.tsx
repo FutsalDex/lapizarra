@@ -94,7 +94,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                 const j = playerStats[player.id]?.j || 0;
                 const l = playerStats[player.id]?.l || 0;
                 
-                const percentage = p > 0 ? Math.round((p / totalSessions) * 100) : 0;
+                const percentage = p > 0 ? Math.round((totalSessions / p) * 100) : 0;
                 
                 return {
                     id: player.id,
@@ -160,7 +160,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                   <TableCell className="text-center">{player.total}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Progress value={player.percentage} className="h-2" />
+                      <Progress value={player.percentage > 100 ? 100 : player.percentage} className="h-2" />
                       <span className="text-xs text-muted-foreground w-12 text-right">{player.percentage}%</span>
                     </div>
                   </TableCell>
@@ -182,7 +182,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
             <p><span className="font-bold">L:</span> Lesionado</p>
         </div>
         <p className="text-xs text-muted-foreground mt-4">
-          * El % de asistencia se calcula como: (Número de registros / Presente) * 100.
+          * El % de asistencia se calcula como: (Sesiones Totales / Presente) * 100.
         </p>
       </CardContent>
     </Card>
