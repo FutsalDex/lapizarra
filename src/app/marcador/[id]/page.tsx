@@ -92,27 +92,28 @@ export default function MarcadorEnVivoPage() {
             visitorScore,
         });
         
-        const teamDoc = await getDoc(doc(db, 'teams', matchData.teamId));
-        const teamName = teamDoc.data()?.name;
-        
-        const userPlayers = matchData.localTeam === teamName ? matchData.localPlayers : matchData.visitorPlayers;
+        if(showToast && matchData.teamId) { 
+            const teamDoc = await getDoc(doc(db, 'teams', matchData.teamId));
+            const teamName = teamDoc.data()?.name;
+            const userPlayers = matchData.localTeam === teamName ? matchData.localPlayers : matchData.visitorPlayers;
 
-        if(userPlayers && showToast) { // Only update lifetime stats on explicit save
-            const batch = writeBatch(db);
-            userPlayers.forEach(player => {
-                const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
-                 batch.update(playerRef, {
-                    pj: increment(1),
-                    goals: increment(player.goals),
-                    faltas: increment(player.faltas),
-                    ta: increment(player.amarillas),
-                    tr: increment(player.rojas),
-                    paradas: increment(player.paradas),
-                    gRec: increment(player.golesContra),
-                    smvp: increment(player.vs1), // Assuming vs1 is the MVP stat now
-                 });
-            });
-            await batch.commit();
+            if(userPlayers) {
+                const batch = writeBatch(db);
+                userPlayers.forEach(player => {
+                    const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
+                    batch.update(playerRef, {
+                        pj: increment(1),
+                        goals: increment(player.goals),
+                        faltas: increment(player.faltas),
+                        ta: increment(player.amarillas),
+                        tr: increment(player.rojas),
+                        paradas: increment(player.paradas),
+                        gRec: increment(player.golesContra),
+                        smvp: increment(player.vs1), 
+                    });
+                });
+                await batch.commit();
+            }
         }
 
         setSaveStatus('saved');
@@ -155,57 +156,57 @@ export default function MarcadorEnVivoPage() {
     const matchDocRef = doc(db, 'matches', id);
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Omit<MatchDetails, 'id'>;
-        
-        let localPlayers = data.localPlayers || [];
-        let visitorPlayers = data.visitorPlayers || [];
+        if (docSnap.exists()) {
+            const data = docSnap.data() as Omit<MatchDetails, 'id'>;
 
-        const teamDocRef = doc(db, 'teams', data.teamId);
-        const teamDoc = await getDoc(teamDocRef);
-        const teamName = teamDoc.exists() ? teamDoc.data().name : '';
+            let localPlayers = data.localPlayers || [];
+            let visitorPlayers = data.visitorPlayers || [];
 
-        // Check if user's team players need to be loaded
-        if (teamName === data.localTeam && localPlayers.length === 0) {
-             const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-             const playersSnapshot = await getDocs(playersQuery);
-             localPlayers = playersSnapshot.docs.map(d => ({
-                 id: d.id,
-                 name: d.data().name,
-                 number: d.data().number,
-                 goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
-             })).sort((a,b) => a.number - b.number);
-        } else if (teamName === data.visitorTeam && visitorPlayers.length === 0) {
-            const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-             const playersSnapshot = await getDocs(playersQuery);
-             visitorPlayers = playersSnapshot.docs.map(d => ({
-                 id: d.id,
-                 name: d.data().name,
-                 number: d.data().number,
-                 goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
-             })).sort((a,b) => a.number - b.number);
+            // Fetch team data to know which side our players are on
+            if (data.teamId) {
+                const teamDocRef = doc(db, 'teams', data.teamId);
+                const teamDoc = await getDoc(teamDocRef);
+                if (teamDoc.exists()) {
+                    const teamName = teamDoc.data().name;
+                    const isLocalTeam = teamName === data.localTeam;
+                    const isVisitorTeam = teamName === data.visitorTeam;
+
+                    if (isLocalTeam && localPlayers.length === 0) {
+                        const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                        const playersSnapshot = await getDocs(playersQuery);
+                        localPlayers = playersSnapshot.docs.map(d => ({
+                            id: d.id, name: d.data().name, number: d.data().number,
+                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
+                        })).sort((a, b) => a.number - b.number);
+                    } else if (isVisitorTeam && visitorPlayers.length === 0) {
+                        const playersQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                        const playersSnapshot = await getDocs(playersQuery);
+                        visitorPlayers = playersSnapshot.docs.map(d => ({
+                            id: d.id, name: d.data().name, number: d.data().number,
+                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
+                        })).sort((a, b) => a.number - b.number);
+                    }
+                }
+            }
+
+            setMatch({
+                id: docSnap.id,
+                ...data,
+                localPlayers,
+                visitorPlayers,
+                timeLeft: data.timeLeft ?? 25 * 60,
+                period: data.period ?? '1ª Parte',
+                isActive: data.isActive ?? false,
+                events: data.events || []
+            });
+        } else {
+            toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
         }
-
-
-        setMatch(prevMatch => ({ 
-            ...(prevMatch || {}),
-            id: docSnap.id,
-            ...data,
-            timeLeft: data.timeLeft ?? 25 * 60,
-            period: data.period ?? '1ª Parte',
-            isActive: data.isActive ?? false,
-            localPlayers,
-            visitorPlayers,
-            events: data.events || []
-        }));
-
-      } else {
-        toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive"});
-      }
-      setLoading(false);
+        setLoading(false);
     });
+
     return () => unsubscribe();
-  }, [id, toast]);
+}, [id, toast]);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -227,7 +228,7 @@ export default function MarcadorEnVivoPage() {
 
  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
     setMatch(prev => {
-        if (!prev) return null;
+        if (!prev) return prev;
 
         const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
         const players = prev[teamKey] ? [...prev[teamKey]!] : [];
@@ -332,17 +333,15 @@ export default function MarcadorEnVivoPage() {
             }));
         }
         
-        // Reset stats when moving to 2nd half for the first time
-        if (prev.period === '1ª Parte' && period === '2ª Parte') {
+        if (period === '2ª Parte' && prev.period === '1ª Parte') {
             return {
                 ...prev,
                 period,
                 localPlayers: resetStats(prev.localPlayers),
-                visitorPlayers: resetStats(prev.visitorPlayers)
+                visitorPlayers: resetStats(prev.visitorPlayers),
             };
         }
         
-        // Otherwise, just change the period
         return {...prev, period };
       });
   }
