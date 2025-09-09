@@ -24,7 +24,7 @@ import { Goal, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const GoogleIcon = () => (
-  <svg className="h-5 w-5" viewBox="0 0 24 24">
+  <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
     <path
       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
       fill="#4285F4"
@@ -77,7 +77,7 @@ export default function RegisterPage() {
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
-    } catch (err: any) {
+    } catch (err: any)      {
       setError(getFirebaseErrorMessage(err));
     }
     setLoading(false);
@@ -90,7 +90,7 @@ export default function RegisterPage() {
       case 'auth/invalid-email':
         return 'El formato del correo electrónico no es válido.';
       case 'auth/weak-password':
-        return 'La contraseña es demasiado débil.';
+        return 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
       default:
         return 'Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.';
     }
