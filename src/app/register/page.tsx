@@ -70,8 +70,8 @@ export default function RegisterPage() {
       router.push('/');
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -84,8 +84,9 @@ export default function RegisterPage() {
       router.push('/');
     } catch (err: any)      {
       setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getFirebaseErrorMessage = (error: any) => {
