@@ -28,8 +28,8 @@ const baseNav = [
   { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
   { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
-  { title: "Favoritos", href: "#", icon: Heart },
-  { title: "Suscripción", href: "#", icon: Star },
+  { title: "Favoritos", href: "/favoritos", icon: Heart },
+  { title: "Suscripción", href: "/suscripcion", icon: Star },
 ];
 
 const adminNav = [
@@ -60,7 +60,7 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             {mainNav.map((item) => (
               <Link
-                key={item.href}
+                key={item.title}
                 href={item.href}
                 className="transition-colors hover:text-white/80 text-white/90 flex items-center gap-2"
               >
@@ -132,7 +132,7 @@ export default function Header() {
               </SheetClose>
               <div className="flex flex-col space-y-3">
                 {mainNav.map((item) => (
-                  <SheetClose asChild key={item.href}>
+                  <SheetClose asChild key={item.title}>
                     <Link
                       href={item.href}
                       className="transition-colors hover:text-white/80 p-2 rounded-md flex items-center gap-2"
