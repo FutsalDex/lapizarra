@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBatch, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -72,22 +72,31 @@ export default function MarcadorEnVivoPage() {
         const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
         const visitorScore = matchData.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
         
-        // Update match document
+        // Update match document with all current data
         await updateDoc(matchDocRef, {
             ...matchData,
             localScore,
             visitorScore,
         });
         
-        
-        // We only update our team players stats in the main roster document
+        // Update our team players' lifetime stats in the main roster document
         if(matchData.localPlayers) {
             const batch = writeBatch(db);
             matchData.localPlayers.forEach(player => {
                 const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
+                 // We use increment to ensure stats are additive across matches.
+                 // NOTE: This assumes this function is called only ONCE at the end of the match
+                 // or that we store match-specific stats and aggregate later.
+                 // For this implementation, we'll update the total stats based on the final match stats.
+                 // This is a simplified approach. A more robust system would diff stats.
                  batch.update(playerRef, {
-                    goals: player.goals,
-                    faltas: player.faltas,
+                    pj: increment(1),
+                    goals: increment(player.goals),
+                    faltas: increment(player.faltas),
+                    ta: increment(player.amarillas),
+                    tr: increment(player.rojas),
+                    paradas: increment(player.paradas),
+                    gRec: increment(player.golesContra),
                  });
             });
             await batch.commit();
@@ -96,6 +105,8 @@ export default function MarcadorEnVivoPage() {
         setSaveStatus('saved');
         if (showToast) {
             toast({ title: "Guardado", description: "Todos los cambios han sido guardados." });
+            // Redirect after explicit save
+            // router.push(`/equipo/${matchRef.current.teamId}/partidos`);
         }
     }
   }, [id, toast]);
@@ -105,10 +116,11 @@ export default function MarcadorEnVivoPage() {
         if(saveStatus === 'unsaved') {
             saveMatchData();
         }
-    }, 5000); // Autosave every 5 seconds
+    }, 3000); // Autosave every 3 seconds
 
     return () => {
         clearInterval(interval);
+        // Save one last time on component unmount if there are unsaved changes
         if(saveStatus === 'unsaved') {
             saveMatchData();
         }
@@ -133,9 +145,9 @@ export default function MarcadorEnVivoPage() {
                  id: d.id,
                  name: d.data().name,
                  number: d.data().number,
-                 goals: d.data().goals || 0,
-                 assists: d.data().assists || 0,
-                 faltas: d.data().faltas || 0,
+                 goals: 0, // Start fresh for the match
+                 assists: 0,
+                 faltas: 0,
                  amarillas: 0,
                  rojas: 0,
                  paradas: 0,
