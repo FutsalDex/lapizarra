@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -19,78 +19,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bookmark, Search, Filter } from 'lucide-react';
+import { Bookmark, Search, Filter, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const exercises = [
-  {
-    title: 'Rondo 4 vs 2',
-    category: 'Técnica',
-    tags: ['Pase', 'Control', 'Presión'],
-    description:
-      'Clásico rondo para mejorar la velocidad del pase y la presión tras pérdida.',
-    image: 'https://picsum.photos/400/250',
-    aiHint: 'futsal drill'
-  },
-  {
-    title: 'Transición Ataque-Defensa 3 vs 2',
-    category: 'Táctica',
-    tags: ['Transición', 'Superioridad', 'Defensa'],
-    description:
-      'Ejercicio para trabajar las transiciones rápidas y la toma de decisiones en superioridad e inferioridad numérica.',
-    image: 'https://picsum.photos/400/251',
-    aiHint: 'futsal tactics'
-  },
-  {
-    title: 'Finalización con Oposición',
-    category: 'Finalización',
-    tags: ['Tiro', '1v1', 'Definición'],
-    description:
-      'Los atacantes intentan finalizar contra un defensor activo, mejorando la definición bajo presión.',
-    image: 'https://picsum.photos/400/252',
-    aiHint: 'futsal shooting'
-  },
-  {
-    title: 'Salida de Presión 3+1',
-    category: 'Táctica',
-    tags: ['Salida de balón', 'Presión alta', 'Movilidad'],
-    description:
-      'Simula la salida desde el portero contra un equipo que presiona alto, buscando líneas de pase seguras.',
-    image: 'https://picsum.photos/400/253',
-    aiHint: 'futsal game'
-  },
-  {
-    title: 'Juego de Posesión con Comodines',
-    category: 'Técnica',
-    tags: ['Posesión', 'Movilidad', 'Apoyos'],
-    description:
-      'Dos equipos compiten por la posesión con la ayuda de comodines ofensivos para crear superioridades.',
-    image: 'https://picsum.photos/400/254',
-    aiHint: 'team huddle'
-  },
-  {
-    title: 'Estrategia de Córner Ofensivo',
-    category: 'Estrategia',
-    tags: ['ABP', 'Bloqueos', 'Movimientos'],
-    description:
-      'Diseño y repetición de jugadas ensayadas para saques de esquina, buscando generar ocasiones de gol.',
-    image: 'https://picsum.photos/400/255',
-    aiHint: 'futsal strategy'
-  },
-];
-
-const categories = [
-  'Todos',
-  'Técnica',
-  'Táctica',
-  'Finalización',
-  'Estrategia',
-];
+interface Exercise {
+  id: string;
+  title: string;
+  category: string;
+  tags: string[];
+  description: string;
+  image: string;
+  aiHint: string;
+}
 
 export default function EjerciciosPage() {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  useEffect(() => {
+    const exercisesCol = collection(db, 'exercises');
+    const unsubscribe = onSnapshot(exercisesCol, (snapshot) => {
+      const exercisesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise));
+      setExercises(exercisesData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching exercises: ", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const categories = ['Todos', ...Array.from(new Set(exercises.map((ex) => ex.category)))];
 
   const filteredExercises = exercises.filter((exercise) => {
     const termMatch = exercise.title
@@ -129,6 +95,7 @@ export default function EjerciciosPage() {
             <Select
               value={selectedCategory}
               onValueChange={setSelectedCategory}
+              disabled={loading}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filtrar por categoría" />
@@ -145,9 +112,29 @@ export default function EjerciciosPage() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({length: 6}).map((_, index) => (
+                <Card key={index}>
+                    <Skeleton className="h-[200px] w-full" />
+                    <CardHeader>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/4" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-full mb-2" />
+                         <Skeleton className="h-4 w-full" />
+                    </CardContent>
+                    <CardFooter>
+                        <Skeleton className="h-6 w-1/3" />
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredExercises.map((exercise, index) => (
-          <Card key={index} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
+        {filteredExercises.map((exercise) => (
+          <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="relative aspect-video">
               <Image
                 src={exercise.image}
@@ -155,6 +142,7 @@ export default function EjerciciosPage() {
                 data-ai-hint={exercise.aiHint}
                 fill
                 className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
             <CardHeader>
@@ -190,6 +178,7 @@ export default function EjerciciosPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

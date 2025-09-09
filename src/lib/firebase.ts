@@ -9,7 +9,6 @@ const firebaseConfig = {
   "storageBucket": "lapizarra-95eqd.firebasestorage.app",
   "apiKey": "AIzaSyDzMpL1f8w2n1t_OfIyfbf10LXTVmCIvCM",
   "authDomain": "lapizarra-95eqd.firebaseapp.com",
-  "measurementId": "",
   "messagingSenderId": "303306895935"
 };
 
