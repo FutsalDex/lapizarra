@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Save } from 'lucide-react';
+import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Save, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -60,7 +60,7 @@ export default function MarcadorEnVivoPage() {
     if (saveStatus !== 'saving') {
         setSaveStatus('unsaved');
     }
-  }, [match]);
+  }, [match, saveStatus]);
 
   const saveMatchData = useCallback(async (showToast = false) => {
     if (matchRef.current) {
@@ -355,5 +355,3 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
-
-    
