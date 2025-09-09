@@ -24,6 +24,7 @@ import { Loader2 } from 'lucide-react';
 const teamSchema = z.object({
   name: z.string().min(3, 'El nombre del equipo debe tener al menos 3 caracteres.'),
   club: z.string().min(3, 'El nombre del club debe tener al menos 3 caracteres.'),
+  competition: z.string().optional(),
 });
 
 type TeamFormValues = z.infer<typeof teamSchema>;
@@ -38,6 +39,7 @@ export default function CreateTeamForm() {
     defaultValues: {
       name: '',
       club: '',
+      competition: '',
     },
   });
 
@@ -98,6 +100,19 @@ export default function CreateTeamForm() {
               <FormLabel>Nombre del Club</FormLabel>
               <FormControl>
                 <Input placeholder="Ej: Futsal Club Ejemplo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="competition"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Competición (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Ej: Liga Local, Torneo Nacional" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

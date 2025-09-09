@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -21,35 +20,16 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, PlusCircle, Trash2, Edit, ArrowLeft, Save } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 
 const initialPlayers = [
@@ -71,27 +51,48 @@ interface Team {
   name: string;
   club: string;
   competition?: string;
+  ownerId: string;
+  ownerRole?: string;
 }
+
+interface Member {
+    id: string;
+    name: string;
+    role: string;
+}
+
 
 export default function TeamRosterPage() {
     const params = useParams();
+    const { user } = useAuth();
     const { toast } = useToast();
     const teamId = params.teamId as string;
     const [players, setPlayers] = useState(initialPlayers);
-    const [open, setOpen] = useState(false);
     const [team, setTeam] = useState<Team | null>(null);
+    const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!teamId) return;
+
         const teamDocRef = doc(db, 'teams', teamId);
-        const unsubscribe = onSnapshot(teamDocRef, (doc) => {
+        const unsubscribeTeam = onSnapshot(teamDocRef, (doc) => {
             if (doc.exists()) {
                 setTeam({ id: doc.id, ...doc.data() } as Team);
             }
             setLoading(false);
         });
-        return () => unsubscribe();
+
+        const membersQuery = query(collection(db, 'teamMembers'), where('teamId', '==', teamId));
+        const unsubscribeMembers = onSnapshot(membersQuery, (snapshot) => {
+            const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
+            setMembers(membersData);
+        });
+
+        return () => {
+            unsubscribeTeam();
+            unsubscribeMembers();
+        };
     }, [teamId]);
 
     const handleActiveChange = (playerId: string, checked: boolean) => {
@@ -147,21 +148,42 @@ export default function TeamRosterPage() {
         <Card className="mb-8">
             <CardHeader>
                 <CardTitle>Información del Equipo</CardTitle>
-                <CardDescription>Define los datos de tu club. Esta información se usará para rellenar automáticamente los datos en las estadísticas de los partidos.</CardDescription>
+                <CardDescription>Datos generales del equipo y cuerpo técnico.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="club-name">Club</Label>
-                        <Input id="club-name" defaultValue={team.club} />
+                        <Input id="club-name" value={team.club} disabled />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="team-name">Equipo</Label>
-                        <Input id="team-name" defaultValue={team.name} />
+                        <Input id="team-name" value={team.name} disabled />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="main-championship">Campeonato Principal</Label>
-                        <Input id="main-championship" defaultValue={team.competition || 'TERCERA DIVISION JUVENIL - GRUPO 5'} />
+                        <Label htmlFor="main-championship">Competición</Label>
+                        <Input id="main-championship" value={team.competition || 'No especificada'} disabled />
+                    </div>
+                </div>
+                <div>
+                    <h4 className="font-semibold mb-2">Cuerpo Técnico</h4>
+                    <div className="rounded-md border p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
+                                <p className="text-xs text-muted-foreground">{team.ownerRole || 'Propietario'}</p>
+                            </div>
+                        </div>
+                        {members.map(member => (
+                            <div key={member.id} className="flex items-center gap-2">
+                                <Shield className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                    <p className="font-medium">{member.name}</p>
+                                    <p className="text-xs text-muted-foreground">{member.role}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </CardContent>
