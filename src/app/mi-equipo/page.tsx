@@ -26,6 +26,12 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
 const modules = [
+   {
+    title: 'Gestión de Equipos',
+    description: 'Crea nuevos equipos e invita a otros miembros de tu cuerpo técnico para colaborar.',
+    icon: ShieldPlus,
+    href: '/gestion-equipos',
+  },
   {
     title: 'Mi Plantilla',
     description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
@@ -67,12 +73,6 @@ const modules = [
     description: 'Visualiza un resumen de los datos más relevantes de la temporada y las sesiones.',
     icon: BarChart3,
     href: '/mis-estadisticas',
-  },
-   {
-    title: 'Gestión de Equipos',
-    description: 'Crea nuevos equipos e invita a otros miembros de tu cuerpo técnico para colaborar.',
-    icon: ShieldPlus,
-    href: '/gestion-equipos',
   },
    {
     title: 'Soporte Técnico',
