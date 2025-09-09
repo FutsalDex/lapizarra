@@ -150,9 +150,15 @@ export default function TeamMembersPage() {
                        </div>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="Entrenador Asistente">Entrenador Asistente</SelectItem>
+                        <SelectItem value="Entrenador">Entrenador</SelectItem>
+                        <SelectItem value="2º Entrenador">2º Entrenador</SelectItem>
                         <SelectItem value="Delegado">Delegado</SelectItem>
-                        <SelectItem value="Analista">Analista</SelectItem>
+                        <SelectItem value="Preparador Físico">Preparador Físico</SelectItem>
+                        <SelectItem value="Analista Táctico/Scouting">Analista Táctico/Scouting</SelectItem>
+                        <SelectItem value="Fisioterapeuta">Fisioterapeuta</SelectItem>
+                        <SelectItem value="Médico">Médico</SelectItem>
+                        <SelectItem value="Psicólogo">Psicólogo</SelectItem>
+                        <SelectItem value="Nutricionista">Nutricionista</SelectItem>
                     </SelectContent>
                  </Select>
             </div>
