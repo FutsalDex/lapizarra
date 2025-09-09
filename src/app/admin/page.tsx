@@ -58,7 +58,7 @@ export default function AdminPage() {
               </Button>
             </div>
             <Button asChild variant="outline" className="w-full" size="lg">
-                <Link href="/admin/gestion-ejercicios">
+                <Link href="/ejercicios">
                     <ClipboardList className="mr-2 h-5 w-5" />
                     Ver/Gestionar Ejercicios
                 </Link>
@@ -75,7 +75,7 @@ export default function AdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full" size="lg">
+            <Button asChild className="w-full" size="lg">
               <Link href="/admin/gestion-usuarios">
                 <Users className="mr-2 h-5 w-5" />
                 Gestionar Usuarios y Roles
