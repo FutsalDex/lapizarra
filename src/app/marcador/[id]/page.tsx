@@ -55,6 +55,8 @@ interface MatchDetails {
     events: GoalEvent[];
 }
 
+type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'assists'>;
+
 
 export default function MarcadorEnVivoPage() {
   const params = useParams();
@@ -102,7 +104,7 @@ export default function MarcadorEnVivoPage() {
                     tr: increment(player.rojas),
                     paradas: increment(player.paradas),
                     gRec: increment(player.golesContra),
-                    vs1: increment(player.vs1),
+                    smvp: increment(player.vs1), // Assuming vs1 is the MVP stat now
                  });
             });
             await batch.commit();
@@ -208,16 +210,16 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft]);
 
 
- const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' | 'number'>, delta: 1 | -1) => {
+ const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
     setMatch(prev => {
-        if (!prev || prev.period === 'Descanso') return prev;
+        if (!prev) return prev;
 
         const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
         const players = prev[teamKey] ? [...prev[teamKey]!] : [];
         const player = players[playerIndex];
 
         if (!player) return prev;
-
+        
         const currentStatValue = player[stat];
         if (typeof currentStatValue !== 'number') return prev;
         
@@ -228,7 +230,7 @@ export default function MarcadorEnVivoPage() {
         
         let newEvents = prev.events ? [...prev.events] : [];
 
-        if (stat === 'goals' && delta === 1) {
+        if (stat === 'goals' && delta === 1 && prev.period !== 'Descanso') {
             const totalTime = 25 * 60;
             const timeElapsedInPeriod = totalTime - prev.timeLeft;
             let minute = Math.floor(timeElapsedInPeriod / 60);
@@ -276,7 +278,7 @@ export default function MarcadorEnVivoPage() {
         });
     };
 
-  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name' | 'assists' | 'number' > }) => {
+  const StatButtonCell = ({ team, playerIndex, stat }: { team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys }) => {
     const player = match?.[team === 'local' ? 'localPlayers' : 'visitorPlayers']?.[playerIndex];
     const value = player?.[stat] ?? 0;
 
@@ -302,7 +304,32 @@ export default function MarcadorEnVivoPage() {
   }
 
   const handlePeriodChange = (period: '1ª Parte' | '2ª Parte') => {
-      setMatch(prev => prev ? {...prev, period } : null);
+      setMatch(prev => {
+        if (!prev || prev.period === period) return prev;
+
+        const resetStats = (players: Player[] | undefined) => {
+            return players?.map(p => ({
+                ...p,
+                faltas: 0,
+                paradas: 0,
+                golesContra: 0,
+                vs1: 0,
+            }));
+        }
+        
+        // Reset stats when moving to 2nd half for the first time
+        if (prev.period === '1ª Parte' && period === '2ª Parte') {
+            return {
+                ...prev,
+                period,
+                localPlayers: resetStats(prev.localPlayers),
+                visitorPlayers: resetStats(prev.visitorPlayers)
+            };
+        }
+        
+        // Otherwise, just change the period
+        return {...prev, period };
+      });
   }
   
   const resetTimer = () => {
