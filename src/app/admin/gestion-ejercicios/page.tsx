@@ -15,7 +15,7 @@ import { ArrowLeft } from 'lucide-react';
 export default function GestionEjerciciosPage() {
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
-       <div className="mb-8">
+       <div className="mb-8 flex justify-end">
         <Button asChild variant="outline">
           <Link href="/admin">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -24,21 +24,20 @@ export default function GestionEjerciciosPage() {
         </Button>
       </div>
 
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold font-headline tracking-tighter text-primary">
-          Gestión de Ejercicios
+      <div className="text-left mb-12">
+        <h1 className="text-3xl font-bold font-headline tracking-tight text-primary">
+          Añadir Nuevo Ejercicio
         </h1>
-        <p className="text-xl text-muted-foreground mt-2">
-          Añade nuevos ejercicios a la biblioteca de la aplicación.
+        <p className="text-lg text-muted-foreground mt-2">
+          Completa el formulario para añadir un nuevo ejercicio a la biblioteca.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Subir Ejercicios</CardTitle>
+          <CardTitle>Formulario de Nuevo Ejercicio</CardTitle>
           <CardDescription>
-            Añade nuevos ejercicios a la biblioteca, ya sea
-            de forma individual o por lotes subiendo un archivo Excel.
+           Rellena todos los campos para crear un nuevo ejercicio.
           </CardDescription>
         </CardHeader>
         <CardContent>
