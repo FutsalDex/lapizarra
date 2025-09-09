@@ -50,7 +50,7 @@ export default function Home() {
                 <ul className="list-disc list-inside space-y-2">
                     <li>Explorar una selección de <span className="font-bold text-primary">15 ejercicios</span> de nuestra biblioteca.</li>
                     <li>Navegar y visualizar todas las herramientas que te ofrecemos</li>
-                    <li>Y si te registras disfruta de <span className="font-bold text-primary">48 horas</span> de todos los ejercicios y herramientas, antes de decidir tu suscripción</li>
+                    <li>{"Y si te registras disfrutarás de 48 horas de todos los ejercicios y herramientas, antes de decidir tu suscripción."}</li>
                 </ul>
             </div>
           </CardContent>
