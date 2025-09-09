@@ -12,7 +12,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldPlus, Users, Edit, Trash2, Settings } from 'lucide-react';
+import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft } from 'lucide-react';
 import CreateTeamForm from './_components/CreateTeamForm';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -51,19 +51,28 @@ export default function GestionEquiposPage() {
 
   return (
     <div className="container mx-auto max-w-6xl py-12 px-4">
-       <div className="text-left mb-12">
-            <div className="flex items-center gap-4">
-                <ShieldPlus className="h-10 w-10 text-primary" />
-                <div>
-                <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
-                    Gestión de Equipos
-                </h1>
-                <p className="text-lg text-muted-foreground mt-1">
-                    Crea y administra tus equipos. Invita a tu cuerpo técnico para colaborar.
-                </p>
+        <div className="flex justify-between items-center mb-12">
+            <div className="text-left flex-grow">
+                <div className="flex items-center gap-4">
+                    <ShieldPlus className="h-10 w-10 text-primary" />
+                    <div>
+                    <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
+                        Gestión de Equipos
+                    </h1>
+                    <p className="text-lg text-muted-foreground mt-1">
+                        Crea y administra tus equipos. Invita a tu cuerpo técnico para colaborar.
+                    </p>
+                    </div>
                 </div>
             </div>
-      </div>
+             <Button asChild variant="outline">
+              <Link href="/mi-equipo">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver al Panel
+              </Link>
+            </Button>
+        </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1">
