@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2 } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2, RefreshCw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
@@ -30,6 +31,17 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface Team {
@@ -169,6 +181,40 @@ export default function TeamRosterPage() {
              setIsSaving(false);
          }
     }
+
+    const handleResetStats = async () => {
+        setIsSaving(true);
+        const batch = writeBatch(db);
+        players.forEach(player => {
+            const playerRef = doc(db, 'teams', teamId, 'players', player.id);
+            batch.update(playerRef, {
+                pj: 0,
+                goals: 0,
+                ta: 0,
+                tr: 0,
+                faltas: 0,
+                paradas: 0,
+                gRec: 0
+            });
+        });
+        try {
+            await batch.commit();
+            toast({
+                title: "Estadísticas Reseteadas",
+                description: "Todas las estadísticas de los jugadores han sido puestas a cero."
+            });
+        } catch (error) {
+            console.error("Error resetting stats: ", error);
+            toast({
+                title: "Error",
+                description: "No se pudieron resetear las estadísticas.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
 
     if (loading) {
         return (
@@ -323,7 +369,36 @@ export default function TeamRosterPage() {
                 </Button>
             </div>
         </CardContent>
+         <CardFooter className="border-t pt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-4">
+              <div>
+                <h4 className="font-semibold">Opciones Adicionales</h4>
+                <p className="text-sm text-muted-foreground">Usa esta opción para limpiar los datos si las estadísticas son incorrectas.</p>
+              </div>
+               <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isSaving}>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Resetear Estadísticas
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción pondrá a CERO todas las estadísticas (PJ, Goles, Faltas, etc.) de TODOS los jugadores de esta plantilla. Esta acción no se puede deshacer.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleResetStats}>Sí, resetear estadísticas</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
 }
+
+    

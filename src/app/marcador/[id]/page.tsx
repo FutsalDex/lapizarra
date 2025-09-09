@@ -27,7 +27,7 @@ interface Player {
     amarillas: number;
     rojas: number;
     paradas: number;
-    golesContra: number;
+    gRec: number;
     vs1: number;
 }
 
@@ -82,27 +82,32 @@ export default function MarcadorEnVivoPage() {
             let localPlayers = data.localPlayers;
             let visitorPlayers = data.visitorPlayers;
             
+            // This block loads the roster for the user's team if it hasn't been loaded yet.
             if (!data.isFinished && data.teamId) {
-                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
-                 if (teamDoc.exists()) {
-                     const teamName = teamDoc.data().name;
-                     const isLocalTeam = teamName === data.localTeam;
-                     const isVisitorTeam = teamName === data.visitorTeam;
+                const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
+                if (teamDoc.exists()) {
+                    const teamName = teamDoc.data().name;
+                    const isLocalTeam = teamName === data.localTeam;
+                    const isVisitorTeam = teamName === data.visitorTeam;
 
-                     const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                     const playersSnapshot = await getDocs(playerQuery);
-                     const teamRoster = playersSnapshot.docs.map(d => ({
-                        id: d.id, name: d.data().name, number: d.data().number,
-                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0,
+                    const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                    const playersSnapshot = await getDocs(playerQuery);
+                    const teamRoster = playersSnapshot.docs.map(d => ({
+                        id: d.id, 
+                        name: d.data().name, 
+                        number: d.data().number,
+                        // Initialize match stats to 0
+                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
                     })).sort((a, b) => a.number - b.number);
 
-                    if (isLocalTeam && !localPlayers?.length) {
+                    // Load roster into the correct team side if it's empty
+                    if (isLocalTeam && (!localPlayers || localPlayers.length === 0)) {
                         localPlayers = teamRoster;
                     }
-                    if (isVisitorTeam && !visitorPlayers?.length) {
+                    if (isVisitorTeam && (!visitorPlayers || visitorPlayers.length === 0)) {
                         visitorPlayers = teamRoster;
                     }
-                 }
+                }
             }
             
             setMatch({
@@ -163,7 +168,8 @@ export default function MarcadorEnVivoPage() {
     try {
         await updateDoc(matchDocRef, dataToUpdate);
 
-        if (finalize && match.teamId && !match.isFinished) { // Check if not already finished to prevent double counting
+        // Only commit stats to player totals if the match is being finalized for the first time
+        if (finalize && match.teamId && !match.isFinished) { 
             const teamDoc = await getDoc(doc(db, 'teams', match.teamId));
             const teamName = teamDoc.data()?.name;
             const userPlayers = match.localTeam === teamName ? match.localPlayers : match.visitorPlayers;
@@ -171,8 +177,8 @@ export default function MarcadorEnVivoPage() {
             if (userPlayers) {
                 const batch = writeBatch(db);
                 userPlayers.forEach(player => {
-                    // Only update players that are part of the user's team (not temp IDs)
-                    if (!player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
+                    // Only update players that are part of the user's team (not temp IDs for rivals)
+                    if (player.id && !player.id.startsWith('visitor-') && !player.id.startsWith('local-')) {
                         const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                         batch.update(playerRef, {
                             pj: increment(1),
@@ -181,7 +187,7 @@ export default function MarcadorEnVivoPage() {
                             ta: increment(player.amarillas || 0),
                             tr: increment(player.rojas || 0),
                             paradas: increment(player.paradas || 0),
-                            gRec: increment(player.golesContra || 0)
+                            gRec: increment(player.gRec || 0)
                         });
                     }
                 });
@@ -206,7 +212,7 @@ export default function MarcadorEnVivoPage() {
 
  const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
     setMatch(prev => {
-        if (!prev) return prev;
+        if (!prev) return null;
 
         const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
         const players = prev[teamKey] ? [...prev[teamKey]!] : [];
@@ -239,7 +245,7 @@ export default function MarcadorEnVivoPage() {
                 team: team,
                 minute: minute,
                 period: prev.period,
-                teamId: team === 'local' ? prev.teamId : `visitor-${prev.id}`
+                teamId: prev.teamId // Consistent teamId for events
             };
             newEvents.push(goalEvent);
         }
@@ -268,7 +274,7 @@ export default function MarcadorEnVivoPage() {
                 id: `${team}-${Date.now()}`,
                 name: 'Nuevo Jugador',
                 number: 0,
-                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, golesContra: 0, vs1: 0
+                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0
             };
             const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
             const players = [...(prev[teamKey] || []), newPlayer];
@@ -310,7 +316,7 @@ export default function MarcadorEnVivoPage() {
                 ...p,
                 faltas: 0,
                 paradas: 0,
-                golesContra: 0,
+                gRec: 0,
                 vs1: 0,
             }));
         }
@@ -404,7 +410,7 @@ export default function MarcadorEnVivoPage() {
                                 <StatButtonCell team={team} playerIndex={index} stat="rojas" />
                                 <StatButtonCell team={team} playerIndex={index} stat="faltas" />
                                 <StatButtonCell team={team} playerIndex={index} stat="paradas" />
-                                <StatButtonCell team={team} playerIndex={index} stat="golesContra" />
+                                <StatButtonCell team={team} playerIndex={index} stat="gRec" />
                                 <StatButtonCell team={team} playerIndex={index} stat="vs1" />
                             </TableRow>
                         ))}
@@ -522,5 +528,7 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
+
+    
 
     
