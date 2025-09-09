@@ -17,109 +17,120 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ClipboardCheck, Calendar, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CalendarIcon, ClipboardCheck } from 'lucide-react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const players = [
-    { id: '1', name: 'Álex' },
-    { id: '2', name: 'Javier' },
-    { id: '3', name: 'Marta' },
-    { id: '4', name: 'Carlos' },
-    { id: '5', name: 'Lucía' },
-    { id: '6', name: 'Sofía' },
-    { id: '7', name: 'David' },
-    { id: '8', name: 'Elena' },
+    { id: '1', name: 'Manel', dorsal: 1 },
+    { id: '2', name: 'Victor', dorsal: 2 },
+    { id: '3', name: 'Marc Muñoz', dorsal: 3 },
+    { id: '4', name: 'Marc Montoro', dorsal: 4 },
+    { id: '5', name: 'Roger', dorsal: 5 },
+    { id: '6', name: 'David', dorsal: 7 },
+    { id: '7', name: 'Elena', dorsal: 8 },
 ];
 
-export default function ControlAsistenciaPage() {
-  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+type AttendanceStatus = 'presente' | 'ausente' | 'justificado' | 'lesionado';
 
-  const handleAttendanceChange = (playerId: string, isPresent: boolean) => {
-    setAttendance(prev => ({ ...prev, [playerId]: isPresent }));
+export default function ControlAsistenciaPage() {
+  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [date, setDate] = useState<Date>(new Date());
+
+  const handleAttendanceChange = (playerId: string, status: AttendanceStatus) => {
+    setAttendance(prev => ({ ...prev, [playerId]: status }));
   };
 
-  const markAll = (isPresent: boolean) => {
-    const newAttendance: Record<string, boolean> = {};
-    players.forEach(player => {
-        newAttendance[player.id] = isPresent;
-    });
-    setAttendance(newAttendance);
-  }
 
   return (
-    <div className="container mx-auto max-w-4xl py-12 px-4">
-      <div className="text-center mb-12">
-         <div className="flex justify-center mb-4">
-            <ClipboardCheck className="h-16 w-16 text-primary" />
-        </div>
+    <div className="container mx-auto max-w-6xl py-12 px-4">
+      <div className="text-left mb-12">
         <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
-          Control de Asistencia
+          Registro de Asistencia
         </h1>
-        <p className="text-xl text-muted-foreground mt-2">
-          Registra y consulta la asistencia de tus jugadores.
+        <p className="text-lg text-muted-foreground mt-2">
+          Selecciona una fecha y marca el estado de cada jugador. Los días enmarcados ya tienen un registro.
         </p>
       </div>
       
        <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Asistencia de Hoy</CardTitle>
-              <CardDescription>
-                Marca los jugadores presentes en la sesión de hoy.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon"><ArrowLeft /></Button>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                <span className="font-semibold">{new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </div>
-              <Button variant="outline" size="icon"><ArrowRight /></Button>
-            </div>
+           <div className="flex items-center gap-4">
+            <Label htmlFor="training-date" className="text-base font-semibold">Fecha del entrenamiento:</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                  <Button
+                    id="training-date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-[280px] justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                  </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate) => setDate(newDate || new Date())}
+                  initialFocus
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </CardHeader>
         <CardContent>
-            <div className="flex justify-between items-center mb-4">
-                <Select defaultValue="training">
-                    <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Tipo de Sesión" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="training">Entrenamiento</SelectItem>
-                        <SelectItem value="match">Partido</SelectItem>
-                    </SelectContent>
-                </Select>
-                <div className="flex gap-2">
-                    <Button variant="secondary" onClick={() => markAll(true)}>Marcar Todos</Button>
-                    <Button variant="secondary" onClick={() => markAll(false)}>Desmarcar Todos</Button>
-                </div>
-            </div>
             <div className="rounded-md border">
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Jugador</TableHead>
-                    <TableHead className="text-center w-32">Asiste</TableHead>
+                    <TableHead className="w-[100px]">Dorsal</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead className="text-right">Asistencia</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {players.map((player) => (
                     <TableRow key={player.id}>
-                        <TableCell className="font-medium">{player.name}</TableCell>
-                        <TableCell className="text-center">
-                            <Checkbox 
-                                checked={attendance[player.id] || false}
-                                onCheckedChange={(checked) => handleAttendanceChange(player.id, !!checked)}
-                                className="h-5 w-5"
-                            />
+                        <TableCell className="font-medium">{player.dorsal}</TableCell>
+                        <TableCell>{player.name}</TableCell>
+                        <TableCell className="text-right">
+                           <RadioGroup
+                              defaultValue="presente"
+                              className="flex justify-end gap-4"
+                              value={attendance[player.id] || 'presente'}
+                              onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="presente" id={`presente-${player.id}`} />
+                                <Label htmlFor={`presente-${player.id}`}>Presente</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="ausente" id={`ausente-${player.id}`} />
+                                <Label htmlFor={`ausente-${player.id}`}>Ausente</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="justificado" id={`justificado-${player.id}`} />
+                                <Label htmlFor={`justificado-${player.id}`}>Justificado</Label>
+                              </div>
+                               <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="lesionado" id={`lesionado-${player.id}`} />
+                                <Label htmlFor={`lesionado-${player.id}`}>Lesionado</Label>
+                              </div>
+                            </RadioGroup>
                         </TableCell>
                     </TableRow>
                 ))}
