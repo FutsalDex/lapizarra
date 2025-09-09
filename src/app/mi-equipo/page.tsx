@@ -51,7 +51,7 @@ const modules = [
   },
     {
     title: 'Mis Sesiones',
-    description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manualmente.',
+    description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manually.',
     icon: ClipboardList,
     href: '/mis-sesiones',
   },
@@ -71,7 +71,7 @@ const modules = [
     title: 'Soporte Técnico',
     description: 'Chatea con nuestro entrenador por IA configurado para darte respuestas sobre dudas, órdenes, etc.',
     icon: LifeBuoy,
-    href: '#',
+    href: '/soporte-tecnico',
   },
 ];
 
