@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { Goal, Menu, LogOut, User } from "lucide-react";
+import { Goal, Menu, LogOut, User, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -24,15 +24,22 @@ import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 
 
-const mainNav = [
+const baseNav = [
   { title: "Ejercicios", href: "/ejercicios" },
   { title: "Crear Sesión", href: "/crear-sesion" },
   { title: "Mi Equipo", href: "/mi-equipo" },
 ];
 
+const adminNav = [
+    { title: "Panel Admin", href: "/admin", icon: Shield },
+]
+
 export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
+
+  const isAdmin = user?.email === "futsaldex@gmail.com";
+  const mainNav = isAdmin ? [...baseNav, ...adminNav] : baseNav;
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -54,8 +61,9 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-2"
               >
+                {item.icon && <item.icon className="h-4 w-4" />}
                 {item.title}
               </Link>
             ))}
@@ -70,7 +78,7 @@ export default function Header() {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || ''} />
                     <AvatarFallback>
-                      {user.email ? user.email.charAt(0).toUpperCase() : <User />}
+                      {isAdmin ? <Shield className="h-5 w-5" /> : (user.email ? user.email.charAt(0).toUpperCase() : <User />)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -127,8 +135,9 @@ export default function Header() {
                   <SheetClose asChild key={item.href}>
                     <Link
                       href={item.href}
-                      className="transition-colors hover:text-foreground/80 text-foreground/60 p-2 rounded-md"
+                      className="transition-colors hover:text-foreground/80 text-foreground/60 p-2 rounded-md flex items-center gap-2"
                     >
+                       {item.icon && <item.icon className="h-4 w-4" />}
                       {item.title}
                     </Link>
                   </SheetClose>
