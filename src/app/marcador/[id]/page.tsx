@@ -1,8 +1,8 @@
 
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBatch, increment } from 'firebase/firestore';
+import { useParams, useRouter } from 'next/navigation';
+import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBatch, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,6 +29,17 @@ interface Player {
     vs1: number;
 }
 
+interface GoalEvent {
+    type: 'goal';
+    playerId: string;
+    playerName: string;
+    team: 'local' | 'visitor';
+    minute: number;
+    period: '1ª Parte' | '2ª Parte';
+    teamId: string;
+}
+
+
 interface MatchDetails {
     id: string;
     teamId: string;
@@ -41,6 +52,7 @@ interface MatchDetails {
     isActive: boolean;
     localPlayers?: Player[];
     visitorPlayers?: Player[];
+    events: GoalEvent[];
 }
 
 
@@ -50,7 +62,6 @@ export default function MarcadorEnVivoPage() {
   const { toast } = useToast();
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
   // Auto-save logic
@@ -72,23 +83,16 @@ export default function MarcadorEnVivoPage() {
         const localScore = matchData.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
         const visitorScore = matchData.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
         
-        // Update match document with all current data
         await updateDoc(matchDocRef, {
             ...matchData,
             localScore,
             visitorScore,
         });
         
-        // Update our team players' lifetime stats in the main roster document
-        if(matchData.localPlayers) {
+        if(matchData.localPlayers && showToast) { // Only update lifetime stats on explicit save
             const batch = writeBatch(db);
             matchData.localPlayers.forEach(player => {
                 const playerRef = doc(db, 'teams', matchData.teamId, 'players', player.id);
-                 // We use increment to ensure stats are additive across matches.
-                 // NOTE: This assumes this function is called only ONCE at the end of the match
-                 // or that we store match-specific stats and aggregate later.
-                 // For this implementation, we'll update the total stats based on the final match stats.
-                 // This is a simplified approach. A more robust system would diff stats.
                  batch.update(playerRef, {
                     pj: increment(1),
                     goals: increment(player.goals),
@@ -105,8 +109,6 @@ export default function MarcadorEnVivoPage() {
         setSaveStatus('saved');
         if (showToast) {
             toast({ title: "Guardado", description: "Todos los cambios han sido guardados." });
-            // Redirect after explicit save
-            // router.push(`/equipo/${matchRef.current.teamId}/partidos`);
         }
     }
   }, [id, toast]);
@@ -116,14 +118,21 @@ export default function MarcadorEnVivoPage() {
         if(saveStatus === 'unsaved') {
             saveMatchData();
         }
-    }, 3000); // Autosave every 3 seconds
+    }, 5000); // Autosave every 5 seconds
+
+    window.addEventListener('beforeunload', () => {
+        if (saveStatus === 'unsaved') {
+            saveMatchData();
+        }
+    });
 
     return () => {
         clearInterval(interval);
-        // Save one last time on component unmount if there are unsaved changes
-        if(saveStatus === 'unsaved') {
-            saveMatchData();
-        }
+        window.removeEventListener('beforeunload', () => {
+            if (saveStatus === 'unsaved') {
+                saveMatchData();
+            }
+        });
     }
   }, [saveMatchData, saveStatus]);
 
@@ -145,7 +154,7 @@ export default function MarcadorEnVivoPage() {
                  id: d.id,
                  name: d.data().name,
                  number: d.data().number,
-                 goals: 0, // Start fresh for the match
+                 goals: 0,
                  assists: 0,
                  faltas: 0,
                  amarillas: 0,
@@ -164,7 +173,8 @@ export default function MarcadorEnVivoPage() {
             period: data.period ?? '1ª Parte',
             isActive: data.isActive ?? false,
             localPlayers,
-            visitorPlayers: data.visitorPlayers || []
+            visitorPlayers: data.visitorPlayers || [],
+            events: data.events || []
         }));
 
       } else {
@@ -180,35 +190,58 @@ export default function MarcadorEnVivoPage() {
     if (match?.isActive && match.timeLeft > 0) {
       interval = setInterval(() => {
         setMatch(prevMatch => {
-          if (prevMatch && prevMatch.timeLeft > 0) {
+          if (prevMatch && prevMatch.timeLeft > 0 && prevMatch.isActive) {
             return { ...prevMatch, timeLeft: prevMatch.timeLeft - 1 };
           }
           return prevMatch;
         });
       }, 1000);
-    } else if (match && !match.isActive && match.timeLeft !== 0) {
-      if (interval) clearInterval(interval);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [match?.isActive, match?.timeLeft]);
+  }, [match?.isActive]);
+
 
   const handleStatChange = (team: 'local' | 'visitor', playerIndex: number, stat: keyof Omit<Player, 'id' | 'name'>, delta: 1 | -1) => {
       setMatch(prev => {
-          if (!prev) return null;
+          if (!prev || prev.period === 'Descanso') return null;
           const teamKey = team === 'local' ? 'localPlayers' : 'visitorPlayers';
           const players = prev[teamKey] ? [...prev[teamKey]!] : [];
-          if (!players[playerIndex]) return prev;
+          const player = players[playerIndex];
+          if (!player) return prev;
 
-          const currentStatValue = players[playerIndex][stat];
+          const currentStatValue = player[stat];
           if (typeof currentStatValue !== 'number') return prev;
           
           if (delta === -1 && currentStatValue === 0) return prev;
 
-          players[playerIndex] = { ...players[playerIndex], [stat]: currentStatValue + delta };
+          players[playerIndex] = { ...player, [stat]: currentStatValue + delta };
+          
+          let newEvents = prev.events ? [...prev.events] : [];
 
-          return { ...prev, [teamKey]: players };
+          if (stat === 'goals' && delta === 1) {
+              const totalTime = 25 * 60;
+              const timeElapsedInPeriod = totalTime - prev.timeLeft;
+              let minute = Math.floor(timeElapsedInPeriod / 60);
+              if (prev.period === '2ª Parte') {
+                  minute += 25;
+              }
+              
+              const goalEvent: GoalEvent = {
+                  type: 'goal',
+                  playerId: player.id,
+                  playerName: player.name,
+                  team: team,
+                  minute: minute,
+                  period: prev.period,
+                  teamId: team === 'local' ? prev.teamId : `visitor-${prev.id}`
+              };
+              newEvents.push(goalEvent);
+          }
+
+
+          return { ...prev, [teamKey]: players, events: newEvents };
       });
   }
   
@@ -327,7 +360,7 @@ export default function MarcadorEnVivoPage() {
                     {formatTime(match.timeLeft)}
                 </div>
                 <div className="flex items-center justify-center gap-4">
-                    <Button onClick={handleTimerToggle}>
+                    <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {match.isActive ? 'Pausar' : 'Iniciar'}
                     </Button>

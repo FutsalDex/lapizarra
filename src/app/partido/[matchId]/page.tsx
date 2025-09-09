@@ -37,9 +37,14 @@ interface PlayerStats {
   vs1: number;
 }
 
-interface GoalScorer {
-    name: string;
-    goals: number;
+interface GoalEvent {
+    type: 'goal';
+    playerId: string;
+    playerName: string;
+    team: 'local' | 'visitor';
+    minute: number;
+    period: '1ª Parte' | '2ª Parte';
+    teamId: string;
 }
 
 interface MatchDetails {
@@ -52,8 +57,7 @@ interface MatchDetails {
   visitorTeam: string;
   localScore: number;
   visitorScore: number;
-  localScorers: GoalScorer[];
-  visitorScorers: GoalScorer[];
+  events: GoalEvent[];
   localPlayers: PlayerStats[];
   visitorPlayers: PlayerStats[];
 }
@@ -75,16 +79,6 @@ export default function MatchDetailsPage() {
     const unsubscribe = onSnapshot(matchDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-
-        const localPlayers = (data.localPlayers || []) as PlayerStats[];
-        const visitorPlayers = (data.visitorPlayers || []) as PlayerStats[];
-        
-        const getScorers = (players: PlayerStats[]): GoalScorer[] => {
-            return players
-                .filter(p => p.goals > 0)
-                .map(p => ({ name: p.name, goals: p.goals }))
-                .sort((a, b) => b.goals - a.goals);
-        };
         
         setMatch({
             id: docSnap.id,
@@ -96,13 +90,11 @@ export default function MatchDetailsPage() {
             visitorTeam: data.visitorTeam,
             localScore: data.localScore,
             visitorScore: data.visitorScore,
-            localScorers: getScorers(localPlayers),
-            visitorScorers: getScorers(visitorPlayers),
-            localPlayers: localPlayers,
-            visitorPlayers: visitorPlayers,
+            events: (data.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute),
+            localPlayers: data.localPlayers || [],
+            visitorPlayers: data.visitorPlayers || [],
         });
       } else {
-        // Handle case where match is not found
         console.log("No such document!");
       }
       setLoading(false);
@@ -128,6 +120,9 @@ export default function MatchDetailsPage() {
     return <div>Partido no encontrado.</div>;
   }
 
+  const allGoals = match.events.filter(e => e.type === 'goal');
+  const localGoals = allGoals.filter(g => g.team === 'local');
+  const visitorGoals = allGoals.filter(g => g.team === 'visitor');
 
   return (
     <div className="container mx-auto max-w-5xl py-12 px-4">
@@ -165,14 +160,14 @@ export default function MatchDetailsPage() {
             <div className="space-y-6">
                  <h3 className="text-2xl font-bold text-center">{match.localTeam}</h3>
                  <Card>
-                    <CardHeader><CardTitle>Goleadores</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Cronología de Goles</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
                             <TableBody>
-                               {match.localScorers.length > 0 ? match.localScorers.map((scorer, i) => (
+                               {localGoals.length > 0 ? localGoals.map((goal, i) => (
                                 <TableRow key={`local-goal-${i}`}>
-                                    <TableCell>{scorer.name}</TableCell>
-                                    <TableCell className="text-right font-bold">{scorer.goals}</TableCell>
+                                    <TableCell>{goal.playerName}</TableCell>
+                                    <TableCell className="text-right font-bold">{goal.minute}'</TableCell>
                                 </TableRow>
                                )) : <TableRow><TableCell>Sin goles</TableCell></TableRow>}
                             </TableBody>
@@ -213,14 +208,14 @@ export default function MatchDetailsPage() {
             <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-center">{match.visitorTeam}</h3>
                 <Card>
-                    <CardHeader><CardTitle>Goleadores</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Cronología de Goles</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
                             <TableBody>
-                                 {match.visitorScorers.length > 0 ? match.visitorScorers.map((scorer, i) => (
+                                 {visitorGoals.length > 0 ? visitorGoals.map((goal, i) => (
                                 <TableRow key={`visitor-goal-${i}`}>
-                                    <TableCell>{scorer.name}</TableCell>
-                                    <TableCell className="text-right font-bold">{scorer.goals}</TableCell>
+                                    <TableCell>{goal.playerName}</TableCell>
+                                    <TableCell className="text-right font-bold">{goal.minute}'</TableCell>
                                 </TableRow>
                                )) : <TableRow><TableCell>Sin goles</TableCell></TableRow>}
                             </TableBody>
