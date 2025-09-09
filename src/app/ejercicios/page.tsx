@@ -18,12 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Heart, Search, Eye, Filter, Loader2 } from 'lucide-react';
+import { Heart, Search, Eye, Filter, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface Exercise {
   id: string;
@@ -41,7 +44,7 @@ interface Exercise {
   coachTips?: string;
   imageUrl: string; // from image
   isVisible: boolean;
-  tags: string[]; // This will need to be created or derived
+  tags: string[];
   title: string;
   aiHint: string;
 }
@@ -56,7 +59,10 @@ const ageCategoryLabels: { [key: string]: string } = {
 };
 
 export default function EjerciciosPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState('Todas');
@@ -68,8 +74,8 @@ export default function EjerciciosPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id, 
-          // a quick fix for the old data structure
           imageUrl: doc.data().imageUrl || doc.data().image,
+          name: doc.data().name || doc.data().title,
           ...doc.data() 
       } as Exercise));
       setExercises(exercisesData);
@@ -81,6 +87,45 @@ export default function EjerciciosPage() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+            setFavorites(doc.data().favorites || []);
+        }
+    });
+    return () => unsubscribe();
+  }, [user]);
+  
+  const toggleFavorite = async (exerciseId: string) => {
+    if (!user) {
+        toast({ title: "Inicia sesión", description: "Debes iniciar sesión para guardar favoritos.", variant: "destructive" });
+        return;
+    }
+    const userDocRef = doc(db, 'users', user.uid);
+    const isFavorite = favorites.includes(exerciseId);
+
+    try {
+        const userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists()) {
+            // If the user document doesn't exist, create it.
+            await updateDoc(userDocRef, { favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId) }, { merge: true });
+        } else {
+             await updateDoc(userDocRef, {
+                favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId)
+            });
+        }
+        toast({
+            title: isFavorite ? "Eliminado de favoritos" : "Añadido a favoritos",
+            description: `El ejercicio ha sido ${isFavorite ? 'eliminado de' : 'añadido a'} tus favoritos.`,
+        });
+    } catch (error) {
+        console.error("Error updating favorites: ", error);
+        toast({ title: "Error", description: "No se pudo actualizar tus favoritos.", variant: "destructive" });
+    }
+};
 
   const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.sessionPhase).filter(Boolean)))], [exercises]);
   const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.category).filter(Boolean)))], [exercises]);
@@ -241,8 +286,8 @@ export default function EjerciciosPage() {
                         <Eye className="mr-2 h-4 w-4" />
                         Ver Ficha
                     </Button>
-                    <Button variant="ghost" size="icon">
-                        <Heart className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                    <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)}>
+                        <Heart className={`h-5 w-5 ${favorites.includes(exercise.id) ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
                     </Button>
                 </div>
             </CardFooter>
@@ -258,3 +303,4 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
