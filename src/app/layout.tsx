@@ -1,9 +1,11 @@
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "LaPizarra - Tu Asistente de Futsal",
@@ -31,12 +33,14 @@ export default function RootLayout({
         />
       </head>
       <body className={cn("min-h-screen font-body antialiased")}>
-        <div className="relative flex min-h-dvh flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-        <Toaster />
+        <AuthProvider>
+          <div className="relative flex min-h-dvh flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
