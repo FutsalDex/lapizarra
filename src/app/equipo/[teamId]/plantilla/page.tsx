@@ -20,10 +20,10 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -31,20 +31,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
-
-const initialPlayers = [
-    { id: '1', number: 1, name: 'Manel', position: 'Portero', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 8, gRec: 5, smvp: 4 },
-    { id: '2', number: 2, name: 'Victor', position: 'Cierre', active: true, pj: 3, goals: 1, ta: 0, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '3', number: 3, name: 'Marc Muñoz', position: 'Ala-Pívot', active: true, pj: 5, goals: 1, ta: 1, tr: 0, faltas: 0, paradas: 2, gRec: 0, smvp: 0 },
-    { id: '4', number: 4, name: 'Marc Montoro', position: 'Cierre', active: true, pj: 3, goals: 1, ta: 0, tr: 0, faltas: 4, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '5', number: 5, name: 'Roger', position: 'Pívot', active: true, pj: 5, goals: 2, ta: 0, tr: 0, faltas: 2, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '6', number: 6, name: 'Marc Romeia', position: 'Ala', active: true, pj: 3, goals: 2, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '7', number: 7, name: 'Hugo', position: 'Pívot', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '8', number: 8, name: 'Dani', position: 'Ala', active: true, pj: 3, goals: 1, ta: 1, tr: 0, faltas: 3, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '9', number: 9, name: 'Iker Rando', position: 'Ala', active: true, pj: 5, goals: 4, ta: 1, tr: 0, faltas: 1, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '10', number: 10, name: 'Salva', position: 'Ala-Pívot', active: true, pj: 5, goals: 1, ta: 1, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0 },
-    { id: '11', number: 11, name: 'Lucen', position: 'Portero', active: true, pj: 5, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 7, gRec: 2, smvp: 4 },
-];
 
 interface Team {
   id: string;
@@ -61,16 +47,33 @@ interface Member {
     role: string;
 }
 
+interface Player {
+    id: string;
+    number: number;
+    name: string;
+    position: string;
+    active: boolean;
+    pj: number;
+    goals: number;
+    ta: number;
+    tr: number;
+    faltas: number;
+    paradas: number;
+    gRec: number;
+    smvp: number;
+}
+
 
 export default function TeamRosterPage() {
     const params = useParams();
     const { user } = useAuth();
     const { toast } = useToast();
     const teamId = params.teamId as string;
-    const [players, setPlayers] = useState(initialPlayers);
+    const [players, setPlayers] = useState<Player[]>([]);
     const [team, setTeam] = useState<Team | null>(null);
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (!teamId) return;
@@ -88,23 +91,78 @@ export default function TeamRosterPage() {
             const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
             setMembers(membersData);
         });
+        
+        const playersQuery = query(collection(db, 'teams', teamId, 'players'));
+        const unsubscribePlayers = onSnapshot(playersQuery, (snapshot) => {
+            const playersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+            setPlayers(playersData.sort((a,b) => a.number - b.number));
+        })
 
         return () => {
             unsubscribeTeam();
             unsubscribeMembers();
+            unsubscribePlayers();
         };
     }, [teamId]);
 
-    const handleActiveChange = (playerId: string, checked: boolean) => {
-        setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, active: checked} : p));
+    const handlePlayerChange = (playerId: string, field: keyof Player, value: any) => {
+        setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, [field]: value} : p));
     }
     
-    const handleSave = () => {
-        // Here you would typically save the data to Firestore
-        toast({
-            title: "¡Plantilla Guardada!",
-            description: "Los cambios en la plantilla han sido guardados con éxito.",
+    const handleSave = async () => {
+        setIsSaving(true);
+        const batch = writeBatch(db);
+        
+        players.forEach(player => {
+            const playerRef = doc(db, 'teams', teamId, 'players', player.id);
+            const { id, ...playerData } = player; // Exclude id from the data being written
+            batch.update(playerRef, { ...playerData });
         });
+        
+        try {
+            await batch.commit();
+            toast({
+                title: "¡Plantilla Guardada!",
+                description: "Los cambios en la plantilla han sido guardados con éxito.",
+            });
+        } catch (error) {
+             console.error("Error saving roster: ", error);
+             toast({ title: "Error", description: "No se pudo guardar la plantilla.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+    
+    const handleAddPlayer = async () => {
+        setIsSaving(true);
+        try {
+            await addDoc(collection(db, 'teams', teamId, 'players'), {
+                name: 'Nuevo Jugador',
+                number: 99,
+                position: 'Ala',
+                active: true,
+                pj: 0, goals: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, smvp: 0
+            });
+             toast({ title: "Jugador Añadido", description: "Se ha añadido un nuevo jugador a la plantilla." });
+        } catch (error) {
+             console.error("Error adding player: ", error);
+             toast({ title: "Error", description: "No se pudo añadir el jugador.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    const handleDeletePlayer = async (playerId: string) => {
+         setIsSaving(true);
+         try {
+             await deleteDoc(doc(db, 'teams', teamId, 'players', playerId));
+             toast({ title: "Jugador Eliminado", description: "El jugador ha sido eliminado de la plantilla." });
+         } catch (error) {
+              console.error("Error deleting player: ", error);
+              toast({ title: "Error", description: "No se pudo eliminar al jugador.", variant: "destructive" });
+         } finally {
+             setIsSaving(false);
+         }
     }
 
     if (loading) {
@@ -218,10 +276,10 @@ export default function TeamRosterPage() {
                 <TableBody>
                     {players.map((player) => (
                         <TableRow key={player.id}>
-                            <TableCell><Input defaultValue={player.number} className="h-8 w-14 text-center" /></TableCell>
-                            <TableCell><Input defaultValue={player.name} className="h-8" /></TableCell>
+                            <TableCell><Input value={player.number} onChange={(e) => handlePlayerChange(player.id, 'number', parseInt(e.target.value) || 0)} className="h-8 w-14 text-center" /></TableCell>
+                            <TableCell><Input value={player.name} onChange={(e) => handlePlayerChange(player.id, 'name', e.target.value)} className="h-8" /></TableCell>
                             <TableCell>
-                                <Select defaultValue={player.position}>
+                                <Select value={player.position} onValueChange={(value) => handlePlayerChange(player.id, 'position', value)}>
                                     <SelectTrigger className="h-8">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -235,7 +293,7 @@ export default function TeamRosterPage() {
                                     </SelectContent>
                                 </Select>
                             </TableCell>
-                            <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handleActiveChange(player.id, checked)} /></TableCell>
+                            <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handlePlayerChange(player.id, 'active', checked)} /></TableCell>
                             <TableCell className="text-center">{player.pj}</TableCell>
                             <TableCell className="text-center">{player.goals}</TableCell>
                             <TableCell className="text-center">{player.ta}</TableCell>
@@ -245,7 +303,7 @@ export default function TeamRosterPage() {
                             <TableCell className="text-center">{player.gRec}</TableCell>
                             <TableCell className="text-center">{player.smvp}</TableCell>
                             <TableCell className="text-right">
-                                 <Button variant="ghost" size="icon" className="hover:text-destructive">
+                                 <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </TableCell>
@@ -255,11 +313,16 @@ export default function TeamRosterPage() {
             </Table>
             </div>
             <div className="flex justify-between mt-4">
-                 <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
-                 <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" />Guardar Plantilla</Button>
+                 <Button variant="outline" onClick={handleAddPlayer} disabled={isSaving || players.length >= 20}><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
+                 <Button onClick={handleSave} disabled={isSaving}>
+                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                     Guardar Plantilla
+                </Button>
             </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

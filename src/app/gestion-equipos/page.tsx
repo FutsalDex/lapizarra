@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft } from 'lucide-react';
 import CreateTeamForm from './_components/CreateTeamForm';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
 
 interface Team {
     id: string;
@@ -39,6 +40,7 @@ interface Team {
 
 export default function GestionEquiposPage() {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [teams, setTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -59,6 +61,25 @@ export default function GestionEquiposPage() {
 
         return () => unsubscribe();
     }, [user]);
+
+    const handleDeleteTeam = async (teamId: string) => {
+        try {
+            // This is a simple delete. A real-world app would need a Cloud Function
+            // to recursively delete all subcollections (players, matches, etc.).
+            await deleteDoc(doc(db, "teams", teamId));
+            toast({
+                title: "Equipo Eliminado",
+                description: "El equipo y sus datos asociados han sido eliminados."
+            });
+        } catch (error) {
+            console.error("Error deleting team: ", error);
+            toast({
+                title: "Error",
+                description: "No se pudo eliminar el equipo.",
+                variant: "destructive"
+            });
+        }
+    }
 
   return (
     <div className="container mx-auto max-w-6xl py-12 px-4">
@@ -150,7 +171,7 @@ export default function GestionEquiposPage() {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction>Eliminar Equipo</AlertDialogAction>
+                                                <AlertDialogAction onClick={() => handleDeleteTeam(team.id)}>Eliminar Equipo</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>

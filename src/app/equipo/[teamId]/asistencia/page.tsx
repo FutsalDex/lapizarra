@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ClipboardCheck, Trash2, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, ClipboardCheck, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -32,19 +32,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import AttendanceHistory from '@/app/control-asistencia/_components/AttendanceHistory';
 import Link from 'next/link';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const players = [
-    { id: '1', name: 'Manel', dorsal: 1 },
-    { id: '2', name: 'Victor', dorsal: 2 },
-    { id: '3', name: 'Marc Muñoz', dorsal: 3 },
-    { id: '4', name: 'Marc Montoro', dorsal: 4 },
-    { id: '5', name: 'Roger', dorsal: 5 },
-    { id: '6', name: 'David', dorsal: 7 },
-    { id: '7', name: 'Elena', dorsal: 8 },
-];
+import { useToast } from '@/hooks/use-toast';
 
 type AttendanceStatus = 'presente' | 'ausente' | 'justificado' | 'lesionado';
 
@@ -52,29 +43,109 @@ interface Team {
   name: string;
 }
 
+interface Player {
+    id: string;
+    name: string;
+    number: number;
+}
+
 export default function TeamAttendancePage() {
   const params = useParams();
   const teamId = params.teamId as string;
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [team, setTeam] = useState<Team | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
    useEffect(() => {
         if (!teamId) return;
+        setLoading(true);
         const teamDocRef = doc(db, 'teams', teamId);
-        const unsubscribe = onSnapshot(teamDocRef, (doc) => {
+        const unsubscribeTeam = onSnapshot(teamDocRef, (doc) => {
             if (doc.exists()) {
                 setTeam(doc.data() as Team);
             }
+        });
+
+        const playersQuery = query(collection(db, 'teams', teamId, 'players'), where('active', '==', true));
+        const unsubscribePlayers = onSnapshot(playersQuery, (snapshot) => {
+            const playersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+            setPlayers(playersData.sort((a,b) => a.number - b.number));
             setLoading(false);
         });
-        return () => unsubscribe();
+
+        return () => {
+            unsubscribeTeam();
+            unsubscribePlayers();
+        };
     }, [teamId]);
+    
+    // Fetch attendance for the selected date
+    useEffect(() => {
+        if (!date || !teamId) return;
+
+        const dateString = format(date, 'yyyy-MM-dd');
+        const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
+
+        const unsubscribe = onSnapshot(attendanceDocRef, (doc) => {
+            if (doc.exists()) {
+                setAttendance(doc.data().statuses);
+            } else {
+                // If no record exists, reset to default 'presente' for all players
+                const defaultAttendance = players.reduce((acc, player) => {
+                    acc[player.id] = 'presente';
+                    return acc;
+                }, {} as Record<string, AttendanceStatus>);
+                setAttendance(defaultAttendance);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [date, teamId, players]);
+
 
   const handleAttendanceChange = (playerId: string, status: AttendanceStatus) => {
     setAttendance(prev => ({ ...prev, [playerId]: status }));
   };
+
+  const handleSaveAttendance = async () => {
+      if (!date || !teamId) return;
+      setIsSaving(true);
+      const dateString = format(date, 'yyyy-MM-dd');
+      const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
+
+      try {
+          await setDoc(attendanceDocRef, {
+              date: date,
+              statuses: attendance
+          });
+          toast({ title: "Asistencia Guardada", description: "El registro de asistencia se ha guardado correctamente." });
+      } catch (error) {
+          console.error("Error saving attendance: ", error);
+          toast({ title: "Error", description: "No se pudo guardar la asistencia.", variant: "destructive" });
+      } finally {
+          setIsSaving(false);
+      }
+  }
+
+  const handleDeleteAttendance = async () => {
+        if (!date || !teamId) return;
+        setIsSaving(true);
+        const dateString = format(date, 'yyyy-MM-dd');
+        const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
+         try {
+            await deleteDoc(attendanceDocRef);
+            toast({ title: "Registro Eliminado", description: "Se ha eliminado la asistencia para la fecha seleccionada." });
+        } catch (error) {
+            console.error("Error deleting attendance: ", error);
+            toast({ title: "Error", description: "No se pudo eliminar el registro.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+  }
   
     if (loading) {
         return (
@@ -128,7 +199,7 @@ export default function TeamAttendancePage() {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(newDate) => setDate(newDate || new Date())}
+                  onSelect={setDate}
                   initialFocus
                   locale={es}
                 />
@@ -149,7 +220,7 @@ export default function TeamAttendancePage() {
                 <TableBody>
                 {players.map((player) => (
                     <TableRow key={player.id}>
-                        <TableCell className="font-medium">{player.dorsal}</TableCell>
+                        <TableCell className="font-medium">{player.number}</TableCell>
                         <TableCell>{player.name}</TableCell>
                         <TableCell className="text-right">
                            <RadioGroup
@@ -182,12 +253,12 @@ export default function TeamAttendancePage() {
             </Table>
             </div>
             <div className="flex justify-end mt-6 gap-4">
-                <Button size="lg" variant="destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
+                <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                     Eliminar Registro
                 </Button>
-                <Button size="lg">
-                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                <Button size="lg" onClick={handleSaveAttendance} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
                     Guardar Asistencia
                 </Button>
             </div>
@@ -198,3 +269,5 @@ export default function TeamAttendancePage() {
     </div>
   );
 }
+
+    

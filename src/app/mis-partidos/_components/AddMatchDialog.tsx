@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,12 +38,12 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const matchSchema = z.object({
@@ -60,9 +60,11 @@ type MatchFormValues = z.infer<typeof matchSchema>;
 
 interface AddMatchDialogProps {
   children: React.ReactNode;
+  teamId: string;
+  matchData?: any; // To edit existing match
 }
 
-export default function AddMatchDialog({ children }: AddMatchDialogProps) {
+export default function AddMatchDialog({ children, teamId, matchData }: AddMatchDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -81,27 +83,55 @@ export default function AddMatchDialog({ children }: AddMatchDialogProps) {
     },
   });
 
+  useEffect(() => {
+    if (matchData && open) {
+        form.reset({
+            ...matchData,
+            date: new Date(matchData.date),
+        });
+    }
+  }, [matchData, form, open]);
+
+
   const onSubmit = async (data: MatchFormValues) => {
     if (!user) {
-      toast({ title: 'Error', description: 'Debes iniciar sesión para añadir un partido.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Debes iniciar sesión para gestionar partidos.', variant: 'destructive' });
       return;
     }
     setLoading(true);
-    try {
-      await addDoc(collection(db, 'matches'), {
+    
+    const combinedDate = data.time 
+        ? parse(data.time, 'HH:mm', data.date)
+        : data.date;
+
+    const submissionData = {
         ...data,
+        date: combinedDate.toISOString(),
+        teamId: teamId,
         userId: user.uid,
-        localScore: 0,
-        visitorScore: 0,
-        status: 'pending',
-        createdAt: new Date(),
-      });
-      toast({ title: '¡Éxito!', description: 'El partido ha sido añadido.' });
+    };
+
+    try {
+        if(matchData?.id) {
+            const matchRef = doc(db, 'matches', matchData.id);
+            await updateDoc(matchRef, submissionData);
+            toast({ title: '¡Éxito!', description: 'El partido ha sido actualizado.' });
+        } else {
+             await addDoc(collection(db, 'matches'), {
+                ...submissionData,
+                localScore: 0,
+                visitorScore: 0,
+                status: 'pending',
+                createdAt: new Date(),
+            });
+            toast({ title: '¡Éxito!', description: 'El partido ha sido añadido.' });
+        }
+
       form.reset();
       setOpen(false);
     } catch (error) {
-      console.error('Error adding match: ', error);
-      toast({ title: 'Error', description: 'Hubo un problema al añadir el partido.', variant: 'destructive' });
+      console.error('Error saving match: ', error);
+      toast({ title: 'Error', description: 'Hubo un problema al guardar el partido.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -112,7 +142,7 @@ export default function AddMatchDialog({ children }: AddMatchDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Añadir Nuevo Partido</DialogTitle>
+          <DialogTitle>{matchData?.id ? 'Editar Partido' : 'Añadir Nuevo Partido'}</DialogTitle>
           <DialogDescription>
             Introduce los datos básicos del partido. Podrás añadir las estadísticas más tarde.
           </DialogDescription>
@@ -238,7 +268,7 @@ export default function AddMatchDialog({ children }: AddMatchDialogProps) {
             <DialogFooter>
                 <Button type="submit" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Guardar y Editar
+                    {matchData?.id ? 'Guardar Cambios' : 'Crear Partido'}
                 </Button>
             </DialogFooter>
           </form>
@@ -247,3 +277,5 @@ export default function AddMatchDialog({ children }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    

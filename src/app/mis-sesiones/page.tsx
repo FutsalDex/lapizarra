@@ -26,6 +26,8 @@ import {
   where,
   onSnapshot,
   getDocs,
+  doc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -50,7 +52,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 interface Exercise {
   id: string;
@@ -77,6 +80,7 @@ interface PopulatedSession extends Omit<Session, 'initialExercise' | 'mainExerci
 
 export default function MisSesionesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [sessions, setSessions] = useState<PopulatedSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -131,7 +135,7 @@ export default function MisSesionesPage() {
           };
         });
 
-        setSessions(populatedSessions);
+        setSessions(populatedSessions.sort((a, b) => b.date.seconds - a.date.seconds));
         setLoading(false);
       },
       (error) => {
@@ -142,6 +146,23 @@ export default function MisSesionesPage() {
 
     return () => unsubscribe();
   }, [user]);
+  
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+        await deleteDoc(doc(db, "sessions", sessionId));
+        toast({
+            title: "Sesión Eliminada",
+            description: "La sesión de entrenamiento ha sido eliminada."
+        });
+    } catch (error) {
+        console.error("Error deleting session: ", error);
+        toast({
+            title: "Error",
+            description: "No se pudo eliminar la sesión.",
+            variant: "destructive"
+        });
+    }
+  }
 
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4">
@@ -190,7 +211,6 @@ export default function MisSesionesPage() {
                       <SelectContent>
                         <SelectItem value="todos">Todos los meses</SelectItem>
                         <SelectItem value="enero">Enero</SelectItem>
-                        <SelectItem value="febrero">Febrero</SelectItem>
                         {/* ... more months ... */}
                       </SelectContent>
                     </Select>
@@ -261,7 +281,7 @@ export default function MisSesionesPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction>Eliminar</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteSession(session.id)}>Eliminar</AlertDialogAction>
                                 </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

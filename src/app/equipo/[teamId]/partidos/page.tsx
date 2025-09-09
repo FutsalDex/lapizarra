@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Trophy, PlusCircle, Eye, BarChart2, Trash2, ArrowLeft } from 'lucide-react';
 import AddMatchDialog from '@/app/mis-partidos/_components/AddMatchDialog';
-import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 interface Match {
   id: string;
@@ -39,6 +40,7 @@ interface Team {
 export default function TeamMatchesPage() {
   const { user } = useAuth();
   const params = useParams();
+  const { toast } = useToast();
   const teamId = params.teamId as string;
   const [matches, setMatches] = useState<Match[]>([]);
   const [team, setTeam] = useState<Team | null>(null);
@@ -49,13 +51,11 @@ export default function TeamMatchesPage() {
       setLoading(false);
       return;
     }
-    // Query for matches related to the team. 
-    // This is a placeholder. A real implementation might need a 'teamId' field in the match document.
-    const q = query(collection(db, 'matches'), where('userId', '==', user.uid));
+    const q = query(collection(db, 'matches'), where('teamId', '==', teamId));
     const unsubscribeMatches = onSnapshot(q, (snapshot) => {
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
       setMatches(matchesData);
-      if(!team) setLoading(true); else setLoading(false);
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching matches: ", error);
       setLoading(false);
@@ -66,14 +66,23 @@ export default function TeamMatchesPage() {
         if (doc.exists()) {
             setTeam(doc.data() as Team);
         }
-        setLoading(false);
     });
 
     return () => {
         unsubscribeMatches();
         unsubscribeTeam();
     }
-  }, [user, teamId, team]);
+  }, [user, teamId]);
+  
+  const handleDeleteMatch = async (matchId: string) => {
+      try {
+          await deleteDoc(doc(db, 'matches', matchId));
+          toast({ title: "Partido Eliminado", description: "El partido ha sido eliminado con éxito." });
+      } catch (error) {
+          console.error("Error deleting match: ", error);
+          toast({ title: "Error", description: "No se pudo eliminar el partido.", variant: "destructive" });
+      }
+  }
 
   return (
     <div className="container mx-auto max-w-6xl py-12 px-4">
@@ -99,7 +108,7 @@ export default function TeamMatchesPage() {
             </div>
           </div>
         </div>
-        <AddMatchDialog>
+        <AddMatchDialog teamId={teamId}>
           <Button size="lg">
             <PlusCircle className="mr-2 h-5 w-5" />
             Añadir Partido
@@ -132,7 +141,7 @@ export default function TeamMatchesPage() {
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/marcador/${match.id}`}><BarChart2 className="mr-2 h-4 w-4" />Estadísticas</Link>
                 </Button>
-                <AddMatchDialog>
+                <AddMatchDialog matchData={match} teamId={teamId}>
                     <Button variant="ghost" size="icon">
                         <Eye className="h-5 w-5" />
                     </Button>
@@ -152,7 +161,7 @@ export default function TeamMatchesPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction>Eliminar</AlertDialogAction>
+                        <AlertDialogAction onClick={() => handleDeleteMatch(match.id)}>Eliminar</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
