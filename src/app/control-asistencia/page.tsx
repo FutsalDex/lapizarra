@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ClipboardCheck } from 'lucide-react';
+import { CalendarIcon, ClipboardCheck, Trash2 } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -29,6 +29,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import AttendanceHistory from './_components/AttendanceHistory';
 
 const players = [
     { id: '1', name: 'Manel', dorsal: 1 },
@@ -52,8 +53,8 @@ export default function ControlAsistenciaPage() {
 
 
   return (
-    <div className="container mx-auto max-w-6xl py-12 px-4">
-      <div className="text-left mb-12">
+    <div className="container mx-auto max-w-6xl py-12 px-4 space-y-12">
+      <div className="text-left">
         <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
           Registro de Asistencia
         </h1>
@@ -137,11 +138,20 @@ export default function ControlAsistenciaPage() {
                 </TableBody>
             </Table>
             </div>
-            <div className="flex justify-end mt-6">
-                <Button size="lg">Guardar Asistencia</Button>
+            <div className="flex justify-end mt-6 gap-4">
+                <Button size="lg" variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar Registro
+                </Button>
+                <Button size="lg">
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    Guardar Asistencia
+                </Button>
             </div>
         </CardContent>
       </Card>
+
+      <AttendanceHistory />
     </div>
   );
 }
