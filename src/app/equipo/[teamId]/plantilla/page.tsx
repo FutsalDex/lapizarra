@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 
 const initialPlayers = [
@@ -74,6 +75,7 @@ interface Team {
 
 export default function TeamRosterPage() {
     const params = useParams();
+    const { toast } = useToast();
     const teamId = params.teamId as string;
     const [players, setPlayers] = useState(initialPlayers);
     const [open, setOpen] = useState(false);
@@ -94,6 +96,14 @@ export default function TeamRosterPage() {
 
     const handleActiveChange = (playerId: string, checked: boolean) => {
         setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, active: checked} : p));
+    }
+    
+    const handleSave = () => {
+        // Here you would typically save the data to Firestore
+        toast({
+            title: "¡Plantilla Guardada!",
+            description: "Los cambios en la plantilla han sido guardados con éxito.",
+        });
     }
 
     if (loading) {
@@ -224,11 +234,10 @@ export default function TeamRosterPage() {
             </div>
             <div className="flex justify-between mt-4">
                  <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
-                 <Button><Save className="mr-2 h-4 w-4" />Guardar Equipo</Button>
+                 <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" />Guardar Plantilla</Button>
             </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
