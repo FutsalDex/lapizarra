@@ -31,7 +31,7 @@ const GoogleIcon = () => (
       fill="#4285F4"
     />
     <path
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98. ৬৬-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
       fill="#34A853"
     />
     <path
@@ -52,6 +52,23 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const getFirebaseErrorMessage = (error: any) => {
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        return 'Este correo electrónico ya está registrado.';
+      case 'auth/invalid-email':
+        return 'El formato del correo electrónico no es válido.';
+      case 'auth/weak-password':
+        return 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
+      case 'auth/operation-not-allowed':
+        return 'El registro con este método no está habilitado. Contacta al administrador.';
+      case 'auth/popup-closed-by-user':
+        return 'El proceso de registro fue cancelado.';
+      default:
+        return 'Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.';
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,31 +95,14 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    const provider = new GoogleAuthProvider();
     try {
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (err: any)      {
       setError(getFirebaseErrorMessage(err));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getFirebaseErrorMessage = (error: any) => {
-    switch (error.code) {
-      case 'auth/email-already-in-use':
-        return 'Este correo electrónico ya está registrado.';
-      case 'auth/invalid-email':
-        return 'El formato del correo electrónico no es válido.';
-      case 'auth/weak-password':
-        return 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
-      case 'auth/operation-not-allowed':
-        return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
-      case 'auth/popup-closed-by-user':
-        return 'El proceso de inicio de sesión fue cancelado.';
-      default:
-        return 'Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.';
     }
   };
 

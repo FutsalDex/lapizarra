@@ -52,6 +52,25 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const getFirebaseErrorMessage = (error: any) => {
+    switch (error.code) {
+      case 'auth/invalid-email':
+        return 'El formato del correo electrónico no es válido.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Correo electrónico o contraseña incorrectos.';
+      case 'auth/too-many-requests':
+        return 'Demasiados intentos de inicio de sesión. Inténtalo de nuevo más tarde.';
+       case 'auth/operation-not-allowed':
+        return 'El inicio de sesión con este método no está habilitado. Contacta al administrador.';
+      case 'auth/popup-closed-by-user':
+        return 'El proceso de inicio de sesión fue cancelado.';
+      default:
+        return 'Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.';
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -69,8 +88,8 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    const provider = new GoogleAuthProvider();
     try {
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (err: any) {
@@ -79,26 +98,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-  const getFirebaseErrorMessage = (error: any) => {
-    switch (error.code) {
-      case 'auth/invalid-email':
-        return 'El formato del correo electrónico no es válido.';
-      case 'auth/user-not-found':
-      case 'auth/wrong-password':
-      case 'auth/invalid-credential':
-        return 'Correo electrónico o contraseña incorrectos.';
-      case 'auth/too-many-requests':
-        return 'Demasiados intentos de inicio de sesión. Inténtalo de nuevo más tarde.';
-       case 'auth/operation-not-allowed':
-        return 'El inicio de sesión con Google no está habilitado. Contacta al administrador.';
-      case 'auth/popup-closed-by-user':
-        return 'El proceso de inicio de sesión fue cancelado.';
-      default:
-        return 'Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.';
-    }
-  };
-
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100dvh-12rem)] py-12 px-4">
