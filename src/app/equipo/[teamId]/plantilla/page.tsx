@@ -152,12 +152,12 @@ export default function TeamRosterPage() {
                 number: 99,
                 position: 'Ala',
                 active: true,
-                pj: 0, 
-                goals: 0, 
-                ta: 0, 
-                tr: 0, 
-                faltas: 0, 
-                paradas: 0, 
+                pj: 0,
+                goals: 0,
+                ta: 0,
+                tr: 0,
+                faltas: 0,
+                paradas: 0,
                 gRec: 0
             });
              toast({ title: "Jugador Añadido", description: "Se ha añadido un nuevo jugador a la plantilla." });
@@ -369,36 +369,7 @@ export default function TeamRosterPage() {
                 </Button>
             </div>
         </CardContent>
-         <CardFooter className="border-t pt-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-4">
-              <div>
-                <h4 className="font-semibold">Opciones Adicionales</h4>
-                <p className="text-sm text-muted-foreground">Usa esta opción para limpiar los datos si las estadísticas son incorrectas.</p>
-              </div>
-               <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isSaving}>
-                            <RefreshCw className="mr-2 h-4 w-4" /> Resetear Estadísticas
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción pondrá a CERO todas las estadísticas (PJ, Goles, Faltas, etc.) de TODOS los jugadores de esta plantilla. Esta acción no se puede deshacer.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleResetStats}>Sí, resetear estadísticas</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
 }
-
-    
