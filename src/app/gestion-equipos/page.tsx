@@ -12,7 +12,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldPlus, Users, Edit, Trash2 } from 'lucide-react';
+import { ShieldPlus, Users, Edit, Trash2, Settings } from 'lucide-react';
 import CreateTeamForm from './_components/CreateTeamForm';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -97,20 +97,23 @@ export default function GestionEquiposPage() {
                     ) : (
                         <div className="space-y-4">
                             {teams.map(team => (
-                                <Card key={team.id} className="flex items-center justify-between p-4">
-                                    <div>
-                                        <h3 className="font-bold">{team.name}</h3>
+                                <Card key={team.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4">
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-lg">{team.name}</h3>
                                         <p className="text-sm text-muted-foreground">{team.club}</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={`/gestion-equipos/${team.id}`}>
-                                                <Users className="mr-2 h-4 w-4" />
-                                                Gestionar Miembros
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button asChild>
+                                            <Link href={`/equipo/${team.id}`}>
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Gestionar Equipo
                                             </Link>
                                         </Button>
-                                         <Button variant="ghost" size="icon">
-                                            <Edit className="h-4 w-4" />
+                                         <Button asChild variant="outline" size="sm">
+                                            <Link href={`/gestion-equipos/${team.id}`}>
+                                                <Users className="mr-2 h-4 w-4" />
+                                                Miembros
+                                            </Link>
                                         </Button>
                                          <Button variant="ghost" size="icon" className="text-destructive">
                                             <Trash2 className="h-4 w-4" />

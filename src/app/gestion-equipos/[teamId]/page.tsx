@@ -169,9 +169,9 @@ export default function TeamMembersPage() {
     <div className="container mx-auto max-w-4xl py-12 px-4 space-y-8">
       <div>
         <Button asChild variant="outline" className="mb-4">
-          <Link href="/mi-equipo">
+          <Link href="/gestion-equipos">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Mi Equipo
+            Volver a Gestión de Equipos
           </Link>
         </Button>
         <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">{team.name}</h1>

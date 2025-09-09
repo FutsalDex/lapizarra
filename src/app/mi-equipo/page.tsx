@@ -28,37 +28,13 @@ import Link from 'next/link';
 const modules = [
    {
     title: 'Gestión de Equipos',
-    description: 'Crea nuevos equipos e invita a otros miembros de tu cuerpo técnico para colaborar.',
+    description: 'Crea nuevos equipos, gestiona sus miembros y accede a sus paneles de control.',
     icon: ShieldPlus,
     href: '/gestion-equipos',
   },
   {
-    title: 'Mi Plantilla',
-    description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
-    icon: Users,
-    href: '/mi-plantilla',
-  },
-  {
-    title: 'Control de Asistencia',
-    description: 'Registra y consulta la asistencia de los jugadores a entrenamientos y partidos.',
-    icon: ClipboardCheck,
-    href: '/control-asistencia',
-  },
-  {
-    title: 'Mis Partidos',
-    description: 'Da de alta nuevos partidos, consulta el historial y gestiona las estadísticas en vivo con el marcador integrado.',
-    icon: Trophy,
-    href: '/mis-partidos',
-  },
-  {
-    title: 'Marcador',
-    description: 'Usa un marcador rápido para partidos o entrenamientos y registra estadísticas básicas.',
-    icon: PenSquare,
-    href: '/marcador',
-  },
-    {
-    title: 'Mis Sesiones',
-    description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manually.',
+    title: 'Mis Sesiones Guardadas',
+    description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manualmente.',
     icon: ClipboardList,
     href: '/mis-sesiones',
   },

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList, Mail } from "lucide-react";
+import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -27,7 +27,6 @@ import { auth } from "@/lib/firebase";
 const baseNav = [
   { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
   { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
-  { title: "Mis Sesiones", href: "/mis-sesiones", icon: ClipboardList },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
   { title: "Favoritos", href: "/favoritos", icon: Heart },
   { title: "Suscripción", href: "/suscripcion", icon: Star },
