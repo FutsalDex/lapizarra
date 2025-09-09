@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -102,9 +103,11 @@ export default function GestionEquiposPage() {
                                         <p className="text-sm text-muted-foreground">{team.club}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm">
-                                            <Users className="mr-2 h-4 w-4" />
-                                            Gestionar Miembros
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={`/gestion-equipos/${team.id}`}>
+                                                <Users className="mr-2 h-4 w-4" />
+                                                Gestionar Miembros
+                                            </Link>
                                         </Button>
                                          <Button variant="ghost" size="icon">
                                             <Edit className="h-4 w-4" />

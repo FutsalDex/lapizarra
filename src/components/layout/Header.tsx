@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList } from "lucide-react";
+import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -33,6 +33,10 @@ const baseNav = [
   { title: "Suscripción", href: "/suscripcion", icon: Star },
 ];
 
+const userNav = [
+    { title: "Mis Invitaciones", href: "/mis-invitaciones", icon: Mail },
+]
+
 const adminNav = [
     { title: "Panel Admin", href: "/admin", icon: Shield },
 ]
@@ -42,7 +46,11 @@ export default function Header() {
   const router = useRouter();
 
   const isAdmin = user?.email === "futsaldex@gmail.com";
-  const mainNav = isAdmin ? [...baseNav, ...adminNav] : baseNav;
+  let mainNav = [...baseNav, ...userNav];
+  if (isAdmin) {
+    mainNav = [...mainNav, ...adminNav];
+  }
+
 
   const handleLogout = async () => {
     await auth.signOut();
