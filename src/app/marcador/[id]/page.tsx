@@ -167,11 +167,9 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
  const finalizeMatch = async () => {
-    if (!match) return;
+    if (!match || match.isFinished) return;
     setIsSaving(true);
     
-    const matchDocRef = doc(db, 'matches', id);
-
     const localScore = match.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     const visitorScore = match.visitorPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     
@@ -184,6 +182,7 @@ export default function MarcadorEnVivoPage() {
     };
     
     try {
+        const matchDocRef = doc(db, 'matches', id);
         const batch = writeBatch(db);
         
         batch.update(matchDocRef, dataToUpdate);
@@ -476,9 +475,11 @@ export default function MarcadorEnVivoPage() {
                         <span>Guardado</span>
                     </div>
                  )}
-                 <Button variant="outline" onClick={() => router.back()}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver
+                 <Button asChild variant="outline">
+                    <Link href={`/equipo/${match.teamId}/partidos`}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Volver
+                    </Link>
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
