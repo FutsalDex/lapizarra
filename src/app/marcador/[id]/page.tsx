@@ -32,6 +32,7 @@ interface Player {
 }
 
 interface GoalEvent {
+    id: string; // Unique ID for the event
     type: 'goal';
     playerId: string;
     playerName: string;
@@ -167,7 +168,7 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
  const finalizeMatch = async () => {
-    if (!match || match.isFinished) return;
+    if (!match) return;
     setIsSaving(true);
     
     const localScore = match.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -250,24 +251,35 @@ export default function MarcadorEnVivoPage() {
         
         let newEvents = prev.events ? [...prev.events] : [];
 
-        if (stat === 'goals' && delta === 1 && prev.period !== 'Descanso') {
-            const totalTime = 25 * 60;
-            const timeElapsedInPeriod = totalTime - prev.timeLeft;
-            let minute = Math.floor(timeElapsedInPeriod / 60);
-            if (prev.period === '2ª Parte') {
-                minute += 25;
+        if (stat === 'goals') {
+             if (delta === 1 && prev.period !== 'Descanso') {
+                const totalTime = 25 * 60;
+                const timeElapsedInPeriod = totalTime - prev.timeLeft;
+                let minute = Math.floor(timeElapsedInPeriod / 60);
+                if (prev.period === '2ª Parte') {
+                    minute += 25;
+                }
+                
+                const goalEvent: GoalEvent = {
+                    id: `goal-${player.id}-${Date.now()}`, // Unique ID
+                    type: 'goal',
+                    playerId: player.id,
+                    playerName: player.name,
+                    team: team,
+                    minute: minute,
+                    period: prev.period,
+                    teamId: prev.teamId
+                };
+                newEvents.push(goalEvent);
+            } else if (delta === -1) {
+                // Find the last goal event for this player and remove it
+                const lastGoalIndex = newEvents.findLastIndex(
+                    (event) => event.type === 'goal' && event.playerId === player.id
+                );
+                if (lastGoalIndex > -1) {
+                    newEvents.splice(lastGoalIndex, 1);
+                }
             }
-            
-            const goalEvent: GoalEvent = {
-                type: 'goal',
-                playerId: player.id,
-                playerName: player.name,
-                team: team,
-                minute: minute,
-                period: prev.period,
-                teamId: prev.teamId // Consistent teamId for events
-            };
-            newEvents.push(goalEvent);
         }
 
         return { ...prev, [teamKey]: players, events: newEvents };
@@ -556,5 +568,7 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
+
+    
 
     
