@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc, resetAndSeed } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -171,6 +171,37 @@ export default function TeamRosterPage() {
              setIsSaving(false);
          }
     }
+    
+     const handleResetStats = async () => {
+        setIsSaving(true);
+        const batch = writeBatch(db);
+        players.forEach(player => {
+            const playerRef = doc(db, 'teams', teamId, 'players', player.id);
+            batch.update(playerRef, {
+                pj: 0,
+                goals: 0,
+                assists: 0,
+                ta: 0,
+                tr: 0,
+                faltas: 0,
+                paradas: 0,
+                gRec: 0,
+            });
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: "Estadísticas Reseteadas",
+                description: "Las estadísticas de todos los jugadores han sido puestas a cero."
+            });
+        } catch (error) {
+            console.error("Error resetting stats: ", error);
+            toast({ title: "Error", description: "No se pudieron resetear las estadísticas.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
 
     if (loading) {
@@ -189,7 +220,7 @@ export default function TeamRosterPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4">
-       <div className="flex justify-between items-center mb-8">
+       <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
             <div className="text-left">
                 <div className="flex items-center gap-4">
                     <Users className="h-10 w-10 text-primary" />
@@ -262,14 +293,14 @@ export default function TeamRosterPage() {
           <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Solo los jugadores "Activos" aparecerán en el módulo de partidos.</CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
              <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[5%]">Dorsal</TableHead>
-                        <TableHead className="w-[20%]">Nombre</TableHead>
-                        <TableHead className="w-[15%]">Posición</TableHead>
-                        <TableHead className="w-[5%]">Activo</TableHead>
+                        <TableHead className="w-[8%]">Dorsal</TableHead>
+                        <TableHead className="w-[20%] min-w-[150px]">Nombre</TableHead>
+                        <TableHead className="w-[15%] min-w-[150px]">Posición</TableHead>
+                        <TableHead className="w-[8%]">Activo</TableHead>
                         <TableHead className="text-center">PJ</TableHead>
                         <TableHead className="text-center">Goles</TableHead>
                         <TableHead className="text-center">As</TableHead>
@@ -320,7 +351,7 @@ export default function TeamRosterPage() {
                 </TableBody>
             </Table>
             </div>
-            <div className="flex justify-between mt-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
                  <Button variant="outline" onClick={handleAddPlayer} disabled={isSaving || players.length >= 20}><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
                  <Button onClick={handleSave} disabled={isSaving}>
                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
@@ -332,5 +363,3 @@ export default function TeamRosterPage() {
     </div>
   );
 }
-
-    

@@ -127,7 +127,7 @@ export default function MatchDetailsPage() {
 
   return (
     <div className="container mx-auto max-w-5xl py-12 px-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
          <div>
             <div className="flex items-center gap-3 text-muted-foreground mb-2">
                  <History className="h-5 w-5" />
@@ -138,12 +138,12 @@ export default function MatchDetailsPage() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.push(`/equipo/${match.teamId}/partidos`)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Historial
+            Volver
           </Button>
           <Button asChild>
             <Link href={`/marcador/${matchId}`}>
                 <BarChartHorizontal className="mr-2 h-4 w-4" />
-                Gestionar Marcador
+                Gestionar
             </Link>
           </Button>
         </div>
@@ -177,7 +177,7 @@ export default function MatchDetailsPage() {
                  </Card>
                  <Card>
                     <CardHeader><CardTitle>Estadísticas de Jugadores</CardTitle></CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -185,12 +185,12 @@ export default function MatchDetailsPage() {
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>G</TableHead>
                                     <TableHead>As</TableHead>
-                                    <TableHead>TA</TableHead>
-                                    <TableHead>TR</TableHead>
-                                    <TableHead>F</TableHead>
-                                    <TableHead>Par.</TableHead>
-                                    <TableHead>GC</TableHead>
-                                    <TableHead>1vs1</TableHead>
+                                    <TableHead className="hidden sm:table-cell">TA</TableHead>
+                                    <TableHead className="hidden sm:table-cell">TR</TableHead>
+                                    <TableHead className="hidden sm:table-cell">F</TableHead>
+                                    <TableHead className="hidden lg:table-cell">Par.</TableHead>
+                                    <TableHead className="hidden lg:table-cell">GC</TableHead>
+                                    <TableHead className="hidden lg:table-cell">1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -200,12 +200,12 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.name}</TableCell>
                                     <TableCell>{player.goals ?? 0}</TableCell>
                                     <TableCell>{player.assists ?? 0}</TableCell>
-                                    <TableCell>{player.amarillas ?? 0}</TableCell>
-                                    <TableCell>{player.rojas ?? 0}</TableCell>
-                                    <TableCell>{player.faltas ?? 0}</TableCell>
-                                    <TableCell>{player.paradas ?? 0}</TableCell>
-                                    <TableCell>{player.gRec ?? 0}</TableCell>
-                                    <TableCell>{player.vs1 ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
@@ -234,7 +234,7 @@ export default function MatchDetailsPage() {
                 <Card>
                     <CardHeader><CardTitle>Estadísticas de Jugadores</CardTitle></CardHeader>
 
-                    <CardContent>
+                    <CardContent className="overflow-x-auto">
                          <Table>
                             <TableHeader>
                                 <TableRow>
@@ -242,12 +242,12 @@ export default function MatchDetailsPage() {
                                     <TableHead>Nombre</TableHead>
                                     <TableHead>G</TableHead>
                                     <TableHead>As</TableHead>
-                                    <TableHead>TA</TableHead>
-                                    <TableHead>TR</TableHead>
-                                    <TableHead>F</TableHead>
-                                    <TableHead>Par.</TableHead>
-                                    <TableHead>GC</TableHead>
-                                    <TableHead>1vs1</TableHead>
+                                    <TableHead className="hidden sm:table-cell">TA</TableHead>
+                                    <TableHead className="hidden sm:table-cell">TR</TableHead>
+                                    <TableHead className="hidden sm:table-cell">F</TableHead>
+                                    <TableHead className="hidden lg:table-cell">Par.</TableHead>
+                                    <TableHead className="hidden lg:table-cell">GC</TableHead>
+                                    <TableHead className="hidden lg:table-cell">1vs1</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -257,12 +257,12 @@ export default function MatchDetailsPage() {
                                     <TableCell>{player.name}</TableCell>
                                     <TableCell>{player.goals ?? 0}</TableCell>
                                     <TableCell>{player.assists ?? 0}</TableCell>
-                                    <TableCell>{player.amarillas ?? 0}</TableCell>
-                                    <TableCell>{player.rojas ?? 0}</TableCell>
-                                    <TableCell>{player.faltas ?? 0}</TableCell>
-                                    <TableCell>{player.paradas ?? 0}</TableCell>
-                                    <TableCell>{player.gRec ?? 0}</TableCell>
-                                    <TableCell>{player.vs1 ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>
                                 </TableRow>
                                 ))}
                             </TableBody>
@@ -274,5 +274,3 @@ export default function MatchDetailsPage() {
     </div>
   );
 }
-
-    

@@ -94,7 +94,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                 const j = playerStats[player.id]?.j || 0;
                 const l = playerStats[player.id]?.l || 0;
                 
-                const percentage = p > 0 ? Math.round((totalSessions / p) * 100) : 0;
+                const percentage = p > 0 ? Math.round((p / totalSessions) * 100) : 0;
                 
                 return {
                     id: player.id,
@@ -134,17 +134,17 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                 <Skeleton className="h-10 w-full" />
             </div>
         ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Dorsal</TableHead>
+                <TableHead>#</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead className="text-center">P</TableHead>
                 <TableHead className="text-center">A</TableHead>
                 <TableHead className="text-center">J</TableHead>
                 <TableHead className="text-center">L</TableHead>
-                <TableHead className="text-center">Sesiones Totales</TableHead>
+                <TableHead className="text-center">Total</TableHead>
                 <TableHead>% Asistencia</TableHead>
               </TableRow>
             </TableHeader>
@@ -159,7 +159,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
                   <TableCell className="text-center">{player.l}</TableCell>
                   <TableCell className="text-center">{player.total}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-[120px]">
                       <Progress value={player.percentage > 100 ? 100 : player.percentage} className="h-2" />
                       <span className="text-xs text-muted-foreground w-12 text-right">{player.percentage}%</span>
                     </div>
@@ -182,7 +182,7 @@ export default function AttendanceHistory({ teamId }: AttendanceHistoryProps) {
             <p><span className="font-bold">L:</span> Lesionado</p>
         </div>
         <p className="text-xs text-muted-foreground mt-4">
-          * El % de asistencia se calcula como: (Sesiones Totales / Presente) * 100.
+          * El % de asistencia se calcula como: (Presente / Sesiones Totales) * 100.
         </p>
       </CardContent>
     </Card>

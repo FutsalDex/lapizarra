@@ -168,7 +168,7 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
  const finalizeMatch = async () => {
-    if (!match) return;
+    if (!match || match.isFinished) return;
     setIsSaving(true);
     
     const localScore = match.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -321,10 +321,10 @@ export default function MarcadorEnVivoPage() {
     const value = player?.[stat] ?? 0;
 
     return (
-        <TableCell className="text-center">
+        <TableCell className="text-center px-1">
             <div className="flex items-center justify-center gap-1">
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
-                <span>{value}</span>
+                <span className="w-4 text-center">{value}</span>
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(team, playerIndex, stat, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
             </div>
         </TableCell>
@@ -403,30 +403,30 @@ export default function MarcadorEnVivoPage() {
             <div className={cn("p-2", team === 'local' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
                 <h3 className="font-bold text-center">JUGADORES - {team === 'local' ? match.localTeam : match.visitorTeam}</h3>
             </div>
-            <div className="rounded-b-md border border-t-0">
+            <div className="rounded-b-md border border-t-0 overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Dorsal</TableHead>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead className="text-center">Goles</TableHead>
-                            <TableHead className="text-center">As</TableHead>
-                            <TableHead className="text-center">
-                                <div className="inline-block w-4 h-5 bg-yellow-400 border border-black"></div>
+                            <TableHead className="px-2">Dorsal</TableHead>
+                            <TableHead className="px-2 min-w-[150px]">Nombre</TableHead>
+                            <TableHead className="text-center px-1">Goles</TableHead>
+                            <TableHead className="text-center px-1">As</TableHead>
+                            <TableHead className="text-center px-1">
+                                <div className="inline-block w-4 h-5 bg-yellow-400 border border-black mx-auto"></div>
                             </TableHead>
-                            <TableHead className="text-center">
-                                <div className="inline-block w-4 h-5 bg-red-600 border border-black"></div>
+                            <TableHead className="text-center px-1">
+                                <div className="inline-block w-4 h-5 bg-red-600 border border-black mx-auto"></div>
                             </TableHead>
-                            <TableHead className="text-center">Faltas</TableHead>
-                            <TableHead className="text-center">Paradas</TableHead>
-                            <TableHead className="text-center">GC</TableHead>
-                            <TableHead className="text-center">1vs1</TableHead>
+                            <TableHead className="text-center px-1">Faltas</TableHead>
+                            <TableHead className="text-center px-1">Paradas</TableHead>
+                            <TableHead className="text-center px-1">GC</TableHead>
+                            <TableHead className="text-center px-1">1vs1</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {players.map((player, index) => (
                             <TableRow key={player.id}>
-                                <TableCell>
+                                <TableCell className="px-2">
                                     <Input 
                                         className="h-8 w-14 text-center" 
                                         value={player.number} 
@@ -434,7 +434,7 @@ export default function MarcadorEnVivoPage() {
                                         readOnly={match.isFinished || (!player.id.startsWith('visitor-') && !player.id.startsWith('local-'))} 
                                     />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="px-2">
                                     <Input 
                                         className="h-8" 
                                         value={player.name} 
@@ -472,7 +472,7 @@ export default function MarcadorEnVivoPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     <BarChartHorizontal className="text-primary"/>
@@ -480,7 +480,7 @@ export default function MarcadorEnVivoPage() {
                 </h1>
                 <p className="text-muted-foreground">Gestiona el partido en tiempo real. Los cambios se guardan automáticamente.</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                  {showSavedIndicator && (
                     <div className="flex items-center gap-2 text-sm text-green-600 transition-opacity duration-300">
                         <CheckCircle className="h-4 w-4" />
@@ -490,14 +490,14 @@ export default function MarcadorEnVivoPage() {
                  <Button asChild variant="outline">
                     <Link href={`/equipo/${match.teamId}/partidos`}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver
+                        <span className="hidden sm:inline">Volver</span>
                     </Link>
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                          <Button variant="destructive" disabled={isSaving || match.isFinished}>
                             {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : (isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<CheckCircle className="mr-2 h-4 w-4"/>)}
-                            {match.isFinished ? 'Partido Finalizado' : 'Finalizar Partido'}
+                            {match.isFinished ? 'Finalizado' : 'Finalizar'}
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -521,17 +521,17 @@ export default function MarcadorEnVivoPage() {
 
         <Card>
             <CardContent className="p-4 md:p-6">
-                 <div className="flex justify-around items-center w-full max-w-4xl mx-auto mb-6">
-                    <h2 className="text-2xl font-bold text-center w-1/3">{match.localTeam}</h2>
+                 <div className="flex flex-col md:flex-row justify-around items-center w-full max-w-4xl mx-auto mb-6 text-center gap-4">
+                    <h2 className="text-2xl font-bold w-full md:w-1/3">{match.localTeam}</h2>
                     <div className="text-5xl font-bold text-primary tabular-nums">
                         {localScore} - {visitorScore}
                     </div>
-                    <h2 className="text-2xl font-bold text-center w-1/3">{match.visitorTeam}</h2>
+                    <h2 className="text-2xl font-bold w-full md:w-1/3">{match.visitorTeam}</h2>
                 </div>
                  <div className="text-6xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg w-fit mx-auto">
                     {formatTime(match.timeLeft)}
                 </div>
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
                     <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || match.isFinished}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {match.isActive ? 'Pausar' : 'Iniciar'}
@@ -568,7 +568,3 @@ export default function MarcadorEnVivoPage() {
     </div>
   );
 }
-
-    
-
-    

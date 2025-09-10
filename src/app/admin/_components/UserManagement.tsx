@@ -69,14 +69,14 @@ export default function UserManagement() {
                 className="max-w-sm"
             />
         </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Email</TableHead>
               <TableHead>Rol</TableHead>
-              <TableHead>Suscripción</TableHead>
-              <TableHead>Miembro desde</TableHead>
+              <TableHead className="hidden sm:table-cell">Suscripción</TableHead>
+              <TableHead className="hidden md:table-cell">Miembro desde</TableHead>
               <TableHead>
                 <span className="sr-only">Acciones</span>
               </TableHead>
@@ -91,8 +91,8 @@ export default function UserManagement() {
                     {user.role}
                   </Badge>
                 </TableCell>
-                <TableCell>{user.subscription}</TableCell>
-                <TableCell>{user.joined}</TableCell>
+                <TableCell className="hidden sm:table-cell">{user.subscription}</TableCell>
+                <TableCell className="hidden md:table-cell">{user.joined}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

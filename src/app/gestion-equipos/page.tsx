@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft } from 'lucide-react';
-import CreateTeamForm from './_components/CreateTeamForm';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -85,7 +84,7 @@ export default function GestionEquiposPage() {
 
   return (
     <div className="container mx-auto max-w-6xl py-12 px-4">
-        <div className="flex justify-between items-center mb-12">
+        <div className="flex justify-between items-center mb-12 flex-wrap gap-4">
             <div className="text-left flex-grow">
                 <div className="flex items-center gap-4">
                     <ShieldPlus className="h-10 w-10 text-primary" />
@@ -145,11 +144,11 @@ export default function GestionEquiposPage() {
                                         <h3 className="font-bold text-lg">{team.name}</h3>
                                         <p className="text-sm text-muted-foreground">{team.club}</p>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
                                         <Button asChild>
                                             <Link href={`/equipo/${team.id}`}>
                                                 <Settings className="mr-2 h-4 w-4" />
-                                                Gestionar Equipo
+                                                Gestionar
                                             </Link>
                                         </Button>
                                          <Button asChild variant="outline" size="sm">
@@ -194,5 +193,3 @@ export default function GestionEquiposPage() {
     </div>
   );
 }
-
-    

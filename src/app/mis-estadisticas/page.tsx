@@ -72,7 +72,7 @@ const PlayerStatCard = ({ title, name, value, icon: Icon, iconBgColor = 'bg-gray
                  </div>
                 <p className="text-sm font-semibold text-muted-foreground">{title}</p>
             </div>
-            <p className="text-xl font-bold">{name}</p>
+            <p className="text-xl font-bold truncate">{name}</p>
             <p className="text-lg text-muted-foreground">{value}</p>
         </CardContent>
     </Card>
@@ -247,7 +247,7 @@ export default function MisEstadisticasPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
             <div className="text-left">
                 <div className="flex items-center gap-4">
                     <BarChart3 className="h-10 w-10 text-primary" />
@@ -282,7 +282,7 @@ export default function MisEstadisticasPage() {
                 <CardHeader>
                     <CardTitle>Resumen General de Partidos</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <StatCard title="Partidos Jugados" value={stats.played} icon={Trophy} />
                     <StatCard title="Ganados" value={stats.won} icon={TrendingUp} />
                     <StatCard title="Empatados" value={stats.drawn} icon={Shield} />
@@ -295,7 +295,7 @@ export default function MisEstadisticasPage() {
                 <CardHeader>
                     <CardTitle>Rendimiento del Equipo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
                     <StatCard title="Tiros Bloqueados" value={stats.shotsBlocked} icon={Hand} />
@@ -309,7 +309,7 @@ export default function MisEstadisticasPage() {
                     <CardHeader>
                         <CardTitle>Goles a Favor</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-4 grid-cols-3">
+                    <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                         <StatCard title="Totales" value={stats.goalsFor} icon={Plus} />
                         <StatCard title="1ª Parte" value={stats.goalsFor1stHalf} icon={Plus} />
                         <StatCard title="2ª Parte" value={stats.goalsFor2ndHalf} icon={Plus} />
@@ -319,7 +319,7 @@ export default function MisEstadisticasPage() {
                     <CardHeader>
                         <CardTitle>Goles en Contra</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-4 grid-cols-3">
+                    <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                         <StatCard title="Totales" value={stats.goalsAgainst} icon={Minus} />
                         <StatCard title="1ª Parte" value={stats.goalsAgainst1stHalf} icon={Minus} />
                         <StatCard title="2ª Parte" value={stats.goalsAgainst2ndHalf} icon={Minus} />
@@ -332,7 +332,7 @@ export default function MisEstadisticasPage() {
                     <CardTitle>Jugadores Destacados</CardTitle>
                     <CardDescription>Resumen de los líderes estadísticos de la temporada.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <PlayerStatCard title="Máximo Goleador" name={leaders.topScorer.name} value={leaders.topScorer.value} icon={Award} iconBgColor="bg-green-100" iconColor="text-green-600" />
                     <PlayerStatCard title="Máximo Asistente" name={leaders.topAssister.name} value={leaders.topAssister.value} icon={Hand} iconBgColor="bg-blue-100" iconColor="text-blue-600" />
                     <PlayerStatCard title="Más Tarjetas Amarillas" name={leaders.mostYellowCards.name} value={leaders.mostYellowCards.value} icon={RectangleVertical} iconBgColor="bg-yellow-100" iconColor="text-yellow-600" />
