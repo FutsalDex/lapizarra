@@ -1,29 +1,101 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday } from 'date-fns';
+import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { collection, query, where, onSnapshot, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Dummy data
-const events = {
-    '2024-08-10': [{ type: 'training', title: 'Sesión #24' }],
-    '2024-08-15': [{ type: 'match', title: 'vs. Rival F.S.' }],
-    '2024-08-22': [{ type: 'training', title: 'Sesión #25' }],
-    '2024-09-01': [{ type: 'match', title: 'vs. Amigos C.F.' }],
-};
+
+interface Event {
+    type: 'training' | 'match';
+    title: string;
+    date: Date;
+}
+
+interface EventsByDate {
+    [key: string]: Event[];
+}
+
 
 export default function MisEventosPage() {
+    const { user } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [events, setEvents] = useState<EventsByDate>({});
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        const fetchEvents = async () => {
+            setLoading(true);
+
+            // Fetch teams to get teamIds
+            const teamsQuery = query(collection(db, 'teams'), where('ownerId', '==', user.uid));
+            const teamsSnapshot = await getDocs(teamsQuery);
+            const teamIds = teamsSnapshot.docs.map(doc => doc.id);
+
+            const allEvents: Event[] = [];
+
+            // Fetch sessions
+            const sessionsQuery = query(collection(db, 'sessions'), where('userId', '==', user.uid));
+            const sessionsSnapshot = await getDocs(sessionsQuery);
+            sessionsSnapshot.forEach(doc => {
+                const data = doc.data();
+                const date = (data.date as Timestamp).toDate();
+                allEvents.push({
+                    type: 'training',
+                    title: `Sesión #${data.sessionNumber || doc.id.substring(0,4)}`,
+                    date: date
+                });
+            });
+
+            // Fetch matches if user has teams
+            if (teamIds.length > 0) {
+                 const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', teamIds));
+                 const matchesSnapshot = await getDocs(matchesQuery);
+                 matchesSnapshot.forEach(doc => {
+                     const data = doc.data();
+                     allEvents.push({
+                         type: 'match',
+                         title: `${data.localTeam} vs ${data.visitorTeam}`,
+                         date: new Date(data.date)
+                     });
+                 });
+            }
+
+            const groupedEvents = allEvents.reduce((acc, event) => {
+                const dateKey = format(event.date, 'yyyy-MM-dd');
+                if (!acc[dateKey]) {
+                    acc[dateKey] = [];
+                }
+                acc[dateKey].push(event);
+                return acc;
+            }, {} as EventsByDate);
+            
+            setEvents(groupedEvents);
+            setLoading(false);
+        };
+        
+        fetchEvents();
+        
+    }, [user]);
+
 
     const firstDayOfMonth = startOfMonth(currentDate);
     const lastDayOfMonth = endOfMonth(currentDate);
@@ -65,35 +137,42 @@ export default function MisEventosPage() {
             </div>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                    <div key={day} className="text-center font-bold text-muted-foreground">{day}</div>
-                ))}
-                {Array.from({ length: startingDayIndex }).map((_, i) => (
-                    <div key={`empty-${i}`} className="border rounded-lg h-28 bg-muted/50"></div>
-                ))}
-                {daysInMonth.map(day => {
-                    const dayKey = format(day, 'yyyy-MM-dd');
-                    // @ts-ignore
-                    const dayEvents = events[dayKey] || [];
-                    return (
-                        <div key={day.toString()} className={cn("border rounded-lg h-28 p-2 flex flex-col", { 'bg-primary/10': isToday(day) })}>
-                            <time dateTime={day.toString()} className={cn("font-semibold", { 'text-primary': isToday(day) })}>
-                                {format(day, 'd')}
-                            </time>
-                            <div className="mt-1 space-y-1 overflow-y-auto">
-                                {dayEvents.map((event, i) => (
-                                    <Badge key={i} variant={event.type === 'match' ? 'default' : 'secondary'} className="w-full block truncate">
-                                        {event.title}
-                                    </Badge>
-                                ))}
+            {loading ? (
+                <div className="flex justify-center items-center h-96">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-7 gap-2">
+                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+                        <div key={day} className="text-center font-bold text-muted-foreground">{day}</div>
+                    ))}
+                    {Array.from({ length: startingDayIndex }).map((_, i) => (
+                        <div key={`empty-${i}`} className="border rounded-lg h-28 bg-muted/50"></div>
+                    ))}
+                    {daysInMonth.map(day => {
+                        const dayKey = format(day, 'yyyy-MM-dd');
+                        const dayEvents = events[dayKey] || [];
+                        return (
+                            <div key={day.toString()} className={cn("border rounded-lg h-28 p-2 flex flex-col", { 'bg-primary/10': isToday(day) })}>
+                                <time dateTime={day.toString()} className={cn("font-semibold", { 'text-primary': isToday(day) })}>
+                                    {format(day, 'd')}
+                                </time>
+                                <div className="mt-1 space-y-1 overflow-y-auto">
+                                    {dayEvents.map((event, i) => (
+                                        <Badge key={i} variant={event.type === 'match' ? 'default' : 'secondary'} className="w-full block truncate text-xs">
+                                            {event.title}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )
-                })}
-            </div>
+                        )
+                    })}
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
