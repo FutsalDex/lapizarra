@@ -91,19 +91,23 @@ export default function MarcadorEnVivoPage() {
             let visitorPlayers = data.visitorPlayers;
             
              // Only fetch roster if players are not already in the match document
-            if (data.teamId && (!localPlayers || localPlayers.length === 0)) {
+            if (data.teamId && ((!localPlayers || localPlayers.length === 0) || (!visitorPlayers || visitorPlayers.length === 0))) {
                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
                 if (teamDoc.exists()) {
                     const teamName = teamDoc.data().name;
-                     if (teamName === data.localTeam) {
-                        const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                        const playersSnapshot = await getDocs(playerQuery);
-                        localPlayers = playersSnapshot.docs.map(d => ({
-                            id: d.id, 
-                            name: d.data().name, 
-                            number: d.data().number,
-                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                        })).sort((a, b) => a.number - b.number);
+                    const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
+                    const playersSnapshot = await getDocs(playerQuery);
+                    const rosterPlayers = playersSnapshot.docs.map(d => ({
+                        id: d.id, 
+                        name: d.data().name, 
+                        number: d.data().number,
+                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                    })).sort((a, b) => a.number - b.number);
+
+                     if (teamName === data.localTeam && (!localPlayers || localPlayers.length === 0)) {
+                        localPlayers = rosterPlayers;
+                     } else if (teamName === data.visitorTeam && (!visitorPlayers || visitorPlayers.length === 0)) {
+                        visitorPlayers = rosterPlayers;
                      }
                 }
             }
