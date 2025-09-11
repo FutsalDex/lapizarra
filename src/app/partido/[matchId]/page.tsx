@@ -23,6 +23,8 @@ import {
 import { ArrowLeft, Edit, History, BarChartHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 interface PlayerStats {
   id: string;
@@ -121,9 +123,69 @@ export default function MatchDetailsPage() {
     return <div>Partido no encontrado.</div>;
   }
 
-  const allGoals = match.events.filter(e => e.type === 'goal');
-  const localGoals = allGoals.filter(g => g.team === 'local');
-  const visitorGoals = allGoals.filter(g => g.team === 'visitor');
+  const renderTeamContent = (teamType: 'local' | 'visitor') => {
+    const teamName = teamType === 'local' ? match.localTeam : match.visitorTeam;
+    const goals = match.events.filter(e => e.type === 'goal' && e.team === teamType);
+    const players = teamType === 'local' ? match.localPlayers : match.visitorPlayers;
+
+    return (
+      <div className="space-y-6 pt-4">
+        <h3 className="text-2xl font-bold text-center">{teamName}</h3>
+        <Card>
+          <CardHeader><CardTitle>Cronología de Goles</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableBody>
+                {goals.length > 0 ? goals.map((goal, i) => (
+                  <TableRow key={`${teamType}-goal-${i}`}>
+                    <TableCell>{goal.playerName}</TableCell>
+                    <TableCell className="text-right font-bold">{goal.minute}'</TableCell>
+                  </TableRow>
+                )) : <TableRow><TableCell>Sin goles</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Estadísticas de Jugadores</CardTitle></CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>G</TableHead>
+                  <TableHead>As</TableHead>
+                  <TableHead className="hidden sm:table-cell">TA</TableHead>
+                  <TableHead className="hidden sm:table-cell">TR</TableHead>
+                  <TableHead className="hidden sm:table-cell">F</TableHead>
+                  <TableHead className="hidden lg:table-cell">Par.</TableHead>
+                  <TableHead className="hidden lg:table-cell">GC</TableHead>
+                  <TableHead className="hidden lg:table-cell">1vs1</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {players.map(player => (
+                  <TableRow key={player.id}>
+                    <TableCell>{player.number ?? 0}</TableCell>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{player.goals ?? 0}</TableCell>
+                    <TableCell>{player.assists ?? 0}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto max-w-5xl py-12 px-4">
@@ -156,121 +218,22 @@ export default function MatchDetailsPage() {
             </CardContent>
         </Card>
       
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Local Team Column */}
-            <div className="space-y-6">
-                 <h3 className="text-2xl font-bold text-center">{match.localTeam}</h3>
-                 <Card>
-                    <CardHeader><CardTitle>Cronología de Goles</CardTitle></CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableBody>
-                               {localGoals.length > 0 ? localGoals.map((goal, i) => (
-                                <TableRow key={`local-goal-${i}`}>
-                                    <TableCell>{goal.playerName}</TableCell>
-                                    <TableCell className="text-right font-bold">{goal.minute}'</TableCell>
-                                </TableRow>
-                               )) : <TableRow><TableCell>Sin goles</TableCell></TableRow>}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                 </Card>
-                 <Card>
-                    <CardHeader><CardTitle>Estadísticas de Jugadores</CardTitle></CardHeader>
-                    <CardContent className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>#</TableHead>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead>G</TableHead>
-                                    <TableHead>As</TableHead>
-                                    <TableHead className="hidden sm:table-cell">TA</TableHead>
-                                    <TableHead className="hidden sm:table-cell">TR</TableHead>
-                                    <TableHead className="hidden sm:table-cell">F</TableHead>
-                                    <TableHead className="hidden lg:table-cell">Par.</TableHead>
-                                    <TableHead className="hidden lg:table-cell">GC</TableHead>
-                                    <TableHead className="hidden lg:table-cell">1vs1</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {match.localPlayers.map(player => (
-                                <TableRow key={player.id}>
-                                    <TableCell>{player.number ?? 0}</TableCell>
-                                    <TableCell>{player.name}</TableCell>
-                                    <TableCell>{player.goals ?? 0}</TableCell>
-                                    <TableCell>{player.assists ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                 </Card>
-            </div>
-            {/* Visitor Team Column */}
-            <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-center">{match.visitorTeam}</h3>
-                <Card>
-                    <CardHeader><CardTitle>Cronología de Goles</CardTitle></CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableBody>
-                                 {visitorGoals.length > 0 ? visitorGoals.map((goal, i) => (
-                                <TableRow key={`visitor-goal-${i}`}>
-                                    <TableCell>{goal.playerName}</TableCell>
-                                    <TableCell className="text-right font-bold">{goal.minute}'</TableCell>
-                                </TableRow>
-                               )) : <TableRow><TableCell>Sin goles</TableCell></TableRow>}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle>Estadísticas de Jugadores</CardTitle></CardHeader>
-
-                    <CardContent className="overflow-x-auto">
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>#</TableHead>
-                                    <TableHead>Nombre</TableHead>
-                                    <TableHead>G</TableHead>
-                                    <TableHead>As</TableHead>
-                                    <TableHead className="hidden sm:table-cell">TA</TableHead>
-                                    <TableHead className="hidden sm:table-cell">TR</TableHead>
-                                    <TableHead className="hidden sm:table-cell">F</TableHead>
-                                    <TableHead className="hidden lg:table-cell">Par.</TableHead>
-                                    <TableHead className="hidden lg:table-cell">GC</TableHead>
-                                    <TableHead className="hidden lg:table-cell">1vs1</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {match.visitorPlayers.map(player => (
-                                <TableRow key={player.id}>
-                                    <TableCell>{player.number ?? 0}</TableCell>
-                                    <TableCell>{player.name}</TableCell>
-                                    <TableCell>{player.goals ?? 0}</TableCell>
-                                    <TableCell>{player.assists ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+        <Card>
+            <CardContent className="p-0">
+                <Tabs defaultValue="local">
+                    <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none">
+                        <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
+                        <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="local" className="p-4 md:p-6 m-0">
+                        {renderTeamContent('local')}
+                    </TabsContent>
+                    <TabsContent value="visitor" className="p-4 md:p-6 m-0">
+                        {renderTeamContent('visitor')}
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
     </div>
   );
 }
