@@ -5,3 +5,4 @@ runConfig:
 requiredEnvironments:
   - FIREBASE_AUTH
   - GOOGLE_CLOUD_FIRESTORE
+  - GEMINI_API_KEY
