@@ -28,7 +28,6 @@ import { auth } from "@/lib/firebase";
 
 const baseNav = [
   { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
-  { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
   { title: "Favoritos", href: "/favoritos", icon: Heart },
   { title: "Suscripción", href: "/suscripcion", icon: Star },
