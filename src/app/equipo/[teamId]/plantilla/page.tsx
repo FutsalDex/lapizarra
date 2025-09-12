@@ -220,7 +220,7 @@ export default function TeamRosterPage() {
     }
 
   return (
-    <div className="container mx-auto max-w-7xl py-12 px-4">
+    <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
        <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
             <div className="text-left">
                 <div className="flex items-center gap-4">
@@ -243,7 +243,7 @@ export default function TeamRosterPage() {
             </Button>
       </div>
 
-        <Card className="mb-8">
+        <Card>
             <CardHeader>
                 <CardTitle>Información del Equipo</CardTitle>
                 <CardDescription>Datos generales del equipo y cuerpo técnico.</CardDescription>
@@ -286,8 +286,6 @@ export default function TeamRosterPage() {
                 </div>
             </CardContent>
         </Card>
-
-        <PlayerStatsCharts players={players} />
 
       <Card>
         <CardHeader>
@@ -362,6 +360,7 @@ export default function TeamRosterPage() {
             </div>
         </CardContent>
       </Card>
+      <PlayerStatsCharts players={players} />
     </div>
   );
 }
