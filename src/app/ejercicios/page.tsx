@@ -18,10 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Heart, Search, Eye, Filter, Loader2, Trash2 } from 'lucide-react';
+import { Heart, Search, Eye, Filter, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -105,7 +105,6 @@ export default function EjerciciosPage() {
     const isFavorite = favorites.includes(exerciseId);
 
     try {
-        // Firestore update with merge: true will create the document if it doesn't exist.
         await updateDoc(userDocRef, {
             favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId)
         }, { merge: true });
@@ -209,7 +208,7 @@ export default function EjerciciosPage() {
               </SelectContent>
             </Select>
         </div>
-        <p className="text-sm text-muted-foreground">Total de ejercicios: {filteredExercises.length}</p>
+        <p className="text-sm text-muted-foreground">Mostrando {filteredExercises.length} de {exercises.length} ejercicios.</p>
       </div>
 
       {loading ? (
@@ -219,7 +218,6 @@ export default function EjerciciosPage() {
                     <Skeleton className="aspect-[4/3] w-full" />
                     <CardHeader>
                         <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-5 w-1/3 mt-2" />
                     </CardHeader>
                     <CardContent className="flex-grow space-y-2">
                         <Skeleton className="h-4 w-full" />
@@ -272,7 +270,7 @@ export default function EjerciciosPage() {
                             Ver Ficha
                         </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)} disabled={!user}>
                         <Heart className={`h-5 w-5 ${favorites.includes(exercise.id) ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
                     </Button>
                 </div>
@@ -289,5 +287,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    
