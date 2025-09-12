@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,10 +17,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, FileQuestion, Info } from 'lucide-react';
+import { Loader2, Upload, FileQuestion } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import * as XLSX from 'xlsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -60,14 +70,24 @@ const exerciseSchema = z.object({
 
 type ExerciseFormValues = z.infer<typeof exerciseSchema>;
 
-export default function UploadExerciseForm() {
+interface UploadExerciseFormProps {
+  exerciseToEdit?: any;
+  onFinished?: () => void;
+  children?: React.ReactNode;
+}
+
+
+export default function UploadExerciseForm({ exerciseToEdit, onFinished, children }: UploadExerciseFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const isEditMode = !!exerciseToEdit;
 
   const form = useForm<ExerciseFormValues>({
     resolver: zodResolver(exerciseSchema),
-    defaultValues: {
+    defaultValues: isEditMode ? exerciseToEdit : {
       Número: '',
       Ejercicio: '',
       'Descripción de la tarea': '',
@@ -85,25 +105,42 @@ export default function UploadExerciseForm() {
     },
   });
 
+  useEffect(() => {
+    if (isEditMode && exerciseToEdit) {
+      form.reset(exerciseToEdit);
+    }
+  }, [exerciseToEdit, form, isEditMode])
+
+
   const onSubmit = async (data: ExerciseFormValues) => {
     setLoading(true);
     try {
-      await addDoc(collection(db, 'exercises'), {
-        ...data,
-        Imagen: data.Imagen || `https://picsum.photos/400/250?random=${Date.now()}`,
-        aiHint: 'futsal drill',
-        Visible: data.Visible,
-      });
-      toast({
-        title: '¡Éxito!',
-        description: 'El ejercicio ha sido añadido a la base de datos.',
-      });
-      form.reset();
+      if (isEditMode) {
+        const docRef = doc(db, 'exercises', exerciseToEdit.id);
+        await updateDoc(docRef, data);
+        toast({
+          title: '¡Éxito!',
+          description: 'El ejercicio ha sido actualizado.',
+        });
+      } else {
+        await addDoc(collection(db, 'exercises'), {
+          ...data,
+          Imagen: data.Imagen || `https://picsum.photos/400/250?random=${Date.now()}`,
+          aiHint: 'futsal drill',
+        });
+        toast({
+          title: '¡Éxito!',
+          description: 'El ejercicio ha sido añadido a la base de datos.',
+        });
+        form.reset();
+      }
+      if (onFinished) onFinished();
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error('Error adding document: ', error);
+      console.error('Error adding/updating document: ', error);
       toast({
         title: 'Error',
-        description: 'Hubo un problema al añadir el ejercicio.',
+        description: 'Hubo un problema al guardar el ejercicio.',
         variant: 'destructive',
       });
     } finally {
@@ -182,314 +219,349 @@ export default function UploadExerciseForm() {
     };
     reader.readAsArrayBuffer(file);
   };
+  
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-h-[70vh] overflow-y-auto p-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <FormField
+                  control={form.control}
+                  name="Ejercicio"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Nombre del Ejercicio</FormLabel>
+                      <FormControl>
+                      <Input placeholder="Nombre descriptivo del ejercicio" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+               <FormField
+                  control={form.control}
+                  name="Número"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Número (Opcional)</FormLabel>
+                      <FormControl>
+                      <Input placeholder="Ej: 001, A-63" {...field} />
+                      </FormControl>
+                      <FormDescription>Identificador numérico o alfanumérico.</FormDescription>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+          </div>
+          
+          <FormField
+              control={form.control}
+              name="Descripción de la tarea"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Descripción de la Tarea</FormLabel>
+                  <FormControl>
+                  <Textarea
+                      placeholder="Explica detalladamente en qué consiste el ejercicio..."
+                      {...field}
+                  />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+          
+           <FormField
+              control={form.control}
+              name="Objetivos"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Objetivos</FormLabel>
+                  <FormControl>
+                  <Textarea
+                      placeholder="¿Qué se busca mejorar con este ejercicio? Ej: Control del balón, pase corto, definición..."
+                      {...field}
+                  />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FormField
+              control={form.control}
+              name="Fase"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Fase de la Sesión</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una fase" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Calentamiento">Calentamiento</SelectItem>
+                        <SelectItem value="Parte Principal">Parte Principal</SelectItem>
+                        <SelectItem value="Vuelta a la Calma">Vuelta a la Calma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  <FormMessage />
+                  </FormItem>
+              )}
+              />
+               <FormField
+              control={form.control}
+              name="Categoría"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Categoría</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Técnica">Técnica</SelectItem>
+                        <SelectItem value="Táctica">Táctica</SelectItem>
+                        <SelectItem value="Físico">Físico</SelectItem>
+                         <SelectItem value="Psicológico">Psicológico</SelectItem>
+                         <SelectItem value="Estrategia">Estrategia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  <FormMessage />
+                  </FormItem>
+              )}
+              />
+          </div>
+          
+          <FormField
+              control={form.control}
+              name="Edad"
+              render={() => (
+                  <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Categorías de Edad</FormLabel>
+                    <FormDescription>
+                      Selecciona una o más categorías.
+                    </FormDescription>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {ageCategories.map((item) => (
+                    <FormField
+                      key={item.id}
+                      control={form.control}
+                      name="Edad"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), item.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item.id
+                                        )
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {item.label}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+              />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <FormField
+                  control={form.control}
+                  name="Número de jugadores"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Número de jugadores</FormLabel>
+                      <FormControl>
+                      <Input placeholder="Ej: 8-12 jugadores" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+              <FormField
+              control={form.control}
+              name="Duración (min)"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Duración (minutos)</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una duración" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="5">5 minutos</SelectItem>
+                         <SelectItem value="10">10 minutos</SelectItem>
+                         <SelectItem value="15">15 minutos</SelectItem>
+                         <SelectItem value="20">20 minutos</SelectItem>
+                         <SelectItem value="25">25 minutos</SelectItem>
+                         <SelectItem value="30">30 minutos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  <FormMessage />
+                  </FormItem>
+              )}
+              />
+          </div>
+          
+           <FormField
+              control={form.control}
+              name="Espacio y materiales necesarios"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Espacio y Materiales Necesarios</FormLabel>
+                  <FormControl>
+                  <Textarea
+                      placeholder="Ej: Media pista, 10 conos, 5 balones..."
+                      {...field}
+                  />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+          
+          <FormField
+              control={form.control}
+              name="Variantes"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Variantes (Opcional)</FormLabel>
+                  <FormControl>
+                  <Textarea
+                      placeholder="Posibles modificaciones o progresiones del ejercicio..."
+                      {...field}
+                  />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+
+          <FormField
+              control={form.control}
+              name="Consejos para el entrenador"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Consejos para el Entrenador (Opcional)</FormLabel>
+                  <FormControl>
+                  <Textarea
+                      placeholder="Puntos clave a observar, correcciones comunes, cómo motivar..."
+                      {...field}
+                  />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+
+          <FormField
+          control={form.control}
+          name="Imagen"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL de la Imagen (Opcional)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="https://ejemplo.com/imagen.png"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>Si se deja vacío, se usará una imagen genérica.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+          <FormField
+              control={form.control}
+              name="Visible"
+              render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                      <FormLabel className="text-base">Visibilidad del Ejercicio</FormLabel>
+                      <FormDescription>
+                      Si está activado, el ejercicio será visible para todos los usuarios. Si está desactivado, se ocultará.
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      />
+                  </FormControl>
+                  </FormItem>
+              )}
+           />
+
+          {!isEditMode && (
+            <Button type="submit" size="lg" className="w-full font-bold" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Añadir Ejercicio
+            </Button>
+          )}
+        </form>
+    </Form>
+  )
+
+  if(isEditMode) {
+    return (
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Editar Ejercicio</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del ejercicio y guarda los cambios.
+            </DialogDescription>
+          </DialogHeader>
+          {formContent}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button type="submit" onClick={form.handleSubmit(onSubmit)} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
 
   return (
     <div className="space-y-12">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <FormField
-                    control={form.control}
-                    name="Ejercicio"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Nombre del Ejercicio</FormLabel>
-                        <FormControl>
-                        <Input placeholder="Nombre descriptivo del ejercicio" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="Número"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Número (Opcional)</FormLabel>
-                        <FormControl>
-                        <Input placeholder="Ej: 001, A-63" {...field} />
-                        </FormControl>
-                        <FormDescription>Identificador numérico o alfanumérico.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            </div>
-            
-            <FormField
-                control={form.control}
-                name="Descripción de la tarea"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Descripción de la Tarea</FormLabel>
-                    <FormControl>
-                    <Textarea
-                        placeholder="Explica detalladamente en qué consiste el ejercicio..."
-                        {...field}
-                    />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            
-             <FormField
-                control={form.control}
-                name="Objetivos"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Objetivos</FormLabel>
-                    <FormControl>
-                    <Textarea
-                        placeholder="¿Qué se busca mejorar con este ejercicio? Ej: Control del balón, pase corto, definición..."
-                        {...field}
-                    />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FormField
-                control={form.control}
-                name="Fase"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Fase de la Sesión</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona una fase" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Calentamiento">Calentamiento</SelectItem>
-                          <SelectItem value="Parte Principal">Parte Principal</SelectItem>
-                          <SelectItem value="Vuelta a la Calma">Vuelta a la Calma</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                 <FormField
-                control={form.control}
-                name="Categoría"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Categoría</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona una categoría" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Técnica">Técnica</SelectItem>
-                          <SelectItem value="Táctica">Táctica</SelectItem>
-                          <SelectItem value="Físico">Físico</SelectItem>
-                           <SelectItem value="Psicológico">Psicológico</SelectItem>
-                           <SelectItem value="Estrategia">Estrategia</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            
-            <FormField
-                control={form.control}
-                name="Edad"
-                render={() => (
-                    <FormItem>
-                    <div className="mb-4">
-                      <FormLabel className="text-base">Categorías de Edad</FormLabel>
-                      <FormDescription>
-                        Selecciona una o más categorías.
-                      </FormDescription>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {ageCategories.map((item) => (
-                      <FormField
-                        key={item.id}
-                        control={form.control}
-                        name="Edad"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={item.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), item.id])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== item.id
-                                          )
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {item.label}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-                />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <FormField
-                    control={form.control}
-                    name="Número de jugadores"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Número de jugadores</FormLabel>
-                        <FormControl>
-                        <Input placeholder="Ej: 8-12 jugadores" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                control={form.control}
-                name="Duración (min)"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Duración (minutos)</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona una duración" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="5">5 minutos</SelectItem>
-                           <SelectItem value="10">10 minutos</SelectItem>
-                           <SelectItem value="15">15 minutos</SelectItem>
-                           <SelectItem value="20">20 minutos</SelectItem>
-                           <SelectItem value="25">25 minutos</SelectItem>
-                           <SelectItem value="30">30 minutos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            
-             <FormField
-                control={form.control}
-                name="Espacio y materiales necesarios"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Espacio y Materiales Necesarios</FormLabel>
-                    <FormControl>
-                    <Textarea
-                        placeholder="Ej: Media pista, 10 conos, 5 balones..."
-                        {...field}
-                    />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            
-            <FormField
-                control={form.control}
-                name="Variantes"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Variantes (Opcional)</FormLabel>
-                    <FormControl>
-                    <Textarea
-                        placeholder="Posibles modificaciones o progresiones del ejercicio..."
-                        {...field}
-                    />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-
-            <FormField
-                control={form.control}
-                name="Consejos para el entrenador"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Consejos para el Entrenador (Opcional)</FormLabel>
-                    <FormControl>
-                    <Textarea
-                        placeholder="Puntos clave a observar, correcciones comunes, cómo motivar..."
-                        {...field}
-                    />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-
-            <FormField
-            control={form.control}
-            name="Imagen"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL de la Imagen (Opcional)</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://ejemplo.com/imagen.png"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>Si se deja vacío, se usará una imagen genérica.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-            <FormField
-                control={form.control}
-                name="Visible"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                        <FormLabel className="text-base">Visibilidad del Ejercicio</FormLabel>
-                        <FormDescription>
-                        Si está activado, el ejercicio será visible para todos los usuarios. Si está desactivado, se ocultará.
-                        </FormDescription>
-                    </div>
-                    <FormControl>
-                        <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        />
-                    </FormControl>
-                    </FormItem>
-                )}
-             />
-
-
-          <Button type="submit" size="lg" className="w-full font-bold" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Añadir Ejercicio
-          </Button>
-        </form>
-      </Form>
+      {formContent}
       
       <Separator />
 
@@ -525,7 +597,5 @@ export default function UploadExerciseForm() {
     </div>
   );
 }
-
-    
 
     

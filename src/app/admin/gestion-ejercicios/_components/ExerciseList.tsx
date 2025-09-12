@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import UploadExerciseForm from '../../_components/UploadExerciseForm';
+
 
 interface Exercise {
   id: string;
@@ -35,6 +48,7 @@ interface Exercise {
   Categoría: string;
   Imagen?: string;
   Visible: boolean;
+  [key: string]: any; // Allow other properties
 }
 
 export default function ExerciseList() {
@@ -52,11 +66,7 @@ export default function ExerciseList() {
           const data = doc.data();
           return {
             id: doc.id,
-            Número: data.Número,
-            Ejercicio: data.Ejercicio,
-            Categoría: data.Categoría,
-            Imagen: data.Imagen,
-            Visible: data.Visible,
+            ...data
           } as Exercise
       });
       setExercises(exercisesData.sort((a,b) => (a.Ejercicio || '').localeCompare(b.Ejercicio || '')));
@@ -89,6 +99,23 @@ export default function ExerciseList() {
         setUpdatingId(null);
     }
   };
+
+  const handleDeleteExercise = async (exerciseId: string) => {
+    const exerciseRef = doc(db, 'exercises', exerciseId);
+    try {
+      await deleteDoc(exerciseRef);
+      toast({
+        title: "Ejercicio Eliminado",
+        description: "El ejercicio ha sido eliminado permanentemente."
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar el ejercicio.',
+        variant: 'destructive',
+      });
+    }
+  }
 
   const filteredExercises = useMemo(() => {
       return exercises.filter(exercise => {
@@ -168,7 +195,7 @@ export default function ExerciseList() {
                     <TableCell>
                         <Badge variant="secondary">{exercise.Categoría || 'N/A'}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                        <div className="flex items-center justify-end gap-2">
                          {updatingId === exercise.id ? <Loader2 className="h-4 w-4 animate-spin" /> :
                          <Switch
@@ -178,12 +205,31 @@ export default function ExerciseList() {
                             aria-label={`Visibilidad de ${exercise.Ejercicio}`}
                         />
                         }
-                        <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <UploadExerciseForm exerciseToEdit={exercise}>
+                           <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                           </Button>
+                        </UploadExerciseForm>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro de que quieres eliminar este ejercicio?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el ejercicio de la base de datos.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteExercise(exercise.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                        </div>
                     </TableCell>
                 </TableRow>
@@ -200,3 +246,5 @@ export default function ExerciseList() {
     </div>
   );
 }
+
+    
