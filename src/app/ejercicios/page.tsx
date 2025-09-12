@@ -105,7 +105,6 @@ export default function EjerciciosPage() {
     const isFavorite = favorites.includes(exerciseId);
 
     try {
-        const userDoc = await getDoc(userDocRef);
         // Firestore update with merge: true will create the document if it doesn't exist.
         await updateDoc(userDocRef, {
             favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId)
@@ -238,16 +237,14 @@ export default function EjerciciosPage() {
         {filteredExercises.map((exercise) => (
           <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
              <div className="relative aspect-[4/3] bg-muted">
-                {exercise.URL_de_la_imagen_del_ejercicio && (
-                     <Image
-                        src={exercise.URL_de_la_imagen_del_ejercicio}
-                        alt={exercise.Nombre_del_ejercicio}
-                        data-ai-hint={exercise.aiHint || 'futsal drill court'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                )}
+                <Image
+                    src={exercise.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/seed/${exercise.id}/400/300`}
+                    alt={exercise.Nombre_del_ejercicio}
+                    data-ai-hint={exercise.aiHint || 'futsal drill court'}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
              </div>
 
             <CardHeader className="pb-3">
@@ -292,3 +289,5 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
+    
