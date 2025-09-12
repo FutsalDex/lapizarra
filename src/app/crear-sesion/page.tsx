@@ -94,8 +94,6 @@ export default function CrearSesionPage() {
     },
   });
 
-  const mainExercisesValue = form.watch('mainExercises');
-
   useEffect(() => {
     const q = query(collection(db, "exercises"), where("visible", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -106,9 +104,8 @@ export default function CrearSesionPage() {
       setAllExercises(exercisesData);
       
       const uniqueCategories = Array.from(new Set(exercisesData
-        .filter(ex => ex.Fase_de_la_sesión === 'Parte Principal')
-        .map(ex => ex.Categoria)
-        .filter(Boolean)));
+        .filter(ex => ex.Fase_de_la_sesión === 'Parte Principal' && ex.Categoria)
+        .map(ex => ex.Categoria)));
       setMainCategories(uniqueCategories);
 
       setLoading(false);
@@ -146,6 +143,7 @@ export default function CrearSesionPage() {
     const main = values.mainExercises.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean);
     const final = allExercises.find(ex => ex.id === values.finalExercise);
     return { initial, main, final };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allExercises, form.watch()]);
 
   const totalDuration = useMemo(() => {
@@ -453,7 +451,7 @@ export default function CrearSesionPage() {
                               <h4 className="font-semibold text-primary">Fase Principal ({selectedSessionExercises.main.length}/4)</h4>
                               {selectedSessionExercises.main.length > 0 ? (
                                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2">
-                                      {selectedSessionExercises.main.map(ex => <li key={ex!.id}>{ex!.Nombre_del_ejercicio}</li>)}
+                                      {selectedSessionExercises.main.map(ex => ex ? <li key={ex.id}>{ex.Nombre_del_ejercicio}</li>: null)}
                                   </ul>
                               ) : (
                                   <p className="text-sm text-muted-foreground">No hay ejercicios seleccionados</p>
@@ -483,3 +481,5 @@ export default function CrearSesionPage() {
     </div>
   );
 }
+
+    

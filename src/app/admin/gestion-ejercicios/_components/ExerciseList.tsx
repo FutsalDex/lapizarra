@@ -49,7 +49,7 @@ export default function ExerciseList() {
             visible: data.visible,
           } as Exercise
       });
-      setExercises(exercisesData.sort((a,b) => a.Nombre_del_ejercicio.localeCompare(b.Nombre_del_ejercicio)));
+      setExercises(exercisesData.sort((a,b) => (a.Nombre_del_ejercicio || '').localeCompare(b.Nombre_del_ejercicio || '')));
       setLoading(false);
     });
 
@@ -78,7 +78,7 @@ export default function ExerciseList() {
   };
 
   const filteredExercises = exercises.filter(exercise =>
-    exercise.Nombre_del_ejercicio.toLowerCase().includes(searchTerm.toLowerCase())
+    (exercise.Nombre_del_ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -152,3 +152,5 @@ export default function ExerciseList() {
     </div>
   );
 }
+
+    

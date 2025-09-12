@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -18,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Heart, Search, Eye, Filter, Loader2 } from 'lucide-react';
+import { Heart, Search, Eye, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { collection, onSnapshot, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -125,7 +124,7 @@ export default function EjerciciosPage() {
 
   const filteredExercises = useMemo(() => {
       return exercises.filter((exercise) => {
-        const termMatch = exercise.Nombre_del_ejercicio
+        const termMatch = (exercise.Nombre_del_ejercicio || '')
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
         const phaseMatch =

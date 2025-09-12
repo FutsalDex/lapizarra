@@ -9,11 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Eye, Trash2, HeartCrack, Loader2 } from 'lucide-react';
+import { Eye, Trash2, HeartCrack } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, arrayRemove, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, arrayRemove, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -75,14 +74,16 @@ export default function FavoritosPage() {
           
           const exercisesData: Exercise[] = [];
           for (const chunk of chunks) {
-            const exercisesQuery = query(collection(db, 'exercises'), where('__name__', 'in', chunk));
-            const exercisesSnapshot = await getDocs(exercisesQuery);
-            exercisesSnapshot.forEach(doc => {
-              exercisesData.push({ 
-                id: doc.id,
-                ...doc.data() 
-              } as Exercise);
-            });
+            if (chunk.length > 0) {
+              const exercisesQuery = query(collection(db, 'exercises'), where('__name__', 'in', chunk));
+              const exercisesSnapshot = await getDocs(exercisesQuery);
+              exercisesSnapshot.forEach(doc => {
+                exercisesData.push({ 
+                  id: doc.id,
+                  ...doc.data() 
+                } as Exercise);
+              });
+            }
           }
           setFavoriteExercises(exercisesData);
         } else {
@@ -230,3 +231,5 @@ export default function FavoritosPage() {
     </div>
   );
 }
+
+    
