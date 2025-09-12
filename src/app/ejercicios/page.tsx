@@ -278,7 +278,7 @@ export default function EjerciciosPage() {
                     <p><span className="font-semibold text-foreground">Duración:</span> {exercise.duration} min</p>
                 </div>
                 <p className="text-muted-foreground pt-2">
-                    {exercise.description.substring(0, 100)}{exercise.description.length > 100 ? '...' : ''}
+                    {exercise.description && `${exercise.description.substring(0, 100)}${exercise.description.length > 100 ? '...' : ''}`}
                 </p>
             </CardContent>
             <CardFooter className="bg-card border-t p-3">
