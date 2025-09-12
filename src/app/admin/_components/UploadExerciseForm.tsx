@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -53,7 +54,7 @@ const exerciseSchema = z.object({
   Ejercicio: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
   'Descripción de la tarea': z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
   Objetivos: z.string().min(10, 'Los objetivos deben tener al menos 10 caracteres.'),
-  'Fase de la Sesión': z.string().min(1, 'Debes seleccionar una fase.'),
+  Fase: z.string().min(1, 'Debes seleccionar una fase.'),
   Categoría: z.string().min(1, 'Debes seleccionar una categoría.'),
   Edad: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "Tienes que seleccionar al menos una categoría de edad.",
@@ -91,7 +92,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
       Ejercicio: '',
       'Descripción de la tarea': '',
       Objetivos: '',
-      'Fase de la Sesión': '',
+      Fase: '',
       Categoría: '',
       Edad: [],
       'Número de jugadores': '',
@@ -181,7 +182,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                   Ejercicio: exerciseName,
                   'Descripción de la tarea': exercise['Descripción de la tarea'] || '',
                   Objetivos: exercise.Objetivos || '',
-                  'Fase de la Sesión': exercise['Fase de la Sesión'] || '',
+                  Fase: exercise['Fase'] || '',
                   Categoría: exercise.Categoría || '',
                   Edad: ageCategoriesArray,
                   'Número de jugadores': exercise['Número de jugadores']?.toString() || '',
@@ -289,7 +290,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <FormField
               control={form.control}
-              name="Fase de la Sesión"
+              name="Fase"
               render={({ field }) => (
                   <FormItem>
                   <FormLabel>Fase de la Sesión</FormLabel>
@@ -570,7 +571,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
             <FileQuestion className="h-4 w-4" />
             <AlertTitle>¿Cómo funciona?</AlertTitle>
             <AlertDescription>
-                Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'Ejercicio', 'Fase de la Sesión', 'Edad'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
+                Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'Ejercicio', 'Fase', 'Edad'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
             </AlertDescription>
         </Alert>
 
@@ -596,3 +597,5 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
     </div>
   );
 }
+
+    
