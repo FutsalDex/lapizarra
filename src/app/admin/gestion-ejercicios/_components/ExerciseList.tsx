@@ -40,7 +40,7 @@ export default function ExerciseList() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todas');
+  const [selectedCategory, setSelectedCategory] = useState('Todas las Categorías');
   const [visibilityFilter, setVisibilityFilter] = useState('Todos'); // 'Todos', 'Visible', 'Oculto'
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -65,7 +65,7 @@ export default function ExerciseList() {
     return () => unsubscribe();
   }, []);
   
-  const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
+  const categories = useMemo(() => ['Todas las Categorías', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
 
 
   const handleVisibilityChange = async (exerciseId: string, newVisibility: boolean) => {
@@ -92,7 +92,7 @@ export default function ExerciseList() {
   const filteredExercises = useMemo(() => {
       return exercises.filter(exercise => {
         const termMatch = (exercise.Ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
+        const categoryMatch = selectedCategory === 'Todas las Categorías' || exercise.Categoría === selectedCategory;
         const visibilityMatch = 
             visibilityFilter === 'Todos' ||
             (visibilityFilter === 'Visible' && exercise.Visible) ||
