@@ -18,12 +18,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface Exercise {
   id: string;
-  name: string;
-  category: string;
-  isVisible: boolean;
+  id_ejercicio?: string;
+  Nombre_del_ejercicio: string;
+  Categoria: string;
+  URL_de_la_imagen_del_ejercicio?: string;
+  visible: boolean;
 }
 
 export default function ExerciseList() {
@@ -34,15 +37,19 @@ export default function ExerciseList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Query all exercises, not just visible ones
     const unsubscribe = onSnapshot(collection(db, 'exercises'), (snapshot) => {
-      const exercisesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name || doc.data().title,
-        category: doc.data().category,
-        isVisible: doc.data().isVisible,
-      } as Exercise));
-      setExercises(exercisesData.sort((a,b) => a.name.localeCompare(b.name)));
+      const exercisesData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            id_ejercicio: data.id_ejercicio,
+            Nombre_del_ejercicio: data.Nombre_del_ejercicio,
+            Categoria: data.Categoria,
+            URL_de_la_imagen_del_ejercicio: data.URL_de_la_imagen_del_ejercicio,
+            visible: data.visible,
+          } as Exercise
+      });
+      setExercises(exercisesData.sort((a,b) => a.Nombre_del_ejercicio.localeCompare(b.Nombre_del_ejercicio)));
       setLoading(false);
     });
 
@@ -53,7 +60,7 @@ export default function ExerciseList() {
     setUpdatingId(exerciseId);
     const exerciseRef = doc(db, 'exercises', exerciseId);
     try {
-      await updateDoc(exerciseRef, { isVisible: newVisibility });
+      await updateDoc(exerciseRef, { visible: newVisibility });
       toast({
         title: 'Visibilidad actualizada',
         description: `El ejercicio ahora está ${newVisibility ? 'visible' : 'oculto'}.`,
@@ -71,7 +78,7 @@ export default function ExerciseList() {
   };
 
   const filteredExercises = exercises.filter(exercise =>
-    exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
+    exercise.Nombre_del_ejercicio.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -95,6 +102,8 @@ export default function ExerciseList() {
             <Table>
             <TableHeader>
                 <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Imagen</TableHead>
                 <TableHead>Nombre del Ejercicio</TableHead>
                 <TableHead>Categoría</TableHead>
                 <TableHead className="text-right">Visible</TableHead>
@@ -103,18 +112,29 @@ export default function ExerciseList() {
             <TableBody>
                 {filteredExercises.map((exercise) => (
                 <TableRow key={exercise.id}>
-                    <TableCell className="font-medium">{exercise.name}</TableCell>
+                    <TableCell className="font-medium">{exercise.id_ejercicio || 'N/A'}</TableCell>
                     <TableCell>
-                        <Badge variant="secondary">{exercise.category || 'N/A'}</Badge>
+                      <div className="w-16 h-10 relative bg-muted rounded-md overflow-hidden">
+                        <Image 
+                          src={exercise.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/seed/${exercise.id}/160/100`}
+                          alt={exercise.Nombre_del_ejercicio}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{exercise.Nombre_del_ejercicio}</TableCell>
+                    <TableCell>
+                        <Badge variant="secondary">{exercise.Categoria || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                        <div className="flex items-center justify-end gap-2">
                          {updatingId === exercise.id && <Loader2 className="h-4 w-4 animate-spin" />}
                         <Switch
-                            checked={exercise.isVisible}
+                            checked={exercise.visible}
                             onCheckedChange={(checked) => handleVisibilityChange(exercise.id, checked)}
                             disabled={updatingId === exercise.id}
-                            aria-label={`Visibilidad de ${exercise.name}`}
+                            aria-label={`Visibilidad de ${exercise.Nombre_del_ejercicio}`}
                         />
                        </div>
                     </TableCell>

@@ -18,27 +18,26 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 
 interface Exercise {
   id: string;
-  name: string; 
-  number?: string;
-  description: string;
-  objectives: string;
-  sessionPhase: string;
-  category: string;
-  ageCategories: string[];
-  players: string;
-  duration: string;
-  materials: string;
-  variants?: string;
-  coachTips?: string;
-  imageUrl: string; 
-  isVisible: boolean;
-  tags: string[]; 
-  title: string;
-  aiHint: string;
+  id_ejercicio?: string;
+  Nombre_del_ejercicio: string;
+  Descripción_de_la_tarea: string;
+  Objetivos: string;
+  Fase_de_la_sesión: string;
+  Categoria: string;
+  Etiquetas_de_edad: string[];
+  Jugadores: string;
+  Duracion: string;
+  Materiales_y_espacio: string;
+  Variantes_del_ejercicio?: string;
+  Consejos_para_el_entrenador?: string;
+  URL_de_la_imagen_del_ejercicio?: string;
+  visible: boolean;
+  aiHint?: string;
 }
 
 const ageCategoryLabels: { [key: string]: string } = {
@@ -67,14 +66,24 @@ export default function FavoritosPage() {
       if (userDoc.exists()) {
         const favoriteIds = userDoc.data().favorites || [];
         if (favoriteIds.length > 0) {
-          const exercisesQuery = query(collection(db, 'exercises'), where('__name__', 'in', favoriteIds));
-          const exercisesSnapshot = await getDocs(exercisesQuery);
-          const exercisesData = exercisesSnapshot.docs.map(doc => ({ 
-              id: doc.id,
-              imageUrl: doc.data().imageUrl || doc.data().image,
-              name: doc.data().name || doc.data().title,
-              ...doc.data() 
-          } as Exercise));
+          // Firestore 'in' queries are limited to 30 elements. 
+          // If a user can have more favorites, this needs chunking.
+          const chunks = [];
+          for (let i = 0; i < favoriteIds.length; i += 30) {
+            chunks.push(favoriteIds.slice(i, i + 30));
+          }
+          
+          const exercisesData: Exercise[] = [];
+          for (const chunk of chunks) {
+            const exercisesQuery = query(collection(db, 'exercises'), where('__name__', 'in', chunk));
+            const exercisesSnapshot = await getDocs(exercisesQuery);
+            exercisesSnapshot.forEach(doc => {
+              exercisesData.push({ 
+                id: doc.id,
+                ...doc.data() 
+              } as Exercise);
+            });
+          }
           setFavoriteExercises(exercisesData);
         } else {
           setFavoriteExercises([]);
@@ -166,7 +175,7 @@ export default function FavoritosPage() {
                 <h3 className="text-xl font-semibold">Aún no tienes favoritos</h3>
                 <p className="text-muted-foreground">Explora la biblioteca y pulsa el corazón en los ejercicios que te gusten.</p>
                 <Button asChild>
-                    <a href="/ejercicios">Ir a la Biblioteca</a>
+                    <Link href="/ejercicios">Ir a la Biblioteca</Link>
                 </Button>
             </CardContent>
         </Card>
@@ -175,10 +184,10 @@ export default function FavoritosPage() {
           {favoriteExercises.map((exercise) => (
             <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <div className="relative aspect-[4/3] bg-muted">
-                {exercise.imageUrl && (
+                {exercise.URL_de_la_imagen_del_ejercicio && (
                   <Image
-                    src={exercise.imageUrl}
-                    alt={exercise.name}
+                    src={exercise.URL_de_la_imagen_del_ejercicio}
+                    alt={exercise.Nombre_del_ejercicio}
                     data-ai-hint={exercise.aiHint || 'futsal drill court'}
                     fill
                     className="object-cover"
@@ -188,33 +197,26 @@ export default function FavoritosPage() {
               </div>
               <CardHeader className="pb-3">
                 <CardTitle className="font-bold text-xl">
-                  {exercise.number ? `${exercise.number} - ` : ''}{exercise.name}
+                  {exercise.id_ejercicio ? `${exercise.id_ejercicio} - ` : ''}{exercise.Nombre_del_ejercicio}
                 </CardTitle>
-                {exercise.tags && exercise.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {exercise.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="font-normal">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </CardHeader>
               <CardContent className="flex-grow space-y-3 text-sm">
                 <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.sessionPhase}</p>
-                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.ageCategories?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
-                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise.duration} min</p>
+                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase_de_la_sesión}</p>
+                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Etiquetas_de_edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
+                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise.Duracion} min</p>
                 </div>
                 <p className="text-muted-foreground pt-2">
-                  {exercise.description.substring(0, 100)}{exercise.description.length > 100 ? '...' : ''}
+                  {exercise.Descripción_de_la_tarea && `${exercise.Descripción_de_la_tarea.substring(0, 100)}${exercise.Descripción_de_la_tarea.length > 100 ? '...' : ''}`}
                 </p>
               </CardContent>
               <CardFooter className="bg-card border-t p-3">
                 <div className="w-full flex justify-between items-center">
-                  <Button variant="outline">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver Ficha
+                  <Button asChild variant="outline">
+                    <Link href={`/ejercicios/${exercise.id}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Ver Ficha
+                    </Link>
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => removeFromFavorites(exercise.id)}>
                     <Trash2 className="h-5 w-5 text-destructive" />

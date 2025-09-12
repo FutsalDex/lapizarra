@@ -31,23 +31,21 @@ import Link from 'next/link';
 
 interface Exercise {
   id: string;
-  name: string; // From title
-  number?: string;
-  description: string;
-  objectives: string;
-  sessionPhase: string;
-  category: string;
-  ageCategories: string[];
-  players: string;
-  duration: string;
-  materials: string;
-  variants?: string;
-  coachTips?: string;
-  imageUrl: string; // from image
-  isVisible: boolean;
-  tags: string[];
-  title: string;
-  aiHint: string;
+  id_ejercicio?: string;
+  Nombre_del_ejercicio: string;
+  Descripción_de_la_tarea: string;
+  Objetivos: string;
+  Fase_de_la_sesión: string;
+  Categoria: string;
+  Etiquetas_de_edad: string[];
+  Jugadores: string;
+  Duracion: string;
+  Materiales_y_espacio: string;
+  Variantes_del_ejercicio?: string;
+  Consejos_para_el_entrenador?: string;
+  URL_de_la_imagen_del_ejercicio?: string;
+  visible: boolean;
+  aiHint?: string;
 }
 
 const ageCategoryLabels: { [key: string]: string } = {
@@ -71,12 +69,10 @@ export default function EjerciciosPage() {
   const [selectedAge, setSelectedAge] = useState('Todas');
 
   useEffect(() => {
-    const q = query(collection(db, "exercises"), where("isVisible", "==", true));
+    const q = query(collection(db, "exercises"), where("visible", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id, 
-          imageUrl: doc.data().imageUrl || doc.data().image,
-          name: doc.data().name || doc.data().title,
           ...doc.data() 
       } as Exercise));
       setExercises(exercisesData);
@@ -110,14 +106,11 @@ export default function EjerciciosPage() {
 
     try {
         const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists()) {
-            // If the user document doesn't exist, create it.
-            await updateDoc(userDocRef, { favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId) }, { merge: true });
-        } else {
-             await updateDoc(userDocRef, {
-                favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId)
-            });
-        }
+        // Firestore update with merge: true will create the document if it doesn't exist.
+        await updateDoc(userDocRef, {
+            favorites: isFavorite ? arrayRemove(exerciseId) : arrayUnion(exerciseId)
+        }, { merge: true });
+
         toast({
             title: isFavorite ? "Eliminado de favoritos" : "Añadido a favoritos",
             description: `El ejercicio ha sido ${isFavorite ? 'eliminado de' : 'añadido a'} tus favoritos.`,
@@ -128,21 +121,21 @@ export default function EjerciciosPage() {
     }
 };
 
-  const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.sessionPhase).filter(Boolean)))], [exercises]);
-  const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.category).filter(Boolean)))], [exercises]);
-  const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.ageCategories).filter(Boolean)))], [exercises]);
+  const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Fase_de_la_sesión).filter(Boolean)))], [exercises]);
+  const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoria).filter(Boolean)))], [exercises]);
+  const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Etiquetas_de_edad).filter(Boolean)))], [exercises]);
 
   const filteredExercises = useMemo(() => {
       return exercises.filter((exercise) => {
-        const termMatch = exercise.name
+        const termMatch = exercise.Nombre_del_ejercicio
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
         const phaseMatch =
-          selectedPhase === 'Todas' || exercise.sessionPhase === selectedPhase;
+          selectedPhase === 'Todas' || exercise.Fase_de_la_sesión === selectedPhase;
         const categoryMatch =
-          selectedCategory === 'Todas' || exercise.category === selectedCategory;
+          selectedCategory === 'Todas' || exercise.Categoria === selectedCategory;
         const ageMatch = 
-          selectedAge === 'Todas' || (exercise.ageCategories && exercise.ageCategories.includes(selectedAge));
+          selectedAge === 'Todas' || (exercise.Etiquetas_de_edad && exercise.Etiquetas_de_edad.includes(selectedAge));
 
         return termMatch && phaseMatch && categoryMatch && ageMatch;
       });
@@ -245,10 +238,10 @@ export default function EjerciciosPage() {
         {filteredExercises.map((exercise) => (
           <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
              <div className="relative aspect-[4/3] bg-muted">
-                {exercise.imageUrl && (
+                {exercise.URL_de_la_imagen_del_ejercicio && (
                      <Image
-                        src={exercise.imageUrl}
-                        alt={exercise.name}
+                        src={exercise.URL_de_la_imagen_del_ejercicio}
+                        alt={exercise.Nombre_del_ejercicio}
                         data-ai-hint={exercise.aiHint || 'futsal drill court'}
                         fill
                         className="object-cover"
@@ -259,26 +252,17 @@ export default function EjerciciosPage() {
 
             <CardHeader className="pb-3">
               <CardTitle className="font-bold text-xl">
-                 {exercise.number ? `${exercise.number} - ` : ''}{exercise.name}
+                 {exercise.id_ejercicio ? `${exercise.id_ejercicio} - ` : ''}{exercise.Nombre_del_ejercicio}
               </CardTitle>
-                {exercise.tags && exercise.tags.length > 0 && (
-                     <div className="flex flex-wrap gap-2 pt-2">
-                        {exercise.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="font-normal">
-                            {tag}
-                        </Badge>
-                        ))}
-                    </div>
-                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-3 text-sm">
                 <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.sessionPhase}</p>
-                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.ageCategories?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
-                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise.duration} min</p>
+                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase_de_la_sesión}</p>
+                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Etiquetas_de_edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
+                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise.Duracion} min</p>
                 </div>
                 <p className="text-muted-foreground pt-2">
-                    {exercise.description && `${exercise.description.substring(0, 100)}${exercise.description.length > 100 ? '...' : ''}`}
+                    {exercise.Descripción_de_la_tarea && `${exercise.Descripción_de_la_tarea.substring(0, 100)}${exercise.Descripción_de_la_tarea.length > 100 ? '...' : ''}`}
                 </p>
             </CardContent>
             <CardFooter className="bg-card border-t p-3">
@@ -306,5 +290,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    

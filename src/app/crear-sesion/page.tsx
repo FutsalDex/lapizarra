@@ -49,11 +49,11 @@ import { cn } from '@/lib/utils';
 
 interface Exercise {
   id: string;
-  name: string;
-  duration: string;
-  sessionPhase: string;
-  category: string;
-  isVisible: boolean;
+  Nombre_del_ejercicio: string;
+  Duracion: string;
+  Fase_de_la_sesión: string;
+  Categoria: string;
+  visible: boolean;
 }
 
 const sessionSchema = z.object({
@@ -97,18 +97,17 @@ export default function CrearSesionPage() {
   const mainExercisesValue = form.watch('mainExercises');
 
   useEffect(() => {
-    const q = query(collection(db, "exercises"), where("isVisible", "==", true));
+    const q = query(collection(db, "exercises"), where("visible", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id,
-          name: doc.data().name || doc.data().title,
           ...doc.data() 
       } as Exercise));
       setAllExercises(exercisesData);
       
       const uniqueCategories = Array.from(new Set(exercisesData
-        .filter(ex => ex.sessionPhase === 'Parte Principal')
-        .map(ex => ex.category)
+        .filter(ex => ex.Fase_de_la_sesión === 'Parte Principal')
+        .map(ex => ex.Categoria)
         .filter(Boolean)));
       setMainCategories(uniqueCategories);
 
@@ -123,17 +122,17 @@ export default function CrearSesionPage() {
   }, [toast]);
 
   const warmUpExercises = useMemo(() => 
-    allExercises.filter(ex => ex.sessionPhase === 'Calentamiento'), 
+    allExercises.filter(ex => ex.Fase_de_la_sesión === 'Calentamiento'), 
   [allExercises]);
   
   const coolDownExercises = useMemo(() => 
-    allExercises.filter(ex => ex.sessionPhase === 'Vuelta a la Calma'),
+    allExercises.filter(ex => ex.Fase_de_la_sesión === 'Vuelta a la Calma'),
   [allExercises]);
 
   const filteredMainExercises = useMemo(() => {
     return allExercises.filter(ex => 
-      ex.sessionPhase === 'Parte Principal' &&
-      (selectedCategories.length === 0 || selectedCategories.includes(ex.category))
+      ex.Fase_de_la_sesión === 'Parte Principal' &&
+      (selectedCategories.length === 0 || selectedCategories.includes(ex.Categoria))
     );
   }, [allExercises, selectedCategories]);
 
@@ -150,9 +149,9 @@ export default function CrearSesionPage() {
   }, [allExercises, form.watch()]);
 
   const totalDuration = useMemo(() => {
-      const initialDuration = parseInt(selectedSessionExercises.initial?.duration || '0', 10);
-      const mainDuration = selectedSessionExercises.main.reduce((acc, ex) => acc + parseInt(ex?.duration || '0', 10), 0);
-      const finalDuration = parseInt(selectedSessionExercises.final?.duration || '0', 10);
+      const initialDuration = parseInt(selectedSessionExercises.initial?.Duracion || '0', 10);
+      const mainDuration = selectedSessionExercises.main.reduce((acc, ex) => acc + parseInt(ex?.Duracion || '0', 10), 0);
+      const finalDuration = parseInt(selectedSessionExercises.final?.Duracion || '0', 10);
       return initialDuration + mainDuration + finalDuration;
   }, [selectedSessionExercises]);
 
@@ -219,7 +218,7 @@ export default function CrearSesionPage() {
                                   </FormControl>
                                   <SelectContent>
                                       {warmUpExercises.map(ex => (
-                                          <SelectItem key={ex.id} value={ex.id}>{ex.name} ({ex.duration} min)</SelectItem>
+                                          <SelectItem key={ex.id} value={ex.id}>{ex.Nombre_del_ejercicio} ({ex.Duracion} min)</SelectItem>
                                       ))}
                                   </SelectContent>
                                 </Select>
@@ -287,7 +286,7 @@ export default function CrearSesionPage() {
                                                         />
                                                     </FormControl>
                                                     <FormLabel className="text-sm font-medium leading-none w-full !mt-0">
-                                                        {ex.name} <span className="text-muted-foreground">({ex.duration} min)</span>
+                                                        {ex.Nombre_del_ejercicio} <span className="text-muted-foreground">({ex.Duracion} min)</span>
                                                     </FormLabel>
                                                 </FormItem>
                                             )}
@@ -321,7 +320,7 @@ export default function CrearSesionPage() {
                                     </FormControl>
                                     <SelectContent>
                                         {coolDownExercises.map(ex => (
-                                            <SelectItem key={ex.id} value={ex.id}>{ex.name} ({ex.duration} min)</SelectItem>
+                                            <SelectItem key={ex.id} value={ex.id}>{ex.Nombre_del_ejercicio} ({ex.Duracion} min)</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -447,14 +446,14 @@ export default function CrearSesionPage() {
                       <CardContent className="space-y-6">
                           <div>
                               <h4 className="font-semibold text-primary">Fase Inicial</h4>
-                              <p className="text-sm text-muted-foreground">{selectedSessionExercises.initial?.name || 'No seleccionado'}</p>
+                              <p className="text-sm text-muted-foreground">{selectedSessionExercises.initial?.Nombre_del_ejercicio || 'No seleccionado'}</p>
                           </div>
                           <Separator/>
                           <div>
                               <h4 className="font-semibold text-primary">Fase Principal ({selectedSessionExercises.main.length}/4)</h4>
                               {selectedSessionExercises.main.length > 0 ? (
                                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2">
-                                      {selectedSessionExercises.main.map(ex => <li key={ex!.id}>{ex!.name}</li>)}
+                                      {selectedSessionExercises.main.map(ex => <li key={ex!.id}>{ex!.Nombre_del_ejercicio}</li>)}
                                   </ul>
                               ) : (
                                   <p className="text-sm text-muted-foreground">No hay ejercicios seleccionados</p>
@@ -463,7 +462,7 @@ export default function CrearSesionPage() {
                           <Separator/>
                           <div>
                               <h4 className="font-semibold text-primary">Fase Final</h4>
-                              <p className="text-sm text-muted-foreground">{selectedSessionExercises.final?.name || 'No seleccionado'}</p>
+                              <p className="text-sm text-muted-foreground">{selectedSessionExercises.final?.Nombre_del_ejercicio || 'No seleccionado'}</p>
                           </div>
                           <Separator/>
                           <div className="text-lg font-bold">

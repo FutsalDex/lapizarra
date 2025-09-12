@@ -40,22 +40,22 @@ const ageCategories = [
 
 
 const exerciseSchema = z.object({
-  name: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
-  number: z.string().optional(),
-  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
-  objectives: z.string().min(10, 'Los objetivos deben tener al menos 10 caracteres.'),
-  sessionPhase: z.string().min(1, 'Debes seleccionar una fase.'),
-  category: z.string().min(1, 'Debes seleccionar una categoría.'),
-  ageCategories: z.array(z.string()).refine((value) => value.some((item) => item), {
+  id_ejercicio: z.string().optional(),
+  Nombre_del_ejercicio: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
+  Descripción_de_la_tarea: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+  Objetivos: z.string().min(10, 'Los objetivos deben tener al menos 10 caracteres.'),
+  Fase_de_la_sesión: z.string().min(1, 'Debes seleccionar una fase.'),
+  Categoria: z.string().min(1, 'Debes seleccionar una categoría.'),
+  Etiquetas_de_edad: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "Tienes que seleccionar al menos una categoría de edad.",
   }),
-  players: z.string().min(1, 'Indica el número de jugadores.'),
-  duration: z.string().min(1, 'Debes seleccionar una duración.'),
-  materials: z.string().min(3, 'Indica los materiales necesarios.'),
-  variants: z.string().optional(),
-  coachTips: z.string().optional(),
-  imageUrl: z.string().url('Debe ser una URL válida.').optional().or(z.literal('')),
-  isVisible: z.boolean().default(true),
+  Jugadores: z.string().min(1, 'Indica el número de jugadores.'),
+  Duracion: z.string().min(1, 'Debes seleccionar una duración.'),
+  Materiales_y_espacio: z.string().min(3, 'Indica los materiales necesarios.'),
+  Variantes_del_ejercicio: z.string().optional(),
+  Consejos_para_el_entrenador: z.string().optional(),
+  URL_de_la_imagen_del_ejercicio: z.string().url('Debe ser una URL válida.').optional().or(z.literal('')),
+  visible: z.boolean().default(true),
 });
 
 type ExerciseFormValues = z.infer<typeof exerciseSchema>;
@@ -68,32 +68,46 @@ export default function UploadExerciseForm() {
   const form = useForm<ExerciseFormValues>({
     resolver: zodResolver(exerciseSchema),
     defaultValues: {
-      name: '',
-      number: '',
-      description: '',
-      objectives: '',
-      sessionPhase: '',
-      category: '',
-      ageCategories: [],
-      players: '',
-      duration: '',
-      materials: '',
-      variants: '',
-      coachTips: '',
-      imageUrl: '',
-      isVisible: true,
+      id_ejercicio: '',
+      Nombre_del_ejercicio: '',
+      Descripción_de_la_tarea: '',
+      Objetivos: '',
+      Fase_de_la_sesión: '',
+      Categoria: '',
+      Etiquetas_de_edad: [],
+      Jugadores: '',
+      Duracion: '',
+      Materiales_y_espacio: '',
+      Variantes_del_ejercicio: '',
+      Consejos_para_el_entrenador: '',
+      URL_de_la_imagen_del_ejercicio: '',
+      visible: true,
     },
   });
 
   const onSubmit = async (data: ExerciseFormValues) => {
     setLoading(true);
     try {
-      await addDoc(collection(db, 'exercises'), { 
-          title: data.name, // Mapping to legacy 'title'
-          tags: [], // Tags seem to be deprecated in new form, let's keep it empty
-          image: data.imageUrl || `https://picsum.photos/400/250?random=${Date.now()}`,
-          aiHint: 'futsal drill', // Default AI hint
-          ...data 
+      await addDoc(collection(db, 'exercises'), {
+        ...data,
+        // Legacy fields for compatibility if needed, can be removed later
+        name: data.Nombre_del_ejercicio,
+        title: data.Nombre_del_ejercicio,
+        number: data.id_ejercicio,
+        description: data.Descripción_de_la_tarea,
+        objectives: data.Objetivos,
+        sessionPhase: data.Fase_de_la_sesión,
+        category: data.Categoria,
+        ageCategories: data.Etiquetas_de_edad,
+        players: data.Jugadores,
+        duration: data.Duracion,
+        materials: data.Materiales_y_espacio,
+        variants: data.Variantes_del_ejercicio,
+        coachTips: data.Consejos_para_el_entrenador,
+        imageUrl: data.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now()}`,
+        isVisible: data.visible,
+        aiHint: 'futsal drill',
+        tags: [],
       });
       toast({
         title: '¡Éxito!',
@@ -135,18 +149,27 @@ export default function UploadExerciseForm() {
         const exercisesCollection = collection(db, 'exercises');
         let count = 0;
         for (const exercise of exercises) {
-            const exerciseName = exercise.name || exercise.Ejercicio;
-            if(exerciseName) {
-                // Map excel columns to our new schema
+            const exerciseName = exercise.Nombre_del_ejercicio || exercise.name;
+            if (exerciseName) {
+                const ageCategoriesArray = typeof exercise.Etiquetas_de_edad === 'string'
+                  ? exercise.Etiquetas_de_edad.split(',').map((s:string) => s.trim().toLowerCase())
+                  : [];
+
                 const docData = {
-                  ...exercise,
-                  name: exerciseName,
-                  title: exerciseName, // mapping
-                  ageCategories: typeof exercise.ageCategories === 'string' ? exercise.ageCategories.split(',').map(s => s.trim()) : [],
-                  image: exercise.imageUrl || `https://picsum.photos/400/250?random=${Date.now()}`,
-                  tags: [],
-                  aiHint: 'futsal drill',
-                  isVisible: true,
+                  id_ejercicio: exercise.id_ejercicio?.toString() || '',
+                  Nombre_del_ejercicio: exerciseName,
+                  Descripción_de_la_tarea: exercise.Descripción_de_la_tarea || '',
+                  Objetivos: exercise.Objetivos || '',
+                  Fase_de_la_sesión: exercise.Fase_de_la_sesión || '',
+                  Categoria: exercise.Categoria || '',
+                  Etiquetas_de_edad: ageCategoriesArray,
+                  Jugadores: exercise.Jugadores?.toString() || '',
+                  Duracion: exercise.Duracion?.toString() || '',
+                  Materiales_y_espacio: exercise.Materiales_y_espacio || '',
+                  Variantes_del_ejercicio: exercise.Variantes_del_ejercicio || '',
+                  Consejos_para_el_entrenador: exercise.Consejos_para_el_entrenador || '',
+                  URL_de_la_imagen_del_ejercicio: exercise.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now() + count}`,
+                  visible: exercise.visible !== undefined ? !!exercise.visible : true,
                 };
                 await addDoc(exercisesCollection, docData);
                 count++;
@@ -183,7 +206,7 @@ export default function UploadExerciseForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <FormField
                     control={form.control}
-                    name="name"
+                    name="Nombre_del_ejercicio"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Nombre del Ejercicio</FormLabel>
@@ -196,7 +219,7 @@ export default function UploadExerciseForm() {
                 />
                  <FormField
                     control={form.control}
-                    name="number"
+                    name="id_ejercicio"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Número (Opcional)</FormLabel>
@@ -212,7 +235,7 @@ export default function UploadExerciseForm() {
             
             <FormField
                 control={form.control}
-                name="description"
+                name="Descripción_de_la_tarea"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Descripción de la Tarea</FormLabel>
@@ -229,7 +252,7 @@ export default function UploadExerciseForm() {
             
              <FormField
                 control={form.control}
-                name="objectives"
+                name="Objetivos"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Objetivos</FormLabel>
@@ -247,7 +270,7 @@ export default function UploadExerciseForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
                 control={form.control}
-                name="sessionPhase"
+                name="Fase_de_la_sesión"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Fase de la Sesión</FormLabel>
@@ -269,7 +292,7 @@ export default function UploadExerciseForm() {
                 />
                  <FormField
                 control={form.control}
-                name="category"
+                name="Categoria"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Categoría</FormLabel>
@@ -295,7 +318,7 @@ export default function UploadExerciseForm() {
             
             <FormField
                 control={form.control}
-                name="ageCategories"
+                name="Etiquetas_de_edad"
                 render={() => (
                     <FormItem>
                     <div className="mb-4">
@@ -309,7 +332,7 @@ export default function UploadExerciseForm() {
                       <FormField
                         key={item.id}
                         control={form.control}
-                        name="ageCategories"
+                        name="Etiquetas_de_edad"
                         render={({ field }) => {
                           return (
                             <FormItem
@@ -347,7 +370,7 @@ export default function UploadExerciseForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <FormField
                     control={form.control}
-                    name="players"
+                    name="Jugadores"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Número de jugadores</FormLabel>
@@ -360,7 +383,7 @@ export default function UploadExerciseForm() {
                 />
                 <FormField
                 control={form.control}
-                name="duration"
+                name="Duracion"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Duración (minutos)</FormLabel>
@@ -387,7 +410,7 @@ export default function UploadExerciseForm() {
             
              <FormField
                 control={form.control}
-                name="materials"
+                name="Materiales_y_espacio"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Espacio y Materiales Necesarios</FormLabel>
@@ -404,7 +427,7 @@ export default function UploadExerciseForm() {
             
             <FormField
                 control={form.control}
-                name="variants"
+                name="Variantes_del_ejercicio"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Variantes (Opcional)</FormLabel>
@@ -421,7 +444,7 @@ export default function UploadExerciseForm() {
 
             <FormField
                 control={form.control}
-                name="coachTips"
+                name="Consejos_para_el_entrenador"
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Consejos para el Entrenador (Opcional)</FormLabel>
@@ -438,7 +461,7 @@ export default function UploadExerciseForm() {
 
             <FormField
             control={form.control}
-            name="imageUrl"
+            name="URL_de_la_imagen_del_ejercicio"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>URL de la Imagen (Opcional)</FormLabel>
@@ -456,7 +479,7 @@ export default function UploadExerciseForm() {
 
             <FormField
                 control={form.control}
-                name="isVisible"
+                name="visible"
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
@@ -491,7 +514,7 @@ export default function UploadExerciseForm() {
             <FileQuestion className="h-4 w-4" />
             <AlertTitle>¿Cómo funciona?</AlertTitle>
             <AlertDescription>
-                Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'name', 'sessionPhase', 'ageCategories'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
+                Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'Nombre_del_ejercicio', 'Fase_de_la_sesión', 'Etiquetas_de_edad'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
             </AlertDescription>
         </Alert>
 
@@ -517,5 +540,3 @@ export default function UploadExerciseForm() {
     </div>
   );
 }
-
-    
