@@ -135,11 +135,13 @@ export default function UploadExerciseForm() {
         const exercisesCollection = collection(db, 'exercises');
         let count = 0;
         for (const exercise of exercises) {
-            if(exercise.name) {
+            const exerciseName = exercise.name || exercise.Ejercicio;
+            if(exerciseName) {
                 // Map excel columns to our new schema
                 const docData = {
                   ...exercise,
-                  title: exercise.name, // mapping
+                  name: exerciseName,
+                  title: exerciseName, // mapping
                   ageCategories: typeof exercise.ageCategories === 'string' ? exercise.ageCategories.split(',').map(s => s.trim()) : [],
                   image: exercise.imageUrl || `https://picsum.photos/400/250?random=${Date.now()}`,
                   tags: [],
