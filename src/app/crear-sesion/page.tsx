@@ -140,7 +140,7 @@ export default function CrearSesionPage() {
   const selectedSessionExercises = useMemo(() => {
     const values = form.getValues();
     const initial = allExercises.find(ex => ex.id === values.initialExercise);
-    const main = values.mainExercises.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean);
+    const main = values.mainExercises.map(id => allExercises.find(ex => ex.id === id)).filter(Boolean) as Exercise[];
     const final = allExercises.find(ex => ex.id === values.finalExercise);
     return { initial, main, final };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,7 +167,16 @@ export default function CrearSesionPage() {
         createdAt: new Date(),
       });
       toast({ title: "¡Sesión Guardada!", description: "Tu plan de entrenamiento ha sido guardado." });
-      form.reset();
+      form.reset({
+        initialExercise: '',
+        mainExercises: [],
+        finalExercise: '',
+        sessionNumber: '',
+        date: new Date(),
+        season: data.season, // Keep these fields for next session
+        club: data.club,
+        team: data.team,
+      });
       setSelectedCategories([]);
     } catch (error) {
       console.error("Error saving session: ", error);
@@ -379,9 +388,6 @@ export default function CrearSesionPage() {
                                     mode="single"
                                     selected={field.value}
                                     onSelect={field.onChange}
-                                    disabled={(date) =>
-                                      date > new Date() || date < new Date("1900-01-01")
-                                    }
                                     initialFocus
                                     locale={es}
                                   />
@@ -451,7 +457,7 @@ export default function CrearSesionPage() {
                               <h4 className="font-semibold text-primary">Fase Principal ({selectedSessionExercises.main.length}/4)</h4>
                               {selectedSessionExercises.main.length > 0 ? (
                                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2">
-                                      {selectedSessionExercises.main.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li>: null)}
+                                      {selectedSessionExercises.main.map(ex => <li key={ex.id}>{ex.Ejercicio}</li>)}
                                   </ul>
                               ) : (
                                   <p className="text-sm text-muted-foreground">No hay ejercicios seleccionados</p>
@@ -481,9 +487,3 @@ export default function CrearSesionPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
