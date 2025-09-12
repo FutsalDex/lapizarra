@@ -55,7 +55,7 @@ const exerciseSchema = z.object({
   Variantes: z.string().optional(),
   'Consejos para el entrenador': z.string().optional(),
   Imagen: z.string().url('Debe ser una URL válida.').optional().or(z.literal('')),
-  visible: z.boolean().default(true),
+  Visible: z.boolean().default(true),
 });
 
 type ExerciseFormValues = z.infer<typeof exerciseSchema>;
@@ -81,7 +81,7 @@ export default function UploadExerciseForm() {
       Variantes: '',
       'Consejos para el entrenador': '',
       Imagen: '',
-      visible: true,
+      Visible: true,
     },
   });
 
@@ -92,7 +92,7 @@ export default function UploadExerciseForm() {
         ...data,
         Imagen: data.Imagen || `https://picsum.photos/400/250?random=${Date.now()}`,
         aiHint: 'futsal drill',
-        visible: data.visible,
+        Visible: data.Visible,
       });
       toast({
         title: '¡Éxito!',
@@ -154,7 +154,7 @@ export default function UploadExerciseForm() {
                   Variantes: exercise.Variantes || '',
                   'Consejos para el entrenador': exercise['Consejos para el entrenador'] || '',
                   Imagen: exercise.Imagen || `https://picsum.photos/400/250?random=${Date.now() + count}`,
-                  visible: exercise.visible !== undefined ? !!exercise.visible : true,
+                  Visible: exercise.Visible !== undefined ? !!exercise.Visible : true,
                 };
                 await addDoc(exercisesCollection, docData);
                 count++;
@@ -464,7 +464,7 @@ export default function UploadExerciseForm() {
 
             <FormField
                 control={form.control}
-                name="visible"
+                name="Visible"
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
@@ -525,5 +525,7 @@ export default function UploadExerciseForm() {
     </div>
   );
 }
+
+    
 
     

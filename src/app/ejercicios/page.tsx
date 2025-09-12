@@ -43,7 +43,7 @@ interface Exercise {
   Variantes?: string;
   'Consejos para el entrenador'?: string;
   Imagen?: string;
-  visible: boolean;
+  Visible: boolean;
   aiHint?: string;
 }
 
@@ -68,7 +68,7 @@ export default function EjerciciosPage() {
   const [selectedAge, setSelectedAge] = useState('Todas');
 
   useEffect(() => {
-    const q = query(collection(db, "exercises"), where("visible", "==", true));
+    const q = query(collection(db, "exercises"), where("Visible", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id, 
@@ -286,3 +286,5 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
+    

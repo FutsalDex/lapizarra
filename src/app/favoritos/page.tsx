@@ -35,7 +35,7 @@ interface Exercise {
   Variantes?: string;
   'Consejos para el entrenador'?: string;
   Imagen?: string;
-  visible: boolean;
+  Visible: boolean;
   aiHint?: string;
 }
 
@@ -231,6 +231,8 @@ export default function FavoritosPage() {
     </div>
   );
 }
+
+    
 
     
 

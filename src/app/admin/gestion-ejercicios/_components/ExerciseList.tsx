@@ -26,7 +26,7 @@ interface Exercise {
   Ejercicio: string;
   Categoría: string;
   Imagen?: string;
-  visible: boolean;
+  Visible: boolean;
 }
 
 export default function ExerciseList() {
@@ -46,7 +46,7 @@ export default function ExerciseList() {
             Ejercicio: data.Ejercicio,
             Categoría: data.Categoría,
             Imagen: data.Imagen,
-            visible: data.visible,
+            Visible: data.Visible,
           } as Exercise
       });
       setExercises(exercisesData.sort((a,b) => (a.Ejercicio || '').localeCompare(b.Ejercicio || '')));
@@ -60,7 +60,7 @@ export default function ExerciseList() {
     setUpdatingId(exerciseId);
     const exerciseRef = doc(db, 'exercises', exerciseId);
     try {
-      await updateDoc(exerciseRef, { visible: newVisibility });
+      await updateDoc(exerciseRef, { Visible: newVisibility });
       toast({
         title: 'Visibilidad actualizada',
         description: `El ejercicio ahora está ${newVisibility ? 'visible' : 'oculto'}.`,
@@ -131,7 +131,7 @@ export default function ExerciseList() {
                        <div className="flex items-center justify-end gap-2">
                          {updatingId === exercise.id && <Loader2 className="h-4 w-4 animate-spin" />}
                         <Switch
-                            checked={exercise.visible}
+                            checked={exercise.Visible}
                             onCheckedChange={(checked) => handleVisibilityChange(exercise.id, checked)}
                             disabled={updatingId === exercise.id}
                             aria-label={`Visibilidad de ${exercise.Ejercicio}`}
@@ -152,6 +152,8 @@ export default function ExerciseList() {
     </div>
   );
 }
+
+    
 
     
 

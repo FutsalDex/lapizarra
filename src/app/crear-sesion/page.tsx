@@ -53,7 +53,7 @@ interface Exercise {
   'Duración (min)': string;
   Fase: string;
   Categoría: string;
-  visible: boolean;
+  Visible: boolean;
 }
 
 const sessionSchema = z.object({
@@ -95,7 +95,7 @@ export default function CrearSesionPage() {
   });
 
   useEffect(() => {
-    const q = query(collection(db, "exercises"), where("visible", "==", true));
+    const q = query(collection(db, "exercises"), where("Visible", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id,
@@ -481,6 +481,8 @@ export default function CrearSesionPage() {
     </div>
   );
 }
+
+    
 
     
 
