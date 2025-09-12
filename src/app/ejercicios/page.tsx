@@ -239,7 +239,7 @@ export default function EjerciciosPage() {
                     alt={exercise.Ejercicio || 'Imagen del ejercicio'}
                     data-ai-hint={exercise.aiHint || 'futsal drill court'}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
              </div>
@@ -286,5 +286,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    
