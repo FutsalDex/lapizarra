@@ -90,24 +90,8 @@ export default function UploadExerciseForm() {
     try {
       await addDoc(collection(db, 'exercises'), {
         ...data,
-        // Legacy fields for compatibility if needed, can be removed later
-        name: data.Nombre_del_ejercicio,
-        title: data.Nombre_del_ejercicio,
-        number: data.id_ejercicio,
-        description: data.Descripción_de_la_tarea,
-        objectives: data.Objetivos,
-        sessionPhase: data.Fase_de_la_sesión,
-        category: data.Categoria,
-        ageCategories: data.Etiquetas_de_edad,
-        players: data.Jugadores,
-        duration: data.Duracion,
-        materials: data.Materiales_y_espacio,
-        variants: data.Variantes_del_ejercicio,
-        coachTips: data.Consejos_para_el_entrenador,
-        imageUrl: data.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now()}`,
-        isVisible: data.visible,
+        URL_de_la_imagen_del_ejercicio: data.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now()}`,
         aiHint: 'futsal drill',
-        tags: [],
       });
       toast({
         title: '¡Éxito!',
@@ -149,7 +133,7 @@ export default function UploadExerciseForm() {
         const exercisesCollection = collection(db, 'exercises');
         let count = 0;
         for (const exercise of exercises) {
-            const exerciseName = exercise.Nombre_del_ejercicio || exercise.name;
+            const exerciseName = exercise.Nombre_del_ejercicio || exercise.Ejercicio;
             if (exerciseName) {
                 const ageCategoriesArray = typeof exercise.Etiquetas_de_edad === 'string'
                   ? exercise.Etiquetas_de_edad.split(',').map((s:string) => s.trim().toLowerCase())
@@ -169,7 +153,7 @@ export default function UploadExerciseForm() {
                   Variantes_del_ejercicio: exercise.Variantes_del_ejercicio || '',
                   Consejos_para_el_entrenador: exercise.Consejos_para_el_entrenador || '',
                   URL_de_la_imagen_del_ejercicio: exercise.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now() + count}`,
-                  visible: exercise.visible !== undefined ? !!exercise.visible : true,
+                  visible: exercise.visible !== undefined ? !!exercise.visible : (exercise.isVisible !== undefined ? !!exercise.isVisible : true),
                 };
                 await addDoc(exercisesCollection, docData);
                 count++;
