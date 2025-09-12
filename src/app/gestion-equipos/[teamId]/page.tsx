@@ -279,7 +279,7 @@ export default function TeamMembersPage() {
             <AlertDialogHeader>
             <AlertDialogTitle>Enlace de Invitación Creado</AlertDialogTitle>
             <AlertDialogDescription>
-                Copia este enlace y compártelo con el nuevo miembro. El enlace le permitirá unirse a tu equipo.
+                Accede a este enlace para unirte al equipo: <span className="font-semibold text-primary">{team.name}</span>:
             </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="relative rounded-md bg-muted px-4 py-2 font-mono text-sm break-all">

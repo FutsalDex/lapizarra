@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -48,21 +48,30 @@ export default function TeamDashboardPage() {
 
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAllowed, setIsAllowed] = useState(false);
 
    useEffect(() => {
     if (!teamId || !user) return;
 
     const teamDocRef = doc(db, 'teams', teamId);
     
-    const unsubscribeTeam = onSnapshot(teamDocRef, (teamDoc) => {
+    const unsubscribeTeam = onSnapshot(teamDocRef, async (teamDoc) => {
       if (teamDoc.exists()) {
         const teamData = teamDoc.data() as Team;
-        // Basic check to see if user is owner. A more robust check would involve checking teamMembers collection.
+        setTeam(teamData);
+
+        // Check for permissions
         if (teamData.ownerId === user.uid) {
-            setTeam(teamData);
+            setIsAllowed(true);
         } else {
-            // For now, redirect if not owner. This can be expanded to allow team members.
-            router.push('/gestion-equipos');
+            const membersQuery = query(collection(db, 'teamMembers'), where('teamId', '==', teamId), where('userId', '==', user.uid));
+            const membersSnapshot = await getDocs(membersQuery);
+            if (!membersSnapshot.empty) {
+                setIsAllowed(true);
+            } else {
+                setIsAllowed(false);
+                router.push('/gestion-equipos');
+            }
         }
       } else {
         router.push('/gestion-equipos');
@@ -88,7 +97,7 @@ export default function TeamDashboardPage() {
     )
   }
 
-  if (!team) {
+  if (!isAllowed || !team) {
       return null;
   }
 

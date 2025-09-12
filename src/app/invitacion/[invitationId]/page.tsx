@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, writeBatch, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -95,7 +95,12 @@ export default function InvitationPage() {
               title: `Invitación ${newStatus === 'accepted' ? 'aceptada' : 'rechazada'}`,
               description: `Ahora ${newStatus === 'accepted' ? `eres miembro de ${invitation.teamName}` : 'has rechazado la invitación'}.`,
           });
-          router.push('/gestion-equipos');
+
+          if (action === 'accept') {
+            router.push(`/equipo/${invitation.teamId}`);
+          } else {
+            router.push('/gestion-equipos');
+          }
 
       } catch (e) {
           console.error('Error handling invitation:', e);
