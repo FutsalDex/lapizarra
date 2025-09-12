@@ -41,9 +41,10 @@ export default function InvitationPage() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (!invitationId || authLoading) return;
+    if (!invitationId) return;
 
     const fetchInvitation = async () => {
+      setLoading(true);
       const invDocRef = doc(db, 'invitations', invitationId);
       const invDoc = await getDoc(invDocRef);
 
@@ -51,20 +52,19 @@ export default function InvitationPage() {
         setError('Esta invitación no es válida o ha caducado.');
       } else {
         const invData = { id: invDoc.id, ...invDoc.data() } as Invitation;
+        setInvitation(invData);
         
         if (invData.status !== 'pending') {
              setError(`Esta invitación ya ha sido ${invData.status === 'accepted' ? 'aceptada' : 'rechazada'}.`);
         } else if (user && user.email !== invData.invitedUserEmail) {
             setError('Esta invitación está dirigida a otro usuario. Por favor, inicia sesión con la cuenta correcta.');
-        } else {
-            setInvitation(invData);
         }
       }
       setLoading(false);
     };
 
     fetchInvitation();
-  }, [invitationId, user, authLoading]);
+  }, [invitationId, user]);
 
   const handleResponse = async (action: 'accept' | 'decline') => {
       if (!user || !invitation) return;
@@ -127,7 +127,15 @@ export default function InvitationPage() {
                     <CardDescription>Para aceptar esta invitación, por favor, inicia sesión o regístrate.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">Estás a punto de unirte a un equipo. Asegúrate de usar la cuenta con la que fuiste invitado.</p>
+                    <p className="text-sm text-muted-foreground">
+                        {invitation ? (
+                            <>
+                                Como <span className="font-semibold text-primary">{invitation.role}</span>, estás a punto de unirte al equipo <span className="font-semibold text-primary">{invitation.teamName}</span>. Asegúrate de usar la cuenta con la que fuiste invitado.
+                            </>
+                        ) : (
+                            "Estás a punto de unirte a un equipo. Asegúrate de usar la cuenta con la que fuiste invitado."
+                        )}
+                    </p>
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
                      <Button asChild>
