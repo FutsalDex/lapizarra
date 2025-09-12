@@ -145,7 +145,8 @@ export default function UploadExerciseForm() {
                   ageCategories: typeof exercise.ageCategories === 'string' ? exercise.ageCategories.split(',').map(s => s.trim()) : [],
                   image: exercise.imageUrl || `https://picsum.photos/400/250?random=${Date.now()}`,
                   tags: [],
-                  aiHint: 'futsal drill'
+                  aiHint: 'futsal drill',
+                  isVisible: true,
                 };
                 await addDoc(exercisesCollection, docData);
                 count++;
@@ -516,3 +517,5 @@ export default function UploadExerciseForm() {
     </div>
   );
 }
+
+    
