@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import PlayerStatsCharts from './_components/PlayerStatsCharts';
 
 
 interface Team {
@@ -286,6 +287,7 @@ export default function TeamRosterPage() {
             </CardContent>
         </Card>
 
+        <PlayerStatsCharts players={players} />
 
       <Card>
         <CardHeader>
