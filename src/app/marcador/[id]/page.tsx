@@ -42,6 +42,15 @@ interface GoalEvent {
     teamId: string;
 }
 
+interface TeamMatchStats {
+  shotsOnTarget: number;
+  shotsOffTarget: number;
+  shotsBlocked: number;
+  timeouts: number;
+  turnovers: number;
+  recoveries: number;
+}
+
 
 interface MatchDetails {
     id: string;
@@ -57,9 +66,12 @@ interface MatchDetails {
     localPlayers?: Player[];
     visitorPlayers?: Player[];
     events: GoalEvent[];
+    teamStats1: TeamMatchStats; // 1st half
+    teamStats2: TeamMatchStats; // 2nd half
 }
 
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number'>;
+type TeamStatKeys = keyof TeamMatchStats;
 
 
 export default function MarcadorEnVivoPage() {
@@ -82,6 +94,15 @@ export default function MarcadorEnVivoPage() {
   useEffect(() => {
     if (!id) return;
     const matchDocRef = doc(db, 'matches', id);
+    
+    const defaultTeamStats = {
+      shotsOnTarget: 0,
+      shotsOffTarget: 0,
+      shotsBlocked: 0,
+      timeouts: 0,
+      turnovers: 0,
+      recoveries: 0,
+    };
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -121,7 +142,9 @@ export default function MarcadorEnVivoPage() {
                 period: data.period ?? '1ª Parte',
                 isActive: data.isActive ?? false,
                 isFinished: data.isFinished ?? false,
-                events: data.events || []
+                events: data.events || [],
+                teamStats1: data.teamStats1 || defaultTeamStats,
+                teamStats2: data.teamStats2 || defaultTeamStats,
             });
         } else {
             toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
@@ -290,7 +313,40 @@ export default function MarcadorEnVivoPage() {
     });
 }
 
-  
+  const handleTeamStatChange = (
+    period: 'teamStats1' | 'teamStats2',
+    stat: TeamStatKeys,
+    delta: 1 | -1
+  ) => {
+    if (match?.isFinished) return;
+    setMatch(prev => {
+        if (!prev) return null;
+
+        const currentStatValue = prev[period][stat];
+        const newValue = currentStatValue + delta;
+        if (newValue < 0) return prev;
+
+        return {
+            ...prev,
+            [period]: {
+                ...prev[period],
+                [stat]: newValue,
+            }
+        };
+    });
+  };
+
+  const getUserTeamName = () => {
+      if (!match || !match.teamId) return '';
+      // A simplified assumption based on which roster is populated from DB.
+      // A more robust way might be needed if both teams can be user-managed.
+      const isLocalTeam = match.localPlayers?.some(p => !p.id.startsWith('local-'));
+      if(isLocalTeam) return match.localTeam;
+      const isVisitorTeam = match.visitorPlayers?.some(p => !p.id.startsWith('visitor-'));
+      if(isVisitorTeam) return match.visitorTeam;
+      return '';
+  }
+   
    const handlePlayerInfoChange = (team: 'local' | 'visitor', playerIndex: number, field: 'name' | 'number', value: string | number) => {
         if (match?.isFinished) return;
         setMatch(prev => {
@@ -473,6 +529,85 @@ export default function MarcadorEnVivoPage() {
     );
 };
 
+const renderTeamStats = () => {
+    const userTeam = getUserTeamName();
+    if (!userTeam) return null;
+
+    const statsConfig: { key: TeamStatKeys, label: string }[] = [
+        { key: 'shotsOnTarget', label: 'Portería' },
+        { key: 'shotsOffTarget', label: 'Fuera' },
+        { key: 'shotsBlocked', label: 'Bloqueados' },
+    ];
+     const eventsConfig: { key: TeamStatKeys, label: string }[] = [
+        { key: 'timeouts', label: 'Tiempos Muertos' },
+        { key: 'turnovers', label: 'Pérdidas' },
+        { key: 'recoveries', label: 'Robos' },
+    ];
+
+    const StatRow = ({ statKey, label }: { statKey: TeamStatKeys, label: string }) => (
+        <TableRow>
+            <TableCell className="font-medium">{label}</TableCell>
+            <TableCell>
+                <div className="flex items-center justify-center gap-1">
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange('teamStats1', statKey, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                    <span className="w-4 text-center">{match.teamStats1[statKey]}</span>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange('teamStats1', statKey, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                </div>
+            </TableCell>
+            <TableCell>
+                <div className="flex items-center justify-center gap-1">
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange('teamStats2', statKey, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                    <span className="w-4 text-center">{match.teamStats2[statKey]}</span>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange('teamStats2', statKey, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                </div>
+            </TableCell>
+        </TableRow>
+    );
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <Card>
+                <CardHeader className="bg-primary text-primary-foreground p-3">
+                    <CardTitle className="text-base text-center">TIROS A PUERTA - {userTeam}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[150px]">Tipo</TableHead>
+                                <TableHead className="text-center">1ª Tiempo</TableHead>
+                                <TableHead className="text-center">2ª Tiempo</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {statsConfig.map(config => <StatRow key={config.key} {...config} />)}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="bg-primary text-primary-foreground p-3">
+                    <CardTitle className="text-base text-center">EVENTOS DEL PARTIDO - {userTeam}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[150px]">Tipo</TableHead>
+                                <TableHead className="text-center">1ª Tiempo</TableHead>
+                                <TableHead className="text-center">2ª Tiempo</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {eventsConfig.map(config => <StatRow key={config.key} {...config} />)}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
@@ -569,6 +704,9 @@ export default function MarcadorEnVivoPage() {
            </Tabs>
         </CardContent>
       </Card>
+      
+      {renderTeamStats()}
+
     </div>
   );
 }
