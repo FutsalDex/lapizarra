@@ -25,7 +25,7 @@ interface Exercise {
   Ejercicio: string;
   'Descripción de la tarea': string;
   Objetivos: string;
-  Fase: string;
+  'Fase de la Sesión': string;
   Categoría: string;
   Edad: string[];
   'Número de jugadores': string;
@@ -149,7 +149,7 @@ export default function ExerciseDetailPage() {
                     <BarChart2 className="h-6 w-6 text-primary" />
                     <div>
                         <p className="text-sm text-muted-foreground">Fase</p>
-                        <p className="font-semibold">{exercise.Fase}</p>
+                        <p className="font-semibold">{exercise['Fase de la Sesión']}</p>
                     </div>
                 </div>
                  <div className="flex items-center gap-3 bg-secondary p-3 rounded-lg">
@@ -193,3 +193,5 @@ export default function ExerciseDetailPage() {
     </div>
   );
 }
+
+    

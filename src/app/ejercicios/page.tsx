@@ -34,7 +34,7 @@ interface Exercise {
   Ejercicio: string;
   'Descripción de la tarea': string;
   Objetivos: string;
-  Fase: string;
+  'Fase de la Sesión': string;
   Categoría: string;
   Edad: string[];
   'Número de jugadores': string;
@@ -118,7 +118,7 @@ export default function EjerciciosPage() {
     }
 };
 
-  const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Fase).filter(Boolean)))], [exercises]);
+  const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex['Fase de la Sesión']).filter(Boolean)))], [exercises]);
   const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 
@@ -128,7 +128,7 @@ export default function EjerciciosPage() {
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
         const phaseMatch =
-          selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
+          selectedPhase === 'Todas' || exercise['Fase de la Sesión'] === selectedPhase;
         const categoryMatch =
           selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
         const ageMatch = 
@@ -251,7 +251,7 @@ export default function EjerciciosPage() {
             </CardHeader>
             <CardContent className="flex-grow space-y-3 text-sm">
                 <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase}</p>
+                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise['Fase de la Sesión']}</p>
                     <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
                     <p><span className="font-semibold text-foreground">Duración:</span> {exercise['Duración (min)']} min</p>
                 </div>
@@ -286,3 +286,5 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
+    
