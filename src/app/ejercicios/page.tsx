@@ -214,7 +214,7 @@ export default function EjerciciosPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({length: 6}).map((_, index) => (
                 <Card key={index} className="flex flex-col">
-                    <Skeleton className="aspect-[4/3] w-full" />
+                    <Skeleton className="h-60 w-full" />
                     <CardHeader>
                         <Skeleton className="h-6 w-3/4" />
                     </CardHeader>
@@ -233,7 +233,7 @@ export default function EjerciciosPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredExercises.map((exercise) => (
           <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
-             <div className="relative aspect-[4/3] bg-muted">
+             <div className="relative h-60 bg-muted">
                 <Image
                     src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/400/300`}
                     alt={exercise.Ejercicio || 'Imagen del ejercicio'}
