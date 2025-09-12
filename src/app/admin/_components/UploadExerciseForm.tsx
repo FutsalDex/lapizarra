@@ -92,6 +92,7 @@ export default function UploadExerciseForm() {
         ...data,
         URL_de_la_imagen_del_ejercicio: data.URL_de_la_imagen_del_ejercicio || `https://picsum.photos/400/250?random=${Date.now()}`,
         aiHint: 'futsal drill',
+        visible: data.visible,
       });
       toast({
         title: '¡Éxito!',
@@ -124,15 +125,15 @@ export default function UploadExerciseForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const exercises: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const exercisesData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-        if (!Array.isArray(exercises) || exercises.length === 0) {
+        if (!Array.isArray(exercisesData) || exercisesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
         }
 
         const exercisesCollection = collection(db, 'exercises');
         let count = 0;
-        for (const exercise of exercises) {
+        for (const exercise of exercisesData) {
             const exerciseName = exercise.Nombre_del_ejercicio || exercise.Ejercicio;
             if (exerciseName) {
                 const ageCategoriesArray = typeof exercise.Etiquetas_de_edad === 'string'
