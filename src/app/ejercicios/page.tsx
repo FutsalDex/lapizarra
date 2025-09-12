@@ -236,7 +236,7 @@ export default function EjerciciosPage() {
              <div className="relative aspect-[4/3] bg-muted">
                 <Image
                     src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/400/300`}
-                    alt={exercise.Ejercicio}
+                    alt={exercise.Ejercicio || 'Imagen del ejercicio'}
                     data-ai-hint={exercise.aiHint || 'futsal drill court'}
                     fill
                     className="object-cover"
@@ -286,7 +286,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    
-
-    
