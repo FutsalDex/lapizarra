@@ -580,7 +580,7 @@ const renderTeamStats = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {statsConfig.map(config => <StatRow key={config.key} {...config} />)}
+                            {statsConfig.map(({ key, label }) => <StatRow key={key} statKey={key} label={label} />)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -599,7 +599,7 @@ const renderTeamStats = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {eventsConfig.map(config => <StatRow key={config.key} {...config} />)}
+                            {eventsConfig.map(({ key, label }) => <StatRow key={key} statKey={key} label={label} />)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -710,3 +710,5 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
