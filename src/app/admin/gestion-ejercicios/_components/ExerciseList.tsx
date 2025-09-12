@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -19,6 +19,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Exercise {
   id: string;
@@ -33,6 +40,8 @@ export default function ExerciseList() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
+  const [visibilityFilter, setVisibilityFilter] = useState('Todos'); // 'Todos', 'Visible', 'Oculto'
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -55,6 +64,9 @@ export default function ExerciseList() {
 
     return () => unsubscribe();
   }, []);
+  
+  const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
+
 
   const handleVisibilityChange = async (exerciseId: string, newVisibility: boolean) => {
     setUpdatingId(exerciseId);
@@ -77,19 +89,47 @@ export default function ExerciseList() {
     }
   };
 
-  const filteredExercises = exercises.filter(exercise =>
-    (exercise.Ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredExercises = useMemo(() => {
+      return exercises.filter(exercise => {
+        const termMatch = (exercise.Ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const categoryMatch = selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
+        const visibilityMatch = 
+            visibilityFilter === 'Todos' ||
+            (visibilityFilter === 'Visible' && exercise.Visible) ||
+            (visibilityFilter === 'Oculto' && !exercise.Visible);
+        
+        return termMatch && categoryMatch && visibilityMatch;
+      })
+  }, [exercises, searchTerm, selectedCategory, visibilityFilter]);
+
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
           placeholder="Buscar ejercicio por nombre..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          className="md:col-span-1"
         />
+         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger>
+                <SelectValue placeholder="Filtrar por categoría" />
+            </SelectTrigger>
+            <SelectContent>
+                {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            </SelectContent>
+        </Select>
+         <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+            <SelectTrigger>
+                <SelectValue placeholder="Filtrar por visibilidad" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="Todos">Todos</SelectItem>
+                <SelectItem value="Visible">Visible</SelectItem>
+                <SelectItem value="Oculto">Oculto</SelectItem>
+            </SelectContent>
+        </Select>
       </div>
       <div className="rounded-md border overflow-x-auto">
         {loading ? (
@@ -146,15 +186,9 @@ export default function ExerciseList() {
       </div>
       {!loading && filteredExercises.length === 0 && (
         <div className="text-center py-10 text-muted-foreground">
-          No se encontraron ejercicios con ese nombre.
+          No se encontraron ejercicios con los filtros actuales.
         </div>
       )}
     </div>
   );
 }
-
-    
-
-    
-
-    
