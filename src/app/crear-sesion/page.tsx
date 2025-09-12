@@ -51,7 +51,7 @@ interface Exercise {
   id: string;
   Ejercicio: string;
   'Duración (min)': string;
-  Fase: string;
+  'Fase de la Sesión': string;
   Categoría: string;
   Visible: boolean;
 }
@@ -104,7 +104,7 @@ export default function CrearSesionPage() {
       setAllExercises(exercisesData);
       
       const uniqueCategories = Array.from(new Set(exercisesData
-        .filter(ex => ex.Fase === 'Parte Principal' && ex.Categoría)
+        .filter(ex => ex['Fase de la Sesión'] === 'Parte Principal' && ex.Categoría)
         .map(ex => ex.Categoría)));
       setMainCategories(uniqueCategories);
 
@@ -119,16 +119,16 @@ export default function CrearSesionPage() {
   }, [toast]);
 
   const warmUpExercises = useMemo(() => 
-    allExercises.filter(ex => ex.Fase === 'Calentamiento'), 
+    allExercises.filter(ex => ex['Fase de la Sesión'] === 'Calentamiento'), 
   [allExercises]);
   
   const coolDownExercises = useMemo(() => 
-    allExercises.filter(ex => ex.Fase === 'Vuelta a la Calma'),
+    allExercises.filter(ex => ex['Fase de la Sesión'] === 'Vuelta a la Calma'),
   [allExercises]);
 
   const filteredMainExercises = useMemo(() => {
     return allExercises.filter(ex => 
-      ex.Fase === 'Parte Principal' &&
+      ex['Fase de la Sesión'] === 'Parte Principal' &&
       (selectedCategories.length === 0 || selectedCategories.includes(ex.Categoría))
     );
   }, [allExercises, selectedCategories]);
@@ -487,5 +487,3 @@ export default function CrearSesionPage() {
     </div>
   );
 }
-
-    
