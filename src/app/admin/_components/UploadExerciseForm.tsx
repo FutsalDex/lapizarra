@@ -135,7 +135,7 @@ export default function UploadExerciseForm() {
         const exercisesCollection = collection(db, 'exercises');
         let count = 0;
         for (const exercise of exercises) {
-            if(exercise.name && exercise.category && exercise.description) {
+            if(exercise.name) {
                 // Map excel columns to our new schema
                 const docData = {
                   ...exercise,
