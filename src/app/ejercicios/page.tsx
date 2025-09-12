@@ -261,9 +261,11 @@ export default function EjerciciosPage() {
                     <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Etiquetas_de_edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
                     <p><span className="font-semibold text-foreground">Duración:</span> {exercise.Duracion} min</p>
                 </div>
-                <p className="text-muted-foreground pt-2">
-                    {exercise.Descripción_de_la_tarea && `${exercise.Descripción_de_la_tarea.substring(0, 100)}${exercise.Descripción_de_la_tarea.length > 100 ? '...' : ''}`}
-                </p>
+                {exercise.Descripción_de_la_tarea && (
+                    <p className="text-muted-foreground pt-2">
+                        {`${exercise.Descripción_de_la_tarea.substring(0, 100)}${exercise.Descripción_de_la_tarea.length > 100 ? '...' : ''}`}
+                    </p>
+                )}
             </CardContent>
             <CardFooter className="bg-card border-t p-3">
                 <div className="w-full flex justify-between items-center">
@@ -290,5 +292,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    
