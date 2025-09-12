@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   Select,
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface Exercise {
   id: string;
@@ -146,7 +147,7 @@ export default function ExerciseList() {
                 <TableHead>Imagen</TableHead>
                 <TableHead>Nombre del Ejercicio</TableHead>
                 <TableHead>Categoría</TableHead>
-                <TableHead className="text-right">Visible</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,13 +170,20 @@ export default function ExerciseList() {
                     </TableCell>
                     <TableCell className="text-right">
                        <div className="flex items-center justify-end gap-2">
-                         {updatingId === exercise.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                        <Switch
+                         {updatingId === exercise.id ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                         <Switch
                             checked={exercise.Visible}
                             onCheckedChange={(checked) => handleVisibilityChange(exercise.id, checked)}
                             disabled={updatingId === exercise.id}
                             aria-label={`Visibilidad de ${exercise.Ejercicio}`}
                         />
+                        }
+                        <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
                        </div>
                     </TableCell>
                 </TableRow>
