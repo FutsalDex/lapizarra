@@ -57,8 +57,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Exercise {
   id: string;
-  Nombre_del_ejercicio: string;
-  Duracion: string;
+  Ejercicio: string;
+  'Duración (min)': string;
 }
 
 interface Session {
@@ -120,9 +120,9 @@ export default function MisSesionesPage() {
             const mainExs = session.mainExercises.map((id) => exercisesMap.get(id) || null);
             const finalEx = exercisesMap.get(session.finalExercise) || null;
 
-            const initialDuration = parseInt(initialEx?.Duracion || '0', 10);
-            const mainDuration = mainExs.reduce((acc, ex) => acc + parseInt(ex?.Duracion || '0', 10),0);
-            const finalDuration = parseInt(finalEx?.Duracion || '0', 10);
+            const initialDuration = parseInt(initialEx?.['Duración (min)'] || '0', 10);
+            const mainDuration = mainExs.reduce((acc, ex) => acc + parseInt(ex?.['Duración (min)'] || '0', 10),0);
+            const finalDuration = parseInt(finalEx?.['Duración (min)'] || '0', 10);
             const totalDuration = initialDuration + mainDuration + finalDuration;
 
           return {
@@ -246,17 +246,17 @@ export default function MisSesionesPage() {
                     <CardContent className="flex-grow space-y-4 text-sm">
                         <div>
                             <h4 className="font-semibold text-foreground">Calentamiento</h4>
-                            <p className="text-muted-foreground">{session.initialExercise?.Nombre_del_ejercicio || 'N/A'}</p>
+                            <p className="text-muted-foreground">{session.initialExercise?.Ejercicio || 'N/A'}</p>
                         </div>
                          <div>
                             <h4 className="font-semibold text-foreground">Ejercicios Principales</h4>
                             <ul className="list-disc list-inside text-muted-foreground">
-                                {session.mainExercises.map(ex => ex ? <li key={ex.id}>{ex.Nombre_del_ejercicio}</li> : null)}
+                                {session.mainExercises.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li> : null)}
                             </ul>
                         </div>
                         <div>
                             <h4 className="font-semibold text-foreground">Vuelta a la Calma</h4>
-                            <p className="text-muted-foreground">{session.finalExercise?.Nombre_del_ejercicio || 'N/A'}</p>
+                            <p className="text-muted-foreground">{session.finalExercise?.Ejercicio || 'N/A'}</p>
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col items-stretch space-y-2">
@@ -294,3 +294,6 @@ export default function MisSesionesPage() {
   );
 }
 
+
+
+    

@@ -22,19 +22,19 @@ import Link from 'next/link';
 
 interface Exercise {
   id: string;
-  id_ejercicio?: string;
-  Nombre_del_ejercicio: string;
-  Descripción_de_la_tarea: string;
+  Número?: string;
+  Ejercicio: string;
+  'Descripción de la tarea': string;
   Objetivos: string;
-  Fase_de_la_sesión: string;
-  Categoria: string;
-  Etiquetas_de_edad: string[];
-  Jugadores: string;
-  Duracion: string;
-  Materiales_y_espacio: string;
-  Variantes_del_ejercicio?: string;
-  Consejos_para_el_entrenador?: string;
-  URL_de_la_imagen_del_ejercicio?: string;
+  Fase: string;
+  Categoría: string;
+  Edad: string[];
+  'Número de jugadores': string;
+  'Duración (min)': string;
+  'Espacio y materiales necesarios': string;
+  Variantes?: string;
+  'Consejos para el entrenador'?: string;
+  Imagen?: string;
   visible: boolean;
   aiHint?: string;
 }
@@ -185,10 +185,10 @@ export default function FavoritosPage() {
           {favoriteExercises.map((exercise) => (
             <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <div className="relative aspect-[4/3] bg-muted">
-                {exercise.URL_de_la_imagen_del_ejercicio && (
+                {exercise.Imagen && (
                   <Image
-                    src={exercise.URL_de_la_imagen_del_ejercicio}
-                    alt={exercise.Nombre_del_ejercicio}
+                    src={exercise.Imagen}
+                    alt={exercise.Ejercicio}
                     data-ai-hint={exercise.aiHint || 'futsal drill court'}
                     fill
                     className="object-cover"
@@ -198,17 +198,17 @@ export default function FavoritosPage() {
               </div>
               <CardHeader className="pb-3">
                 <CardTitle className="font-bold text-xl">
-                  {exercise.id_ejercicio ? `${exercise.id_ejercicio} - ` : ''}{exercise.Nombre_del_ejercicio}
+                  {exercise.Número ? `${exercise.Número} - ` : ''}{exercise.Ejercicio}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-grow space-y-3 text-sm">
                 <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase_de_la_sesión}</p>
-                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Etiquetas_de_edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
-                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise.Duracion} min</p>
+                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase}</p>
+                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
+                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise['Duración (min)']} min</p>
                 </div>
                 <p className="text-muted-foreground pt-2">
-                  {exercise.Descripción_de_la_tarea && `${exercise.Descripción_de_la_tarea.substring(0, 100)}${exercise.Descripción_de_la_tarea.length > 100 ? '...' : ''}`}
+                  {exercise['Descripción de la tarea'] && `${exercise['Descripción de la tarea'].substring(0, 100)}${exercise['Descripción de la tarea'].length > 100 ? '...' : ''}`}
                 </p>
               </CardContent>
               <CardFooter className="bg-card border-t p-3">
@@ -231,5 +231,7 @@ export default function FavoritosPage() {
     </div>
   );
 }
+
+    
 
     
