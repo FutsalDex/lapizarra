@@ -58,7 +58,7 @@ export default function AdminPage() {
               </Button>
             </div>
             <Button asChild variant="outline" className="w-full" size="lg">
-                <Link href="/ejercicios">
+                <Link href="/admin/gestion-ejercicios/listado">
                     <ClipboardList className="mr-2 h-5 w-5" />
                     Ver/Gestionar Ejercicios
                 </Link>
