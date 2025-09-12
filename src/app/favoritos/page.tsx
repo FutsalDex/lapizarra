@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,7 +25,7 @@ interface Exercise {
   Ejercicio: string;
   'Descripción de la tarea': string;
   Objetivos: string;
-  Fase: string;
+  'Fase de la Sesión': string;
   Categoría: string;
   Edad: string[];
   'Número de jugadores': string;
@@ -203,7 +202,7 @@ export default function FavoritosPage() {
               </CardHeader>
               <CardContent className="flex-grow space-y-3 text-sm">
                 <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase}</p>
+                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise['Fase de la Sesión']}</p>
                     <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
                     <p><span className="font-semibold text-foreground">Duración:</span> {exercise['Duración (min)']} min</p>
                 </div>
@@ -231,9 +230,3 @@ export default function FavoritosPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
