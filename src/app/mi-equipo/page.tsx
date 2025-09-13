@@ -17,7 +17,6 @@ import {
   PenSquare,
   ClipboardList,
   CalendarDays,
-  BarChart3,
   LifeBuoy,
   ArrowRight,
   ShieldPlus,
@@ -43,12 +42,6 @@ const modules = [
     description: 'Visualiza la cronología de todos tus partidos y sesiones de entrenamiento guardados.',
     icon: CalendarDays,
     href: '/mis-eventos',
-  },
-   {
-    title: 'Mis Estadísticas',
-    description: 'Visualiza un resumen de los datos más relevantes de la temporada y las sesiones.',
-    icon: BarChart3,
-    href: '/mis-estadisticas',
   },
    {
     title: 'Soporte Técnico',

@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Users, ClipboardCheck, BarChartHorizontal, Settings } from 'lucide-react';
+import { ArrowLeft, Users, ClipboardCheck, Trophy, Settings, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -21,7 +21,7 @@ interface Team {
 const teamModules = [
   {
     title: 'Plantilla',
-    description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus estadísticas de la temporada.',
+    description: 'Gestiona la plantilla de tu equipo, añade jugadores y consulta sus datos.',
     icon: Users,
     href: (teamId: string) => `/equipo/${teamId}/plantilla`,
   },
@@ -32,11 +32,17 @@ const teamModules = [
     href: (teamId: string) => `/equipo/${teamId}/asistencia`,
   },
   {
-    title: 'Partidos y Estadísticas',
-    description: 'Gestiona el partido en tiempo real, estadísticas, goles y crono.',
-    icon: BarChartHorizontal,
+    title: 'Partidos',
+    description: 'Gestiona los partidos del equipo, resultados y accede al marcador en vivo.',
+    icon: Trophy,
     href: (teamId: string) => `/equipo/${teamId}/partidos`,
   },
+  {
+    title: 'Estadísticas',
+    description: 'Visualiza un resumen de los datos más relevantes de la temporada y el rendimiento del equipo.',
+    icon: BarChart3,
+    href: (teamId: string) => `/equipo/${teamId}/estadisticas`,
+  }
 ];
 
 
@@ -128,7 +134,7 @@ export default function TeamDashboardPage() {
           </div>
       </div>
       
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {teamModules.map((item) => (
           <Card key={item.title} className="flex flex-col hover:shadow-lg transition-shadow">
             <CardHeader className="flex-row items-center gap-4 space-y-0">
