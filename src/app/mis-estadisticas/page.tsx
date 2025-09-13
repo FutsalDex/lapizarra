@@ -162,11 +162,11 @@ export default function MisEstadisticasPage() {
                 goalsAgainst: 0,
                 goalsAgainst1stHalf: 0,
                 goalsAgainst2ndHalf: 0,
-                shotsOnTarget: 0, // Need to add to match data
-                shotsOffTarget: 0, // Need to add to match data
-                shotsBlocked: 0, // Need to add to match data
-                turnovers: 0, // Need to add to match data
-                recoveries: 0, // Need to add to match data
+                shotsOnTarget: 0,
+                shotsOffTarget: 0,
+                shotsBlocked: 0,
+                turnovers: 0,
+                recoveries: 0,
             };
 
             matches.forEach(match => {
@@ -199,6 +199,21 @@ export default function MisEstadisticasPage() {
                          if(goal.period === '2ª Parte') newStats.goalsAgainst2ndHalf++;
                     }
                 })
+
+                if (match.teamStats1) {
+                  newStats.shotsOnTarget += match.teamStats1.shotsOnTarget || 0;
+                  newStats.shotsOffTarget += match.teamStats1.shotsOffTarget || 0;
+                  newStats.shotsBlocked += match.teamStats1.shotsBlocked || 0;
+                  newStats.turnovers += match.teamStats1.turnovers || 0;
+                  newStats.recoveries += match.teamStats1.recoveries || 0;
+                }
+                if (match.teamStats2) {
+                  newStats.shotsOnTarget += match.teamStats2.shotsOnTarget || 0;
+                  newStats.shotsOffTarget += match.teamStats2.shotsOffTarget || 0;
+                  newStats.shotsBlocked += match.teamStats2.shotsBlocked || 0;
+                  newStats.turnovers += match.teamStats2.turnovers || 0;
+                  newStats.recoveries += match.teamStats2.recoveries || 0;
+                }
             });
 
             setStats(newStats);

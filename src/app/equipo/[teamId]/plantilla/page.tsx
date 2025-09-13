@@ -30,7 +30,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import PlayerStatsCharts from './_components/PlayerStatsCharts';
 
 
 interface Team {
@@ -230,7 +229,7 @@ export default function TeamRosterPage() {
                         Mi Plantilla
                     </h1>
                     <p className="text-lg text-muted-foreground mt-1">
-                        Gestiona la plantilla de tu equipo y consulta sus estadísticas de la temporada.
+                        Gestiona la plantilla de tu equipo y sus datos principales.
                     </p>
                     </div>
                 </div>
@@ -301,14 +300,6 @@ export default function TeamRosterPage() {
                         <TableHead className="w-[20%] min-w-[150px]">Nombre</TableHead>
                         <TableHead className="w-[15%] min-w-[150px]">Posición</TableHead>
                         <TableHead className="w-[8%]">Activo</TableHead>
-                        <TableHead className="text-center">PJ</TableHead>
-                        <TableHead className="text-center">Goles</TableHead>
-                        <TableHead className="text-center">As</TableHead>
-                        <TableHead className="text-center">T.A.</TableHead>
-                        <TableHead className="text-center">T.R.</TableHead>
-                        <TableHead className="text-center">Faltas</TableHead>
-                        <TableHead className="text-center">Paradas</TableHead>
-                        <TableHead className="text-center">GC</TableHead>
                         <TableHead className="text-right w-[10%]">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -333,14 +324,6 @@ export default function TeamRosterPage() {
                                 </Select>
                             </TableCell>
                             <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handlePlayerChange(player.id, 'active', checked)} /></TableCell>
-                            <TableCell className="text-center">{player.pj || 0}</TableCell>
-                            <TableCell className="text-center">{player.goals || 0}</TableCell>
-                            <TableCell className="text-center">{player.assists || 0}</TableCell>
-                            <TableCell className="text-center">{player.ta || 0}</TableCell>
-                            <TableCell className="text-center">{player.tr || 0}</TableCell>
-                            <TableCell className="text-center">{player.faltas || 0}</TableCell>
-                            <TableCell className="text-center">{player.paradas || 0}</TableCell>
-                            <TableCell className="text-center">{player.gRec || 0}</TableCell>
                             <TableCell className="text-right">
                                  <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
                                     <Trash2 className="h-4 w-4" />
@@ -360,7 +343,6 @@ export default function TeamRosterPage() {
             </div>
         </CardContent>
       </Card>
-      <PlayerStatsCharts players={players} />
     </div>
   );
 }
