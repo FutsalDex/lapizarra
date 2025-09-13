@@ -53,14 +53,6 @@ interface Player {
     name: string;
     position: string;
     active: boolean;
-    pj: number;
-    goals: number;
-    assists: number;
-    ta: number;
-    tr: number;
-    faltas: number;
-    paradas: number;
-    gRec: number;
 }
 
 
@@ -116,7 +108,12 @@ export default function TeamRosterPage() {
         players.forEach(player => {
             const playerRef = doc(db, 'teams', teamId, 'players', player.id);
             const { id, ...playerData } = player; // Exclude id from the data being written
-            batch.update(playerRef, { ...playerData });
+            batch.update(playerRef, { 
+                name: playerData.name,
+                number: playerData.number,
+                position: playerData.position,
+                active: playerData.active
+            });
         });
         
         try {
@@ -172,38 +169,6 @@ export default function TeamRosterPage() {
          }
     }
     
-     const handleResetStats = async () => {
-        setIsSaving(true);
-        const batch = writeBatch(db);
-        players.forEach(player => {
-            const playerRef = doc(db, 'teams', teamId, 'players', player.id);
-            batch.update(playerRef, {
-                pj: 0,
-                goals: 0,
-                assists: 0,
-                ta: 0,
-                tr: 0,
-                faltas: 0,
-                paradas: 0,
-                gRec: 0,
-            });
-        });
-
-        try {
-            await batch.commit();
-            toast({
-                title: "Estadísticas Reseteadas",
-                description: "Las estadísticas de todos los jugadores han sido puestas a cero."
-            });
-        } catch (error) {
-            console.error("Error resetting stats: ", error);
-            toast({ title: "Error", description: "No se pudieron resetear las estadísticas.", variant: "destructive" });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-
     if (loading) {
         return (
              <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
