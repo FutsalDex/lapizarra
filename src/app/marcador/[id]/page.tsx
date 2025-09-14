@@ -495,7 +495,6 @@ export default function MarcadorEnVivoPage() {
   const visitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
   const opponentPeriodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
-  const opponentFouls = match[opponentTeam === 'local' ? 'localFouls' : 'visitorFouls'];
   
   const renderTeamTable = (isUserTeam: boolean) => {
     if (!isUserTeam) {
@@ -598,7 +597,7 @@ const renderOpponentStats = () => {
                     />
                     <StatCounter 
                         label="Faltas Rival"
-                        value={opponentFouls}
+                        value={match[opponentTeam === 'local' ? 'localFouls' : 'visitorFouls']}
                         onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', 1)}
                         onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', -1)}
                     />
@@ -637,7 +636,7 @@ const renderTeamStats = () => {
     ];
 
     const StatRow = ({ statKey, label, periodKey }: { statKey: TeamStatKeys, label: string, periodKey: 'teamStats1' | 'teamStats2' }) => (
-        <TableRow>
+        <TableRow key={statKey}>
             <TableCell className="font-medium">{label}</TableCell>
             <TableCell>
                 <div className="flex items-center justify-center gap-1">
@@ -697,7 +696,7 @@ const renderTeamStats = () => {
         <div
           key={i}
           className={cn(
-            'h-4 w-4 rounded-full border-2 border-red-500',
+            'h-3 w-3 rounded-full border-2 border-red-500',
             i < count ? 'bg-red-500' : 'bg-transparent'
           )}
         />
@@ -759,14 +758,14 @@ const renderTeamStats = () => {
             <CardContent className="p-4 md:p-6">
                  <div className="grid grid-cols-3 items-start w-full max-w-4xl mx-auto mb-4 text-center gap-4">
                     <div className="flex flex-col items-center">
-                        <h2 className="text-2xl font-bold w-full truncate">{match.localTeam}</h2>
+                        <h2 className="text-xl md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
-                    <div className="text-5xl font-bold text-primary tabular-nums self-center">
+                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums self-center">
                         {localScore} - {visitorScore}
                     </div>
                     <div className="flex flex-col items-center">
-                        <h2 className="text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
+                        <h2 className="text-xl md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
                 </div>
