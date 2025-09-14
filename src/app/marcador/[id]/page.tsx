@@ -424,11 +424,13 @@ export default function MarcadorEnVivoPage() {
   }
 
   const StatCounter = ({ label, value, onIncrement, onDecrement }: { label:string, value: number, onIncrement: () => void, onDecrement: () => void }) => (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{label}:</span>
-        <Button size="icon" variant="outline" className="h-6 w-6" onClick={onDecrement} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
-        <span className="w-4 text-center font-bold">{value}</span>
-        <Button size="icon" variant="outline" className="h-6 w-6" onClick={onIncrement} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+        <div className="flex items-center gap-1">
+            <Button size="icon" variant="outline" className="h-6 w-6" onClick={onDecrement} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+            <span className="w-4 text-center font-bold">{value}</span>
+            <Button size="icon" variant="outline" className="h-6 w-6" onClick={onIncrement} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+        </div>
     </div>
   );
 
@@ -505,71 +507,74 @@ export default function MarcadorEnVivoPage() {
     const players = userPlayers || [];
 
     return (
-        <div className="mt-0">
-            <div className="p-2 bg-primary text-primary-foreground">
-                <h3 className="font-bold text-center">JUGADORES - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</h3>
-            </div>
-            <div className="rounded-b-md border border-t-0 overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="px-2">Dorsal</TableHead>
-                            <TableHead className="px-2 min-w-[150px]">Nombre</TableHead>
-                            <TableHead className="text-center px-1">Goles</TableHead>
-                            <TableHead className="text-center px-1">As</TableHead>
-                            <TableHead className="text-center px-1">
-                                <div className="inline-block w-4 h-5 bg-yellow-400 border border-black mx-auto"></div>
-                            </TableHead>
-                            <TableHead className="text-center px-1">
-                                <div className="inline-block w-4 h-5 bg-red-600 border border-black mx-auto"></div>
-                            </TableHead>
-                            <TableHead className="text-center px-1">Faltas</TableHead>
-                            <TableHead className="text-center px-1">Paradas</TableHead>
-                            <TableHead className="text-center px-1">GC</TableHead>
-                            <TableHead className="text-center px-1">1vs1</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {players.map((player, index) => (
-                            <TableRow key={player.id}>
-                                <TableCell className="px-2">
-                                    <Input 
-                                        className="h-8 w-14 text-center" 
-                                        value={player.number} 
-                                        onChange={(e) => handlePlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} 
-                                        readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')} 
-                                    />
-                                </TableCell>
-                                <TableCell className="px-2">
-                                    <Input 
-                                        className="h-8" 
-                                        value={player.name} 
-                                        onChange={(e) => handlePlayerInfoChange(index, 'name', e.target.value)} 
-                                        readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')}
-                                    />
-                                </TableCell>
-                                <StatButtonCell playerIndex={index} stat="goals" />
-                                <StatButtonCell playerIndex={index} stat="assists" />
-                                <StatButtonCell playerIndex={index} stat="amarillas" />
-                                <StatButtonCell playerIndex={index} stat="rojas" />
-                                <StatButtonCell playerIndex={index} stat="faltas" />
-                                <StatButtonCell playerIndex={index} stat="paradas" />
-                                <StatButtonCell playerIndex={index} stat="gRec" />
-                                <StatButtonCell playerIndex={index} stat="vs1" />
+        <div className="space-y-6">
+            <div className="mt-0">
+                <div className="p-2 bg-primary text-primary-foreground">
+                    <h3 className="font-bold text-center">JUGADORES - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</h3>
+                </div>
+                <div className="rounded-b-md border border-t-0 overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="px-2">Dorsal</TableHead>
+                                <TableHead className="px-2 min-w-[150px]">Nombre</TableHead>
+                                <TableHead className="text-center px-1">Goles</TableHead>
+                                <TableHead className="text-center px-1">As</TableHead>
+                                <TableHead className="text-center px-1">
+                                    <div className="inline-block w-4 h-5 bg-yellow-400 border border-black mx-auto"></div>
+                                </TableHead>
+                                <TableHead className="text-center px-1">
+                                    <div className="inline-block w-4 h-5 bg-red-600 border border-black mx-auto"></div>
+                                </TableHead>
+                                <TableHead className="text-center px-1">Faltas</TableHead>
+                                <TableHead className="text-center px-1">Paradas</TableHead>
+                                <TableHead className="text-center px-1">GC</TableHead>
+                                <TableHead className="text-center px-1">1vs1</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                
-                {!match.isFinished && (
-                    <div className="p-2 text-right">
-                        <Button variant="outline" size="sm" onClick={addPlayer}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Jugador
-                        </Button>
-                    </div>
-                )}
+                        </TableHeader>
+                        <TableBody>
+                            {players.map((player, index) => (
+                                <TableRow key={player.id}>
+                                    <TableCell className="px-2">
+                                        <Input 
+                                            className="h-8 w-14 text-center" 
+                                            value={player.number} 
+                                            onChange={(e) => handlePlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} 
+                                            readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')} 
+                                        />
+                                    </TableCell>
+                                    <TableCell className="px-2">
+                                        <Input 
+                                            className="h-8" 
+                                            value={player.name} 
+                                            onChange={(e) => handlePlayerInfoChange(index, 'name', e.target.value)} 
+                                            readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')}
+                                        />
+                                    </TableCell>
+                                    <StatButtonCell playerIndex={index} stat="goals" />
+                                    <StatButtonCell playerIndex={index} stat="assists" />
+                                    <StatButtonCell playerIndex={index} stat="amarillas" />
+                                    <StatButtonCell playerIndex={index} stat="rojas" />
+                                    <StatButtonCell playerIndex={index} stat="faltas" />
+                                    <StatButtonCell playerIndex={index} stat="paradas" />
+                                    <StatButtonCell playerIndex={index} stat="gRec" />
+                                    <StatButtonCell playerIndex={index} stat="vs1" />
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    
+                    {!match.isFinished && (
+                        <div className="p-2 text-right">
+                            <Button variant="outline" size="sm" onClick={addPlayer}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Añadir Jugador
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </div>
+            {renderTeamStats()}
         </div>
     );
 };
@@ -588,7 +593,7 @@ const renderOpponentStats = () => {
                 <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="p-4 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 border-b">
+                 <div className="p-4 flex flex-col space-y-4 border-b">
                      <StatCounter 
                         label="Goles Rival"
                         value={opponentScore}
@@ -604,14 +609,14 @@ const renderOpponentStats = () => {
                 </div>
                 <Table>
                     <TableBody>
-                         {opponentStatsConfig.map(({ key, label }) => (
-                            <TableRow key={key}>
-                                <TableCell className="font-medium">{label}</TableCell>
+                         {opponentStatsConfig.map((config) => (
+                            <TableRow key={config.key}>
+                                <TableCell className="font-medium">{config.label}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, key, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
-                                        <span className="w-4 text-center">{match[opponentPeriodKey][key]}</span>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, key, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                                        <span className="w-4 text-center">{match[opponentPeriodKey][config.key]}</span>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -636,7 +641,7 @@ const renderTeamStats = () => {
     ];
 
     const StatRow = ({ statKey, label, periodKey }: { statKey: TeamStatKeys, label: string, periodKey: 'teamStats1' | 'teamStats2' }) => (
-        <TableRow key={statKey}>
+        <TableRow>
             <TableCell className="font-medium">{label}</TableCell>
             <TableCell>
                 <div className="flex items-center justify-center gap-1">
@@ -809,8 +814,6 @@ const renderTeamStats = () => {
         </CardContent>
       </Card>
       
-      {renderTeamStats()}
-
     </div>
   );
 }
@@ -818,3 +821,4 @@ const renderTeamStats = () => {
     
 
     
+
