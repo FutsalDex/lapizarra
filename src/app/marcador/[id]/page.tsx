@@ -498,7 +498,10 @@ export default function MarcadorEnVivoPage() {
   const opponentFouls = match[opponentTeam === 'local' ? 'localFouls' : 'visitorFouls'];
   
   const renderTeamTable = (isUserTeam: boolean) => {
-    if (!isUserTeam) return renderOpponentStats();
+    if (!isUserTeam) {
+        return renderOpponentStats();
+    }
+
 
     const players = userPlayers || [];
 
@@ -586,6 +589,20 @@ const renderOpponentStats = () => {
                 <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+                <div className="p-4 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 border-b">
+                     <StatCounter 
+                        label="Goles Rival"
+                        value={opponentScore}
+                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', 1)}
+                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', -1)}
+                    />
+                    <StatCounter 
+                        label="Faltas Rival"
+                        value={opponentFouls}
+                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', 1)}
+                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', -1)}
+                    />
+                </div>
                 <Table>
                     <TableBody>
                          {opponentStatsConfig.map(({ key, label }) => (
@@ -758,23 +775,6 @@ const renderTeamStats = () => {
                     {formatTime(match.timeLeft)}
                 </div>
 
-                 <div className="flex justify-center items-center gap-2 text-center text-sm font-semibold text-muted-foreground my-4">
-                    <StatCounter 
-                        label="Goles Rival"
-                        value={opponentScore}
-                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', 1)}
-                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', -1)}
-                    />
-                    <div className="h-6 w-px bg-border mx-2"></div>
-                    <StatCounter 
-                        label="Faltas Rival"
-                        value={opponentFouls}
-                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', 1)}
-                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', -1)}
-                    />
-                </div>
-
-
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
                     <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || match.isFinished}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
@@ -815,5 +815,7 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
 
     
