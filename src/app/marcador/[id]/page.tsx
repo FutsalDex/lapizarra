@@ -72,6 +72,7 @@ interface MatchDetails {
     period: '1ª Parte' | '2ª Parte' | 'Descanso';
     isActive: boolean;
     isFinished: boolean; 
+    userTeam: 'local' | 'visitor';
     localPlayers?: Player[];
     visitorPlayers?: Player[];
     events: GoalEvent[];
@@ -120,30 +121,38 @@ export default function MarcadorEnVivoPage() {
         if (docSnap.exists()) {
             const data = docSnap.data() as Omit<MatchDetails, 'id'>;
 
-            let localPlayers = data.localPlayers;
-            
-            // Only fetch roster if players are not already in the match document
-            if (data.teamId && (!localPlayers || localPlayers.length === 0)) {
+            let userTeam: 'local' | 'visitor' = 'local'; // default
+            let teamPlayers: Player[] | undefined = data.localPlayers;
+
+            if (data.teamId) {
                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
-                if (teamDoc.exists()) {
+                if(teamDoc.exists()) {
                     const teamName = teamDoc.data().name;
-                     if (teamName === data.localTeam) {
+                    if(teamName === data.visitorTeam) {
+                        userTeam = 'visitor';
+                        teamPlayers = data.visitorPlayers;
+                    }
+                    if (teamName === data.localTeam) {
+                        userTeam = 'local';
+                        teamPlayers = data.localPlayers;
+                    }
+
+                    if (!teamPlayers || teamPlayers.length === 0) {
                         const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playerQuery);
-                        localPlayers = playersSnapshot.docs.map(d => ({
+                        teamPlayers = playersSnapshot.docs.map(d => ({
                             id: d.id, 
                             name: d.data().name, 
                             number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
                         })).sort((a, b) => a.number - b.number);
-                     }
+                    }
                 }
             }
-            
-            setMatch({
+
+            const updatedMatch: MatchDetails = {
                 id: docSnap.id,
                 ...data,
-                localPlayers: localPlayers || [],
                 timeLeft: data.timeLeft ?? 25 * 60,
                 period: data.period ?? '1ª Parte',
                 isActive: data.isActive ?? false,
@@ -155,7 +164,12 @@ export default function MarcadorEnVivoPage() {
                 opponentStats2: data.opponentStats2 || defaultOpponentStats,
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
-            });
+                userTeam: userTeam,
+                localPlayers: userTeam === 'local' ? teamPlayers : [],
+                visitorPlayers: userTeam === 'visitor' ? teamPlayers : [],
+            }
+            
+            setMatch(updatedMatch);
         } else {
             toast({ title: "Error", description: "Partido no encontrado.", variant: "destructive" });
         }
@@ -172,7 +186,6 @@ export default function MarcadorEnVivoPage() {
         if (currentMatch && !currentMatch.isFinished && !isSaving) {
             try {
                 const matchDocRef = doc(db, 'matches', currentMatch.id);
-                // Destructure to avoid sending the whole object if not needed
                 const { id: matchId, ...dataToSave } = currentMatch;
                 await updateDoc(matchDocRef, dataToSave);
                 setShowSavedIndicator(true);
@@ -181,7 +194,7 @@ export default function MarcadorEnVivoPage() {
                 console.error("Autosave failed: ", error);
             }
         }
-    }, 5000); // 5 seconds
+    }, 5000);
 
     return () => clearInterval(saveInterval);
   }, [isSaving]);
@@ -208,13 +221,15 @@ export default function MarcadorEnVivoPage() {
     if (!match || match.isFinished) return;
     setIsSaving(true);
     
-    const localScore = match.localPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
-    const opponentPeriodStats = match.period === '1ª Parte' ? match.opponentStats1 : match.opponentStats2;
+    const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
+    const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+    
+    const opponentScore = match.userTeam === 'local' ? match.visitorScore : match.localScore;
 
     const dataToUpdate = {
         ...match,
-        localScore,
-        visitorScore: opponentPeriodStats.goals,
+        localScore: match.userTeam === 'local' ? userTeamScore : opponentScore,
+        visitorScore: match.userTeam === 'visitor' ? userTeamScore : opponentScore,
         isFinished: true,
         isActive: false
     };
@@ -225,9 +240,9 @@ export default function MarcadorEnVivoPage() {
         
         batch.update(matchDocRef, dataToUpdate);
 
-        if (match.teamId && match.localPlayers) { 
-             match.localPlayers.forEach(player => {
-                if (player.id && !player.id.startsWith('local-')) {
+        if (match.teamId && userPlayers) { 
+             userPlayers.forEach(player => {
+                if (player.id && !player.id.startsWith('local-') && !player.id.startsWith('visitor-')) {
                     const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
                     batch.update(playerRef, {
                         pj: increment(1),
@@ -261,9 +276,10 @@ export default function MarcadorEnVivoPage() {
  const handleStatChange = (playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
     if (match?.isFinished) return;
     setMatch(prev => {
-        if (!prev || !prev.localPlayers) return null;
+        if (!prev) return null;
 
-        const players = [...prev.localPlayers];
+        const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = prev[playersKey] ? [...prev[playersKey]!] : [];
         const player = players[playerIndex];
 
         if (!player) return prev;
@@ -277,7 +293,9 @@ export default function MarcadorEnVivoPage() {
         players[playerIndex] = { ...player, [stat]: newValue };
         
         let newEvents = prev.events ? [...prev.events] : [];
-        let newLocalFouls = prev.localFouls;
+        
+        const foulsKey = prev.userTeam === 'local' ? 'localFouls' : 'visitorFouls';
+        let newFoulsCount = prev[foulsKey];
 
         if (stat === 'goals') {
              if (delta === 1 && prev.period !== 'Descanso') {
@@ -293,7 +311,7 @@ export default function MarcadorEnVivoPage() {
                     type: 'goal',
                     playerId: player.id,
                     playerName: player.name,
-                    team: 'local',
+                    team: prev.userTeam,
                     minute: minute,
                     period: prev.period,
                     teamId: prev.teamId
@@ -310,10 +328,10 @@ export default function MarcadorEnVivoPage() {
         }
         
         if (stat === 'faltas') {
-             newLocalFouls = Math.max(0, newLocalFouls + delta);
+             newFoulsCount = Math.max(0, newFoulsCount + delta);
         }
 
-        return { ...prev, localPlayers: players, events: newEvents, localFouls: newLocalFouls };
+        return { ...prev, [playersKey]: players, events: newEvents, [foulsKey]: newFoulsCount };
     });
 }
 
@@ -336,16 +354,26 @@ export default function MarcadorEnVivoPage() {
         const currentStatValue = prev[period][stat];
         const newValue = currentStatValue + delta;
         if (newValue < 0) return prev;
+        
+        const opponentTeam = prev.userTeam === 'local' ? 'visitor' : 'local';
+        const foulsKey = opponentTeam === 'local' ? 'localFouls' : 'visitorFouls';
+        let newFoulsCount = prev[foulsKey];
 
-        let newVisitorFouls = prev.visitorFouls;
         if (stat === 'faltas') {
-            newVisitorFouls = Math.max(0, newVisitorFouls + delta);
+            newFoulsCount = Math.max(0, newFoulsCount + delta);
+        }
+        
+        const scoreKey = opponentTeam === 'local' ? 'localScore' : 'visitorScore';
+        let newScore = prev[scoreKey];
+        if (stat === 'goals') {
+            newScore = Math.max(0, newScore + delta);
         }
 
         return {
             ...prev,
             [period]: { ...prev[period], [stat]: newValue },
-            visitorFouls: newVisitorFouls,
+            [foulsKey]: newFoulsCount,
+            [scoreKey]: newScore
         };
     });
   };
@@ -353,11 +381,13 @@ export default function MarcadorEnVivoPage() {
    const handlePlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
         if (match?.isFinished) return;
         setMatch(prev => {
-            if (!prev || !prev.localPlayers) return null;
+            if (!prev) return null;
+            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+            if (!prev[playersKey]) return prev;
             
-            const updatedPlayers = [...prev.localPlayers];
+            const updatedPlayers = [...prev[playersKey]!];
             updatedPlayers[playerIndex] = { ...updatedPlayers[playerIndex], [field]: value };
-            return { ...prev, localPlayers: updatedPlayers };
+            return { ...prev, [playersKey]: updatedPlayers };
         });
     };
 
@@ -365,19 +395,21 @@ export default function MarcadorEnVivoPage() {
         if (match?.isFinished) return;
         setMatch(prev => {
             if (!prev) return prev;
+            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
             const newPlayer: Player = {
-                id: `local-${Date.now()}`,
+                id: `${prev.userTeam}-${Date.now()}`,
                 name: 'Nuevo Jugador',
                 number: 0,
                 goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0
             };
-            const players = [...(prev.localPlayers || []), newPlayer];
-            return { ...prev, localPlayers: players };
+            const players = [...(prev[playersKey] || []), newPlayer];
+            return { ...prev, [playersKey]: players };
         });
     };
 
   const StatButtonCell = ({ playerIndex, stat }: { playerIndex: number, stat: PlayerStatKeys }) => {
-    const player = match?.localPlayers?.[playerIndex];
+    const players = match?.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
+    const player = players?.[playerIndex];
     const value = player?.[stat] ?? 0;
 
     return (
@@ -417,17 +449,17 @@ export default function MarcadorEnVivoPage() {
         if (!prev || prev.period === newPeriod) return prev;
 
         const resetPlayerFouls = (players: Player[] | undefined) => players?.map(p => ({ ...p, faltas: 0 }));
-        const opponentPeriodKey = newPeriod === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+        
+        const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
 
         return {
             ...prev,
             period: newPeriod,
             timeLeft: 25 * 60,
             isActive: false,
-            localPlayers: resetPlayerFouls(prev.localPlayers),
+            [playersKey]: resetPlayerFouls(prev[playersKey]),
             localFouls: 0,
             visitorFouls: 0,
-            [opponentPeriodKey]: { ...prev[opponentPeriodKey], faltas: 0 },
         };
       });
   }
@@ -454,17 +486,26 @@ export default function MarcadorEnVivoPage() {
     return <div className="container mx-auto py-8 text-center">Partido no encontrado.</div>;
   }
   
-  const opponentPeriodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
-  const localScore = match.localPlayers?.reduce((acc, p) => acc + p.goals, 0) || 0;
-  const visitorScore = match[opponentPeriodKey].goals;
+  const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
+  const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+  const opponentTeam = match.userTeam === 'local' ? 'visitor' : 'local';
+  const opponentScore = match[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
+  
+  const localScore = match.userTeam === 'local' ? userTeamScore : opponentScore;
+  const visitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
-  const renderTeamTable = () => {
-    const players = match.localPlayers || [];
+  const opponentPeriodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+  const opponentFouls = match[opponentTeam === 'local' ? 'localFouls' : 'visitorFouls'];
+  
+  const renderTeamTable = (isUserTeam: boolean) => {
+    if (!isUserTeam) return renderOpponentStats();
+
+    const players = userPlayers || [];
 
     return (
         <div className="mt-0">
             <div className="p-2 bg-primary text-primary-foreground">
-                <h3 className="font-bold text-center">JUGADORES - {match.localTeam}</h3>
+                <h3 className="font-bold text-center">JUGADORES - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</h3>
             </div>
             <div className="rounded-b-md border border-t-0 overflow-x-auto">
                 <Table>
@@ -494,7 +535,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8 w-14 text-center" 
                                         value={player.number} 
                                         onChange={(e) => handlePlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} 
-                                        readOnly={match.isFinished || !player.id.startsWith('local-')} 
+                                        readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')} 
                                     />
                                 </TableCell>
                                 <TableCell className="px-2">
@@ -502,7 +543,7 @@ export default function MarcadorEnVivoPage() {
                                         className="h-8" 
                                         value={player.name} 
                                         onChange={(e) => handlePlayerInfoChange(index, 'name', e.target.value)} 
-                                        readOnly={match.isFinished || !player.id.startsWith('local-')}
+                                        readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')}
                                     />
                                 </TableCell>
                                 <StatButtonCell playerIndex={index} stat="goals" />
@@ -542,7 +583,7 @@ const renderOpponentStats = () => {
     return (
         <Card>
             <CardHeader className="bg-muted p-3">
-                <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {match.visitorTeam}</CardTitle>
+                <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <Table>
@@ -595,7 +636,7 @@ const renderTeamStats = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <Card>
                 <CardHeader className="bg-primary text-primary-foreground p-3">
-                    <CardTitle className="text-base text-center">TIROS A PUERTA - {match.localTeam}</CardTitle>
+                    <CardTitle className="text-base text-center">TIROS A PUERTA - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
@@ -613,7 +654,7 @@ const renderTeamStats = () => {
             </Card>
             <Card>
                 <CardHeader className="bg-primary text-primary-foreground p-3">
-                    <CardTitle className="text-base text-center">EVENTOS DEL PARTIDO - {match.localTeam}</CardTitle>
+                    <CardTitle className="text-base text-center">EVENTOS DEL PARTIDO - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
@@ -720,14 +761,14 @@ const renderTeamStats = () => {
                  <div className="flex justify-center items-center gap-2 text-center text-sm font-semibold text-muted-foreground my-4">
                     <StatCounter 
                         label="Goles Rival"
-                        value={visitorScore}
+                        value={opponentScore}
                         onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', 1)}
                         onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', -1)}
                     />
                     <div className="h-6 w-px bg-border mx-2"></div>
                     <StatCounter 
                         label="Faltas Rival"
-                        value={match.visitorFouls}
+                        value={opponentFouls}
                         onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', 1)}
                         onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', -1)}
                     />
@@ -754,16 +795,16 @@ const renderTeamStats = () => {
 
       <Card>
         <CardContent className="p-0">
-           <Tabs defaultValue="local">
+           <Tabs defaultValue={match.userTeam}>
             <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none">
                 <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
-                <TabsTrigger value="visitor">Estadísticas {match.visitorTeam}</TabsTrigger>
+                <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
             </TabsList>
-            <TabsContent value="local" className="m-0">
-                {renderTeamTable()}
+            <TabsContent value="local" className="m-0 p-4">
+                {renderTeamTable(match.userTeam === 'local')}
             </TabsContent>
             <TabsContent value="visitor" className="p-4 m-0">
-                {renderOpponentStats()}
+                {renderTeamTable(match.userTeam === 'visitor')}
             </TabsContent>
            </Tabs>
         </CardContent>
