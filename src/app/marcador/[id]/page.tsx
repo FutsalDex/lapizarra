@@ -398,15 +398,42 @@ const reopenMatch = async () => {
         
         const scoreKey = opponentTeam === 'local' ? 'localScore' : 'visitorScore';
         let newScore = prev[scoreKey];
+        let newEvents = prev.events ? [...prev.events] : [];
         if (stat === 'goals') {
             newScore = Math.max(0, newScore + delta);
+             if (delta === 1 && prev.period !== 'Descanso') {
+                const totalTime = 25 * 60;
+                const timeElapsedInPeriod = totalTime - prev.timeLeft;
+                let minute = Math.floor(timeElapsedInPeriod / 60);
+                if (prev.period === '2ª Parte') minute += 25;
+                
+                const goalEvent: GoalEvent = {
+                    id: `goal-opponent-${Date.now()}`,
+                    type: 'goal',
+                    playerId: 'opponent',
+                    playerName: 'Rival',
+                    team: opponentTeam,
+                    minute: minute,
+                    period: prev.period,
+                    teamId: prev.teamId,
+                };
+                newEvents.push(goalEvent);
+            } else if (delta === -1) {
+                const lastOpponentGoalIndex = newEvents.findLastIndex(
+                    (event) => event.type === 'goal' && event.team === opponentTeam
+                );
+                if (lastOpponentGoalIndex > -1) {
+                    newEvents.splice(lastOpponentGoalIndex, 1);
+                }
+            }
         }
 
         return {
             ...prev,
             [period]: { ...prev[period], [stat]: newValue },
             [foulsKey]: newFoulsCount,
-            [scoreKey]: newScore
+            [scoreKey]: newScore,
+            events: newEvents,
         };
     });
   };
@@ -866,5 +893,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
