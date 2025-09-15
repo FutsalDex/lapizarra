@@ -777,20 +777,19 @@ const renderTeamStats = () => {
         </div>
 
         <Card>
-            <CardContent className="p-4 md:p-6">
-                 <div className="grid grid-cols-2 items-start w-full max-w-4xl mx-auto text-center gap-2">
+            <CardContent className="p-4 md:p-6 text-center space-y-4">
+                 <div className="grid grid-cols-3 items-center w-full max-w-4xl mx-auto gap-2">
                     <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
+                    </div>
+                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
+                        {localScore} - {visitorScore}
                     </div>
                     <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
-                </div>
-
-                <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums my-4 text-center">
-                    {localScore} - {visitorScore}
                 </div>
 
                 <div className="flex items-center justify-center gap-4 my-4">
