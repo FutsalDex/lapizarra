@@ -39,15 +39,17 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon: Icon, subtitle, color = 'text-primary' }: StatCardProps) => (
     <Card>
-        <CardContent className="p-4 flex items-center gap-4">
-            <div className={`p-3 rounded-lg bg-primary/10`}>
-                <Icon className={`h-6 w-6 ${color}`} />
+        <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg bg-primary/10`}>
+                    <Icon className={`h-6 w-6 ${color}`} />
+                </div>
+                <div>
+                    <p className="text-sm text-muted-foreground">{title}</p>
+                    {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+                </div>
             </div>
-            <div>
-                <p className="text-sm text-muted-foreground">{title}</p>
-                <p className="text-2xl font-bold">{value}</p>
-                 {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-            </div>
+            <p className="text-2xl font-bold">{value}</p>
         </CardContent>
     </Card>
 );
@@ -206,7 +208,7 @@ export default function TeamStatsPage() {
                 <CardHeader>
                     <CardTitle>Resumen General de Partidos</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <StatCard title="Partidos Jugados" value={stats.played} icon={Trophy} />
                     <StatCard title="Ganados" value={stats.won} icon={TrendingUp} />
                     <StatCard title="Empatados" value={stats.drawn} icon={Shield} />
@@ -219,7 +221,7 @@ export default function TeamStatsPage() {
                 <CardHeader>
                     <CardTitle>Rendimiento del Equipo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 sm:grid-cols-1">
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
                     <StatCard title="Tiros Bloqueados" value={stats.shotsBlocked} icon={Hand} />
@@ -233,7 +235,7 @@ export default function TeamStatsPage() {
                     <CardHeader>
                         <CardTitle>Goles a Favor</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                    <CardContent className="grid gap-4 grid-cols-1">
                         <StatCard title="Totales" value={stats.goalsFor} icon={Plus} />
                         <StatCard title="1ª Parte" value={stats.goalsFor1stHalf} icon={Plus} />
                         <StatCard title="2ª Parte" value={stats.goalsFor2ndHalf} icon={Plus} />
@@ -243,7 +245,7 @@ export default function TeamStatsPage() {
                     <CardHeader>
                         <CardTitle>Goles en Contra</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                    <CardContent className="grid gap-4 grid-cols-1">
                         <StatCard title="Totales" value={stats.goalsAgainst} icon={Minus} />
                         <StatCard title="1ª Parte" value={stats.goalsAgainst1stHalf} icon={Minus} />
                         <StatCard title="2ª Parte" value={stats.goalsAgainst2ndHalf} icon={Minus} />
@@ -255,3 +257,4 @@ export default function TeamStatsPage() {
     </div>
   );
 }
+
