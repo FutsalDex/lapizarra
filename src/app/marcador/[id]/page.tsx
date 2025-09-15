@@ -340,8 +340,15 @@ export default function MarcadorEnVivoPage() {
     setMatch(prev => {
         if (!prev) return null;
         const currentStatValue = prev[period][stat];
-        const newValue = currentStatValue + delta;
-        if (newValue < 0) return prev;
+        let newValue = currentStatValue + delta;
+
+        if (stat === 'timeouts') {
+            if (newValue > 1) newValue = 1;
+            if (newValue < 0) newValue = 0;
+        } else {
+            if (newValue < 0) return prev;
+        }
+
         return { ...prev, [period]: { ...prev[period], [stat]: newValue } };
     });
   };
@@ -352,8 +359,14 @@ export default function MarcadorEnVivoPage() {
         if (!prev) return null;
 
         const currentStatValue = prev[period][stat];
-        const newValue = currentStatValue + delta;
-        if (newValue < 0) return prev;
+        let newValue = currentStatValue + delta;
+        
+        if (stat === 'timeouts') {
+            if (newValue > 1) newValue = 1;
+            if (newValue < 0) newValue = 0;
+        } else {
+            if (newValue < 0) return prev;
+        }
         
         const opponentTeam = prev.userTeam === 'local' ? 'visitor' : 'local';
         const foulsKey = opponentTeam === 'local' ? 'localFouls' : 'visitorFouls';
@@ -439,18 +452,17 @@ export default function MarcadorEnVivoPage() {
       setMatch(prev => {
         if (!prev || prev.period === newPeriod) return prev;
 
-        const resetPlayerFouls = (players: Player[] | undefined) => players?.map(p => ({ ...p, faltas: 0 }));
-        
-        const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-
         return {
             ...prev,
             period: newPeriod,
             timeLeft: 25 * 60,
             isActive: false,
-            [playersKey]: resetPlayerFouls(prev[playersKey]),
             localFouls: 0,
             visitorFouls: 0,
+            teamStats1: { ...prev.teamStats1, timeouts: 0},
+            teamStats2: { ...prev.teamStats2, timeouts: 0},
+            opponentStats1: { ...prev.opponentStats1, timeouts: 0},
+            opponentStats2: { ...prev.opponentStats2, timeouts: 0},
         };
       });
   }
@@ -701,6 +713,18 @@ const renderTeamStats = () => {
     </div>
   );
 
+  const TimeoutIndicator = ({ used }: { used: boolean }) => (
+      <div className={cn(
+          "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
+          used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
+      )}>
+          <span className="font-bold text-sm">TM</span>
+      </div>
+  );
+
+  const currentPeriodKey = match.period === '1ª Parte' ? '1' : '2';
+  const localTimeoutUsed = match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0;
+  const visitorTimeoutUsed = match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0;
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
@@ -753,13 +777,17 @@ const renderTeamStats = () => {
 
         <Card>
             <CardContent className="p-4 md:p-6">
-                 <div className="grid grid-cols-3 items-start w-full max-w-4xl mx-auto mb-4 text-center gap-4">
+                 <div className="grid grid-cols-3 items-start w-full max-w-4xl mx-auto mb-4 text-center gap-2">
                     <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums self-center">
-                        {localScore} - {visitorScore}
+                    <div className="flex items-center justify-around self-center">
+                         <TimeoutIndicator used={match.userTeam === 'local' ? localTimeoutUsed : visitorTimeoutUsed} />
+                        <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
+                            {localScore} - {visitorScore}
+                        </div>
+                         <TimeoutIndicator used={match.userTeam === 'visitor' ? localTimeoutUsed : visitorTimeoutUsed} />
                     </div>
                     <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
@@ -813,6 +841,7 @@ const renderTeamStats = () => {
     
 
     
+
 
 
 
