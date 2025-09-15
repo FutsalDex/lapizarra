@@ -83,13 +83,15 @@ export default function MatchDetailsPage() {
     const unsubscribe = onSnapshot(matchDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        
-        let events = (data.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
+        let processedData = {
+            id: docSnap.id,
+            ...data
+        };
 
         // Manual fix for match J7wVYfI5UyXMiPkN5
-        if (matchId === 'J7wVYfI5UyXMiPkN5') {
-            const visitorHasGoalEvent = events.some((e: GoalEvent) => e.team === 'visitor');
-            if (!visitorHasGoalEvent && data.visitorScore === 1) {
+        if (processedData.id === 'J7wVYfI5UyXMiPkN5' && processedData.visitorScore === 1) {
+            const visitorHasGoalEvent = (processedData.events || []).some((e: GoalEvent) => e.team === 'visitor');
+            if (!visitorHasGoalEvent) {
                 const visitorGoal: GoalEvent = {
                     id: 'manual-goal-J7wVYfI5UyXMiPkN5',
                     type: 'goal',
@@ -100,11 +102,15 @@ export default function MatchDetailsPage() {
                     period: '1ª Parte',
                     teamId: data.teamId,
                 };
-                 events.push(visitorGoal);
-                 events.sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
+                if (!processedData.events) {
+                    processedData.events = [];
+                }
+                processedData.events.push(visitorGoal);
             }
         }
         
+        const sortedEvents = (processedData.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
+
         setMatch({
             id: docSnap.id,
             teamId: data.teamId,
@@ -115,7 +121,7 @@ export default function MatchDetailsPage() {
             visitorTeam: data.visitorTeam,
             localScore: data.localScore,
             visitorScore: data.visitorScore,
-            events: events,
+            events: sortedEvents,
             localPlayers: data.localPlayers || [],
             visitorPlayers: data.visitorPlayers || [],
         });
