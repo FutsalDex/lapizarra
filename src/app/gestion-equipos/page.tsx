@@ -12,7 +12,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft, UserCheck } from 'lucide-react';
+import { ShieldPlus, Users, Edit, Trash2, Settings, UserCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -42,7 +42,8 @@ interface Team {
 export default function GestionEquiposPage() {
     const { user } = useAuth();
     const { toast } = useToast();
-    const [teams, setTeams] = useState<Team[]>([]);
+    const [myTeams, setMyTeams] = useState<Team[]>([]);
+    const [sharedTeams, setSharedTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -50,23 +51,53 @@ export default function GestionEquiposPage() {
             setLoading(false);
             return;
         }
-        const q = query(collection(db, "teams"), where("ownerId", "==", user.uid));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+
+        // Fetch user's own teams
+        const myTeamsQuery = query(collection(db, "teams"), where("ownerId", "==", user.uid));
+        const unsubscribeMyTeams = onSnapshot(myTeamsQuery, (snapshot) => {
             const teamsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
-            setTeams(teamsData);
+            setMyTeams(teamsData);
             setLoading(false);
         }, (error) => {
             console.error("Error fetching teams: ", error);
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        // Fetch shared teams
+        const memberQuery = query(collection(db, "teamMembers"), where("userId", "==", user.uid));
+        const unsubscribeSharedTeams = onSnapshot(memberQuery, async (snapshot) => {
+            const teamIds = snapshot.docs.map(doc => doc.data().teamId);
+            
+            if (teamIds.length === 0) {
+                 setSharedTeams([]);
+                 return;
+            }
+
+            const uniqueTeamIds = [...new Set(teamIds)];
+            const teamsData: Team[] = [];
+            
+            // Fetch team details for each shared team
+            for (const teamId of uniqueTeamIds) {
+                const teamDoc = await getDoc(doc(db, 'teams', teamId));
+                if (teamDoc.exists()) {
+                    teamsData.push({ id: teamDoc.id, ...teamDoc.data() } as Team);
+                }
+            }
+            setSharedTeams(teamsData);
+
+        }, (error) => {
+             console.error("Error fetching shared teams: ", error);
+        });
+
+
+        return () => {
+            unsubscribeMyTeams();
+            unsubscribeSharedTeams();
+        };
     }, [user]);
 
     const handleDeleteTeam = async (teamId: string) => {
         try {
-            // This is a simple delete. A real-world app would need a Cloud Function
-            // to recursively delete all subcollections (players, matches, etc.).
             await deleteDoc(doc(db, "teams", teamId));
             toast({
                 title: "Equipo Eliminado",
@@ -98,12 +129,6 @@ export default function GestionEquiposPage() {
                     </div>
                 </div>
             </div>
-             <Button asChild variant="outline">
-              <Link href="/mi-equipo">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al Panel
-              </Link>
-            </Button>
         </div>
 
 
@@ -118,24 +143,8 @@ export default function GestionEquiposPage() {
                     <TeamForm />
                 </CardContent>
             </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <UserCheck className="h-5 w-5 text-primary"/>
-                        Equipos Compartidos
-                    </CardTitle>
-                    <CardDescription>Equipos a los que has sido invitado como miembro del cuerpo técnico.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild className="w-full">
-                        <Link href="/gestion-equipos/compartidos">
-                            Ver mis equipos compartidos
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
              <Card>
                 <CardHeader>
                     <CardTitle>Mis Equipos</CardTitle>
@@ -147,14 +156,14 @@ export default function GestionEquiposPage() {
                             <Skeleton className="h-20 w-full" />
                             <Skeleton className="h-20 w-full" />
                         </div>
-                    ) : teams.length === 0 ? (
+                    ) : myTeams.length === 0 ? (
                         <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
                            <p>No has creado ningún equipo todavía.</p>
                            <p className="text-sm">Usa el formulario para añadir tu primer equipo.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {teams.map(team => (
+                            {myTeams.map(team => (
                                 <Card key={team.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4">
                                     <div className="flex-grow">
                                         <h3 className="font-bold text-lg">{team.name}</h3>
@@ -204,6 +213,48 @@ export default function GestionEquiposPage() {
                     )}
                 </CardContent>
              </Card>
+
+              <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <UserCheck className="h-5 w-5"/>
+                        Equipos Compartidos
+                    </CardTitle>
+                    <CardDescription>Equipos a los que has sido invitado como miembro del cuerpo técnico.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                         <div className="space-y-4">
+                            <Skeleton className="h-20 w-full" />
+                        </div>
+                    ) : sharedTeams.length === 0 ? (
+                        <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                           <p>No eres miembro de ningún equipo compartido.</p>
+                           <p className="text-sm">Cuando aceptes una invitación, el equipo aparecerá aquí.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {sharedTeams.map(team => (
+                                <Card key={team.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4">
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-lg">{team.name}</h3>
+                                        <p className="text-sm text-muted-foreground">{team.club}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button asChild>
+                                            <Link href={`/equipo/${team.id}`}>
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Gestionar Equipo
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+             </Card>
+
         </div>
       </div>
     </div>
