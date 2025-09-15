@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import {
   createUserWithEmailAndPassword,
@@ -47,6 +47,8 @@ const GoogleIcon = () => (
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect') || '/';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,7 +87,7 @@ export default function RegisterPage() {
       await updateProfile(userCredential.user, {
         displayName: name,
       });
-      router.push('/');
+      router.push(redirectPath);
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
     } finally {
@@ -99,7 +101,7 @@ export default function RegisterPage() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push('/');
+      router.push(redirectPath);
     } catch (err: any)      {
       setError(getFirebaseErrorMessage(err));
     } finally {

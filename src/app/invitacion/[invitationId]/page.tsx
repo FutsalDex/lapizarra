@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, writeBatch, collection } from 'firebase/firestore';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { doc, getDoc, writeBatch, collection, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ interface Invitation {
 
 export default function InvitationPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -39,6 +40,7 @@ export default function InvitationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const redirectUrl = searchParams.get('redirect');
 
   useEffect(() => {
     if (!invitationId) return;
@@ -52,19 +54,22 @@ export default function InvitationPage() {
         setError('Esta invitación no es válida o ha caducado.');
       } else {
         const invData = { id: invDoc.id, ...invDoc.data() } as Invitation;
-        setInvitation(invData);
         
-        if (invData.status !== 'pending') {
-             setError(`Esta invitación ya ha sido ${invData.status === 'accepted' ? 'aceptada' : 'rechazada'}.`);
-        } else if (user && user.email !== invData.invitedUserEmail) {
+        if (user && user.email !== invData.invitedUserEmail) {
             setError('Esta invitación está dirigida a otro usuario. Por favor, inicia sesión con la cuenta correcta.');
+        } else if (invData.status !== 'pending') {
+             setError(`Esta invitación ya ha sido ${invData.status === 'accepted' ? 'aceptada' : 'rechazada'}.`);
+        } else {
+            setInvitation(invData);
         }
       }
       setLoading(false);
     };
 
-    fetchInvitation();
-  }, [invitationId, user]);
+    if (!authLoading) {
+      fetchInvitation();
+    }
+  }, [invitationId, user, authLoading]);
 
   const handleResponse = async (action: 'accept' | 'decline') => {
       if (!user || !invitation) return;
@@ -118,6 +123,8 @@ export default function InvitationPage() {
     );
   }
   
+  const fullRedirectUrl = redirectUrl ? `${redirectUrl}?invitationId=${invitationId}` : `/login?redirect=/invitacion/${invitationId}`;
+
   if (!user) {
       return (
            <div className="container mx-auto max-w-lg py-12 px-4">
@@ -130,7 +137,7 @@ export default function InvitationPage() {
                     <p className="text-sm text-muted-foreground">
                         {invitation ? (
                             <>
-                                Como <span className="font-semibold text-primary">{invitation.role}</span>, estás a punto de unirte al equipo <span className="font-semibold text-primary">{invitation.teamName}</span>. Asegúrate de usar la cuenta con la que fuiste invitado.
+                                Como <span className="font-semibold text-primary">{invitation.role}</span>, estás a punto de unirte al equipo <span className="font-semibold text-primary">{invitation.teamName}</span>. Asegúrate de usar la cuenta con la que fuiste invitado (<span className="font-semibold">{invitation.invitedUserEmail}</span>).
                             </>
                         ) : (
                             "Estás a punto de unirte a un equipo. Asegúrate de usar la cuenta con la que fuiste invitado."
@@ -139,7 +146,7 @@ export default function InvitationPage() {
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
                      <Button asChild>
-                        <Link href={`/login?redirect=/invitacion/${invitationId}`}>Iniciar Sesión</Link>
+                        <Link href={fullRedirectUrl}>Iniciar Sesión</Link>
                      </Button>
                       <Button asChild variant="outline">
                         <Link href={`/register?redirect=/invitacion/${invitationId}`}>Registrarse</Link>
@@ -195,7 +202,7 @@ export default function InvitationPage() {
             </div>
         </CardContent>
         <CardFooter className="grid grid-cols-2 gap-4">
-          <Button variant="outline" onClick={() => handleResponse('decline')} disabled={processing}>
+          <Button variant="destructive" onClick={() => handleResponse('decline')} disabled={processing}>
             {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4" />}
             Rechazar
           </Button>

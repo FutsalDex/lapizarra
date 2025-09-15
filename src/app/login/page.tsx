@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import {
   signInWithEmailAndPassword,
@@ -47,6 +47,8 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect') || '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -78,7 +80,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      router.push(redirectPath);
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
     } finally {
@@ -92,7 +94,7 @@ export default function LoginPage() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push('/');
+      router.push(redirectPath);
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
     } finally {

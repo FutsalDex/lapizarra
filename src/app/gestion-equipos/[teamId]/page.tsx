@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send, Clipboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -23,7 +23,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 
 interface Team {
@@ -38,6 +50,13 @@ interface Member {
     email: string;
     role: string;
     name: string;
+}
+
+interface Invitation {
+    id: string;
+    email: string;
+    role: string;
+    status: 'pending' | 'accepted' | 'declined';
 }
 
 const roles = [
@@ -61,10 +80,13 @@ export default function TeamMembersPage() {
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', role: '' });
   const [processingMember, setProcessingMember] = useState<string | null>(null);
+  const [invitationLink, setInvitationLink] = useState('');
+  const [isInviteLinkDialogOpen, setIsInviteLinkDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -91,39 +113,57 @@ export default function TeamMembersPage() {
         const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
         setMembers(membersData);
     });
+    
+    const invitesQuery = query(collection(db, 'invitations'), where('teamId', '==', teamId));
+    const unsubscribeInvites = onSnapshot(invitesQuery, (snapshot) => {
+        const invitesData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data() } as Invitation));
+        setInvitations(invitesData);
+    })
 
     return () => {
         unsubscribeTeam();
         unsubscribeMembers();
+        unsubscribeInvites();
     };
 
   }, [teamId, user, router]);
+  
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  const handleCreateInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMember.email || !newMember.role || !newMember.name) {
+    if (!newMember.email || !newMember.role || !newMember.name || !team) {
         toast({ title: "Campos requeridos", description: "Por favor, completa todos los campos.", variant: 'destructive' });
         return;
     }
     setProcessingMember('new');
     try {
-        await addDoc(collection(db, 'teamMembers'), {
+        const newInvitationRef = doc(collection(db, 'invitations'));
+        
+        await setDoc(newInvitationRef, {
             teamId,
-            name: newMember.name,
-            email: newMember.email,
+            teamName: team.name,
             role: newMember.role,
-            joinedAt: new Date(),
+            invitedUserEmail: newMember.email,
+            status: 'pending',
+            createdAt: new Date(),
         });
-        toast({ title: "¡Miembro añadido!", description: `${newMember.name} ha sido añadido al equipo.` });
+
+        const link = `${window.location.origin}/invitacion/${newInvitationRef.id}`;
+        setInvitationLink(link);
+
+        toast({ title: "¡Invitación Creada!", description: `Comparte el enlace con ${newMember.name}.` });
         setNewMember({ name: '', email: '', role: '' });
         setIsDialogOpen(false);
+        setIsInviteLinkDialogOpen(true);
+
     } catch (error) {
-        console.error("Error adding member: ", error);
-        toast({ title: "Error", description: "Hubo un problema al añadir al miembro.", variant: "destructive" });
+        console.error("Error creating invitation: ", error);
+        toast({ title: "Error", description: "Hubo un problema al crear la invitación.", variant: "destructive" });
     } finally {
         setProcessingMember(null);
     }
   }
+
 
   const handleOwnerRoleChange = async (newRole: string) => {
       if (!teamId) return;
@@ -175,40 +215,51 @@ export default function TeamMembersPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                 <Button><UserPlus className="mr-2 h-4 w-4" />Alta de nuevo miembro</Button>
+                 <Button><UserPlus className="mr-2 h-4 w-4" />Añadir nuevo miembro</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Añadir nuevo miembro al cuerpo técnico</DialogTitle>
-                    <DialogDescription>Introduce los datos del nuevo miembro. Se le dará acceso al panel de este equipo si su email coincide con una cuenta registrada.</DialogDescription>
+                    <DialogTitle>Invitar nuevo miembro al cuerpo técnico</DialogTitle>
+                    <DialogDescription>Introduce los datos del nuevo miembro. Se generará un enlace de invitación para que se una.</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleAddMember} className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="new-member-name">Nombre</Label>
-                        <Input id="new-member-name" value={newMember.name} onChange={(e) => setNewMember({...newMember, name: e.target.value})} placeholder="Nombre y Apellidos" />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="new-member-email">Email</Label>
-                        <Input id="new-member-email" type="email" value={newMember.email} onChange={(e) => setNewMember({...newMember, email: e.target.value})} placeholder="email@ejemplo.com" />
+                <form onSubmit={handleCreateInvitation} className="space-y-4 pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-member-name">Nombre</Label>
+                            <div className="relative">
+                               <UserPlus className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                               <Input id="new-member-name" value={newMember.name} onChange={(e) => setNewMember({...newMember, name: e.target.value})} placeholder="Nombre y Apellidos" className="pl-8" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-member-email">Email</Label>
+                             <div className="relative">
+                               <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                               <Input id="new-member-email" type="email" value={newMember.email} onChange={(e) => setNewMember({...newMember, email: e.target.value})} placeholder="email@ejemplo.com" className="pl-8" />
+                            </div>
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="new-member-role">Rol</Label>
-                         <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
-                            <SelectTrigger id="new-member-role">
-                               <SelectValue placeholder="Selecciona un rol" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {roles.map(role => (
-                                    <SelectItem key={role} value={role}>{role}</SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
+                         <div className="relative">
+                           <Shield className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                           <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
+                                <SelectTrigger id="new-member-role" className="pl-8">
+                                <SelectValue placeholder="Selecciona un rol" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {roles.map(role => (
+                                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={!!processingMember}>
                             {processingMember === 'new' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                            Añadir Miembro
+                            Crear Invitación
                         </Button>
                     </DialogFooter>
                 </form>
@@ -219,7 +270,7 @@ export default function TeamMembersPage() {
        <Card>
         <CardHeader>
           <CardTitle>Miembros del Equipo</CardTitle>
-          <CardDescription>Lista de usuarios con acceso a este equipo.</CardDescription>
+          <CardDescription>Lista de usuarios con acceso a este equipo. Desde aquí puedes enviar invitaciones o eliminar miembros.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="rounded-md border">
@@ -258,8 +309,40 @@ export default function TeamMembersPage() {
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>{member.role}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteMember(member.id)} disabled={!!processingMember}>
-                                        {processingMember === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="hover:text-destructive" disabled={!!processingMember}>
+                                                 <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Eliminar a {member.name}?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. El usuario perderá el acceso a este equipo.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteMember(member.id)}>Eliminar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {invitations.filter(i => i.status === 'pending').map(invite => (
+                             <TableRow key={invite.id} className="bg-muted/50">
+                                <TableCell>{invite.email.split('@')[0]}</TableCell>
+                                <TableCell>{invite.email}</TableCell>
+                                <TableCell>{invite.role} (Pendiente)</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="icon" onClick={() => {
+                                        const link = `${window.location.origin}/invitacion/${invite.id}`;
+                                        setInvitationLink(link);
+                                        setIsInviteLinkDialogOpen(true);
+                                    }}>
+                                        <Send className="h-4 w-4" />
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -267,12 +350,38 @@ export default function TeamMembersPage() {
                     </TableBody>
                 </Table>
             </div>
-             {members.length === 0 && !loading && (
+             {members.length === 0 && invitations.length === 0 && !loading && (
                 <p className="text-sm text-muted-foreground text-center mt-4">Aún no has añadido a nadie al equipo.</p>
             )}
         </CardContent>
       </Card>
     </div>
+
+     {/* Invite Link Dialog */}
+    <Dialog open={isInviteLinkDialogOpen} onOpenChange={setIsInviteLinkDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Enlace de Invitación Creado</DialogTitle>
+                <DialogDescription>
+                    Comparte este enlace con el miembro de tu equipo para que pueda unirse. El enlace es de un solo uso.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center space-x-2 pt-4">
+                <Input value={invitationLink} readOnly />
+                <Button onClick={() => {
+                    navigator.clipboard.writeText(invitationLink);
+                    toast({ title: '¡Copiado!', description: 'El enlace de invitación se ha copiado al portapapeles.' });
+                }} size="icon">
+                    <Clipboard className="h-4 w-4" />
+                </Button>
+            </div>
+             <DialogFooter>
+                <DialogClose asChild>
+                    <Button>Cerrar</Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }
