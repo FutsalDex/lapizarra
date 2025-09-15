@@ -162,10 +162,10 @@ export default function MarcadorEnVivoPage() {
                 isActive: data.isActive ?? false,
                 isFinished: data.isFinished ?? false,
                 events: data.events || [],
-                teamStats1: data.teamStats1 || defaultTeamStats,
-                teamStats2: data.teamStats2 || defaultTeamStats,
-                opponentStats1: data.opponentStats1 || defaultOpponentStats,
-                opponentStats2: data.opponentStats2 || defaultOpponentStats,
+                teamStats1: { ...defaultTeamStats, ...data.teamStats1 },
+                teamStats2: { ...defaultTeamStats, ...data.teamStats2 },
+                opponentStats1: { ...defaultOpponentStats, ...data.opponentStats1 },
+                opponentStats2: { ...defaultOpponentStats, ...data.opponentStats2 },
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
@@ -866,3 +866,5 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
