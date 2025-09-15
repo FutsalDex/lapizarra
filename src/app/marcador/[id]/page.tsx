@@ -783,7 +783,7 @@ const renderTeamStats = () => {
                         <h2 className="text-lg md:text-2xl font-bold w-full truncate text-center">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums text-center">
+                    <div className="text-3xl md:text-5xl font-bold text-primary tabular-nums text-center">
                         {localScore} - {visitorScore}
                     </div>
                     <div className="flex flex-col items-center">
@@ -794,7 +794,7 @@ const renderTeamStats = () => {
 
                 <div className="flex items-center justify-center">
                     <TimeoutIndicator used={localTimeoutUsed} />
-                    <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-2">
+                    <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-0">
                         {formatTime(match.timeLeft)}
                     </div>
                     <TimeoutIndicator used={visitorTimeoutUsed} />
