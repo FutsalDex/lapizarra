@@ -11,19 +11,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send, Clipboard, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, UserPlus, Mail, Shield, Trash2, Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from '@/components/ui/label';
 
 interface Team {
   name: string;
@@ -51,7 +52,6 @@ const roles = [
     'Nutricionista'
 ];
 
-
 export default function TeamMembersPage() {
   const params = useParams();
   const router = useRouter();
@@ -62,15 +62,10 @@ export default function TeamMembersPage() {
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviting, setInviting] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newMember, setNewMember] = useState({ name: '', email: '', role: '' });
   const [processingMember, setProcessingMember] = useState<string | null>(null);
 
-
-  const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
-  const [inviteLink, setInviteLink] = useState('');
-  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!teamId || !user) return;
@@ -91,7 +86,6 @@ export default function TeamMembersPage() {
       setLoading(false);
     });
     
-    // Listener for members
     const membersQuery = query(collection(db, 'teamMembers'), where('teamId', '==', teamId));
     const unsubscribeMembers = onSnapshot(membersQuery, (snapshot) => {
         const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
@@ -105,36 +99,29 @@ export default function TeamMembersPage() {
 
   }, [teamId, user, router]);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail || !inviteRole) {
-        toast({ title: "Campos requeridos", description: "Por favor, introduce un email y selecciona un rol.", variant: 'destructive' });
+    if (!newMember.email || !newMember.role || !newMember.name) {
+        toast({ title: "Campos requeridos", description: "Por favor, completa todos los campos.", variant: 'destructive' });
         return;
     }
-    setInviting(true);
+    setProcessingMember('new');
     try {
-        const invitationDoc = await addDoc(collection(db, 'invitations'), {
+        await addDoc(collection(db, 'teamMembers'), {
             teamId,
-            teamName: team?.name,
-            invitedByUser: user?.uid,
-            invitedUserEmail: inviteEmail,
-            role: inviteRole,
-            status: 'pending',
-            createdAt: serverTimestamp(),
+            name: newMember.name,
+            email: newMember.email,
+            role: newMember.role,
+            joinedAt: new Date(),
         });
-
-        const generatedLink = `${window.location.origin}/invitacion/${invitationDoc.id}`;
-        setInviteLink(generatedLink);
-        setShowInviteLinkDialog(true);
-
-        toast({ title: "¡Invitación Creada!", description: `Comparte el enlace con ${inviteEmail}.` });
-        setInviteEmail('');
-        setInviteRole('');
+        toast({ title: "¡Miembro añadido!", description: `${newMember.name} ha sido añadido al equipo.` });
+        setNewMember({ name: '', email: '', role: '' });
+        setIsDialogOpen(false);
     } catch (error) {
-        console.error("Error creating invitation: ", error);
-        toast({ title: "Error", description: "Hubo un problema al crear la invitación.", variant: "destructive" });
+        console.error("Error adding member: ", error);
+        toast({ title: "Error", description: "Hubo un problema al añadir al miembro.", variant: "destructive" });
     } finally {
-        setInviting(false);
+        setProcessingMember(null);
     }
   }
 
@@ -163,14 +150,7 @@ export default function TeamMembersPage() {
         setProcessingMember(null);
     }
   }
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(inviteLink);
-    setIsLinkCopied(true);
-    setTimeout(() => setIsLinkCopied(false), 2000); // Reset after 2 seconds
-  };
   
-
   if (loading) {
     return <div className="container mx-auto max-w-4xl py-12 px-4"><Skeleton className="h-96 w-full" /></div>;
   }
@@ -182,54 +162,59 @@ export default function TeamMembersPage() {
   return (
     <>
     <div className="container mx-auto max-w-4xl py-12 px-4 space-y-8">
-      <div>
-        <Button asChild variant="outline" className="mb-4">
-          <Link href="/gestion-equipos">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Gestión de Equipos
-          </Link>
-        </Button>
-        <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">{team.name}</h1>
-        <p className="text-lg text-muted-foreground">{team.club}</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserPlus />Invitar Nuevo Miembro</CardTitle>
-          <CardDescription>Crea un enlace de invitación para que otros miembros del cuerpo técnico se unan.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email del invitado</label>
-                <div className="relative">
-                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                     <Input id="email" type="email" placeholder="email@ejemplo.com" className="pl-10" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
-                </div>
-            </div>
-            <div className="space-y-2">
-                 <label htmlFor="role" className="text-sm font-medium">Rol</label>
-                 <Select value={inviteRole} onValueChange={setInviteRole}>
-                    <SelectTrigger id="role">
-                       <div className="flex items-center gap-2">
-                         <Shield className="h-4 w-4 text-muted-foreground" />
-                         <SelectValue placeholder="Selecciona un rol" />
-                       </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {roles.map(role => (
-                            <SelectItem key={role} value={role}>{role}</SelectItem>
-                        ))}
-                    </SelectContent>
-                 </Select>
-            </div>
-            <Button type="submit" disabled={inviting}>
-                {inviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                Crear Invitación
+      <div className="flex justify-between items-start">
+        <div>
+            <Button asChild variant="outline" className="mb-4">
+            <Link href="/gestion-equipos">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver a Gestión de Equipos
+            </Link>
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">{team.name}</h1>
+            <p className="text-lg text-muted-foreground">{team.club}</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+                 <Button><UserPlus className="mr-2 h-4 w-4" />Alta de nuevo miembro</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Añadir nuevo miembro al cuerpo técnico</DialogTitle>
+                    <DialogDescription>Introduce los datos del nuevo miembro. Se le dará acceso al panel de este equipo si su email coincide con una cuenta registrada.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddMember} className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-member-name">Nombre</Label>
+                        <Input id="new-member-name" value={newMember.name} onChange={(e) => setNewMember({...newMember, name: e.target.value})} placeholder="Nombre y Apellidos" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="new-member-email">Email</Label>
+                        <Input id="new-member-email" type="email" value={newMember.email} onChange={(e) => setNewMember({...newMember, email: e.target.value})} placeholder="email@ejemplo.com" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="new-member-role">Rol</Label>
+                         <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
+                            <SelectTrigger id="new-member-role">
+                               <SelectValue placeholder="Selecciona un rol" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {roles.map(role => (
+                                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                                ))}
+                            </SelectContent>
+                         </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                        <Button type="submit" disabled={!!processingMember}>
+                            {processingMember === 'new' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Añadir Miembro
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+      </div>
       
        <Card>
         <CardHeader>
@@ -288,27 +273,6 @@ export default function TeamMembersPage() {
         </CardContent>
       </Card>
     </div>
-
-    <AlertDialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Enlace de Invitación Creado</AlertDialogTitle>
-            <AlertDialogDescription>
-                Copia y comparte este enlace con el miembro del equipo para que pueda unirse a <span className="font-semibold text-primary">{team.name}</span>.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="relative rounded-md bg-muted px-4 py-2 font-mono text-sm break-all">
-                {inviteLink}
-            </div>
-            <AlertDialogFooter>
-                <Button variant="outline" onClick={copyToClipboard}>
-                    {isLinkCopied ? <ClipboardCheck className="mr-2 h-4 w-4" /> : <Clipboard className="mr-2 h-4 w-4" />}
-                    {isLinkCopied ? '¡Copiado!' : 'Copiar Enlace'}
-                </Button>
-                <AlertDialogAction onClick={() => setShowInviteLinkDialog(false)}>Cerrar</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
