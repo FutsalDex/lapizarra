@@ -378,7 +378,7 @@ const reopenMatch = async () => {
     setMatch(prev => {
         if (!prev) return null;
 
-        const currentStatValue = prev[period][stat];
+        const currentStatValue = prev[period][stat] || 0;
         let newValue = currentStatValue + delta;
         
         if (stat === 'timeouts') {
