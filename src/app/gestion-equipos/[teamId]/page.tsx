@@ -54,6 +54,7 @@ interface Member {
 
 interface Invitation {
     id: string;
+    name: string;
     invitedUserEmail: string;
     role: string;
     status: 'pending' | 'accepted' | 'declined';
@@ -142,6 +143,7 @@ export default function TeamMembersPage() {
         await setDoc(newInvitationRef, {
             teamId,
             teamName: team.name,
+            name: newMember.name,
             role: newMember.role,
             invitedUserEmail: newMember.email,
             status: 'pending',
@@ -333,7 +335,7 @@ export default function TeamMembersPage() {
                         ))}
                         {invitations.filter(i => i.status === 'pending').map(invite => (
                              <TableRow key={invite.id} className="bg-muted/50">
-                                <TableCell>{invite.invitedUserEmail.split('@')[0]}</TableCell>
+                                <TableCell>{invite.name}</TableCell>
                                 <TableCell>{invite.invitedUserEmail}</TableCell>
                                 <TableCell>{invite.role} (Pendiente)</TableCell>
                                 <TableCell className="text-right">
@@ -385,3 +387,4 @@ export default function TeamMembersPage() {
     </>
   );
 }
+
