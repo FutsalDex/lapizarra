@@ -794,7 +794,7 @@ const renderTeamStats = () => {
 
                 <div className="flex items-center justify-center">
                     <TimeoutIndicator used={localTimeoutUsed} />
-                    <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-0">
+                    <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-4">
                         {formatTime(match.timeLeft)}
                     </div>
                     <TimeoutIndicator used={visitorTimeoutUsed} />
