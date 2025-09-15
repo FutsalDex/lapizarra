@@ -12,7 +12,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft } from 'lucide-react';
+import { ShieldPlus, Users, Edit, Trash2, Settings, ArrowLeft, UserCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -108,7 +108,7 @@ export default function GestionEquiposPage() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Crear Nuevo Equipo</CardTitle>
@@ -118,12 +118,28 @@ export default function GestionEquiposPage() {
                     <TeamForm />
                 </CardContent>
             </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <UserCheck className="h-5 w-5 text-primary"/>
+                        Equipos Compartidos
+                    </CardTitle>
+                    <CardDescription>Equipos a los que has sido invitado como miembro del cuerpo técnico.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full">
+                        <Link href="/gestion-equipos/compartidos">
+                            Ver mis equipos compartidos
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
         <div className="lg:col-span-2">
              <Card>
                 <CardHeader>
                     <CardTitle>Mis Equipos</CardTitle>
-                    <CardDescription>Lista de equipos que administras.</CardDescription>
+                    <CardDescription>Lista de equipos que administras como propietario.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (

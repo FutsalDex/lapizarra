@@ -150,7 +150,7 @@ export default function TeamMembersPage() {
             createdAt: new Date(),
         });
 
-        const link = `${window.location.origin}/invitacion/${newInvitationRef.id}`;
+        const link = `https://lapizarra--lapizarra-95eqd.europe-west4.hosted.app/invitacion/${newInvitationRef.id}`;
         setInvitationLink(link);
 
         toast({ title: "¡Invitación Creada!", description: `Comparte el enlace con ${newMember.name}.` });
@@ -340,7 +340,7 @@ export default function TeamMembersPage() {
                                 <TableCell>{invite.role} (Pendiente)</TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="icon" onClick={() => {
-                                        const link = `${window.location.origin}/invitacion/${invite.id}`;
+                                        const link = `https://lapizarra--lapizarra-95eqd.europe-west4.hosted.app/invitacion/${invite.id}`;
                                         setInvitationLink(link);
                                         setIsInviteLinkDialogOpen(true);
                                     }}>
@@ -387,4 +387,3 @@ export default function TeamMembersPage() {
     </>
   );
 }
-
