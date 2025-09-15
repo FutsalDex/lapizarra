@@ -780,21 +780,21 @@ const renderTeamStats = () => {
             <CardContent className="p-4 md:p-6 text-center space-y-4">
                  <div className="grid grid-cols-3 items-center w-full max-w-4xl mx-auto gap-2">
                     <div className="flex flex-col items-center">
-                        <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.localTeam}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
                     <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
                         {localScore} - {visitorScore}
                     </div>
                     <div className="flex flex-col items-center">
-                        <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.visitorTeam}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-4 my-4">
+                <div className="flex items-center justify-center my-4">
                     <TimeoutIndicator used={localTimeoutUsed} />
-                    <div className="text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg w-fit mx-auto">
+                    <div className="text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-2">
                         {formatTime(match.timeLeft)}
                     </div>
                     <TimeoutIndicator used={visitorTimeoutUsed} />
