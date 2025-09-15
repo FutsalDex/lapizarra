@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Card,
@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -72,6 +72,9 @@ interface Stats {
     recoveries: number;
 }
 
+type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
+const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
+
 export default function TeamSpecificStatsPage() {
     const { user } = useAuth();
     const params = useParams();
@@ -79,6 +82,7 @@ export default function TeamSpecificStatsPage() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [teamName, setTeamName] = useState<string>('');
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
      useEffect(() => {
         if (!user || !teamId) {
@@ -99,9 +103,20 @@ export default function TeamSpecificStatsPage() {
             const currentTeamName = teamDoc.data().name;
             setTeamName(currentTeamName);
 
-            const matchesQuery = query(collection(db, 'matches'), where('teamId', '==', teamId), where('isFinished', '==', true));
+            const queryConstraints: QueryConstraint[] = [where('teamId', '==', teamId), where('isFinished', '==', true)];
+            if(activeFilter !== 'Todos') {
+                queryConstraints.push(where('matchType', '==', activeFilter));
+            }
+            
+            const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
             const matchesSnapshot = await getDocs(matchesQuery);
             const matches = matchesSnapshot.docs.map(doc => doc.data());
+
+            if (matches.length === 0) {
+                setStats(null);
+                setLoading(false);
+                return;
+            }
 
             const newStats: Stats = {
                 played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0,
@@ -161,9 +176,9 @@ export default function TeamSpecificStatsPage() {
         };
 
         fetchStats();
-    }, [user, teamId]);
+    }, [user, teamId, activeFilter]);
 
-  if(loading) {
+  if(loading && !stats) {
     return (
         <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
             <Skeleton className="h-12 w-1/3" />
@@ -197,11 +212,33 @@ export default function TeamSpecificStatsPage() {
               </Link>
             </Button>
         </div>
+        
+        <Card>
+            <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-2">
+                {filters.map(filter => (
+                    <Button 
+                        key={filter} 
+                        variant={activeFilter === filter ? 'default' : 'outline'}
+                        onClick={() => setActiveFilter(filter)}
+                    >
+                        {filter}
+                    </Button>
+                ))}
+            </div>
+            </CardContent>
+        </Card>
 
-        {!stats ? (
+        {loading ? (
+             <div className="space-y-8">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        ) : !stats ? (
             <Card className="text-center py-16">
                  <CardContent>
-                    <p className="text-muted-foreground">No hay suficientes datos para mostrar estadísticas.</p>
+                    <p className="text-muted-foreground">No hay suficientes datos para mostrar estadísticas con el filtro actual.</p>
                     <p className="text-sm text-muted-foreground mt-2">Juega y finaliza algunos partidos para empezar a ver tus datos aquí.</p>
                 </CardContent>
             </Card>
@@ -260,3 +297,5 @@ export default function TeamSpecificStatsPage() {
     </div>
   );
 }
+
+    

@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,9 @@ interface Player {
     gRec: number;
 }
 
+type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
+const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
+
 export default function TeamPlayerStatsPage() {
     const { user } = useAuth();
     const params = useParams();
@@ -51,6 +54,7 @@ export default function TeamPlayerStatsPage() {
     const [teamName, setTeamName] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
      useEffect(() => {
         if (!user || !teamId) {
@@ -58,7 +62,7 @@ export default function TeamPlayerStatsPage() {
             return;
         }
 
-        const fetchPlayers = async () => {
+        const fetchPlayerStats = async () => {
             setLoading(true);
 
             const teamDocRef = doc(db, 'teams', teamId);
@@ -71,24 +75,59 @@ export default function TeamPlayerStatsPage() {
             const currentTeamName = teamDoc.data().name;
             setTeamName(currentTeamName);
 
+            // Get base player data
             const playersQuery = query(collection(db, 'teams', teamId, 'players'));
             const playersSnapshot = await getDocs(playersQuery);
-            
-            const teamPlayers = playersSnapshot.docs
-                .map(doc => {
-                    const data = doc.data();
-                    return {
-                        ...data,
-                        teamName: currentTeamName,
-                    } as Player;
-                });
+            const teamPlayers = playersSnapshot.docs.map(doc => ({
+                id: doc.id,
+                name: doc.data().name,
+                number: doc.data().number
+            }));
 
-            setPlayers(teamPlayers.sort((a, b) => b.goals - a.goals));
+            // Get matches based on filter
+            const queryConstraints: QueryConstraint[] = [where('teamId', '==', teamId), where('isFinished', '==', true)];
+            if (activeFilter !== 'Todos') {
+                queryConstraints.push(where('matchType', '==', activeFilter));
+            }
+            const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
+            const matchesSnapshot = await getDocs(matchesQuery);
+            const matches = matchesSnapshot.docs.map(doc => doc.data());
+
+            // Aggregate stats
+            const playerStats: Record<string, Player> = {};
+            teamPlayers.forEach(p => {
+                playerStats[p.id] = {
+                    name: p.name, number: p.number, teamName: currentTeamName,
+                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0,
+                };
+            });
+
+            matches.forEach(match => {
+                const isLocal = match.localTeam === currentTeamName;
+                const matchPlayers = isLocal ? match.localPlayers : match.visitorPlayers;
+                
+                if (matchPlayers) {
+                    matchPlayers.forEach((p: any) => {
+                        if (playerStats[p.id]) {
+                            playerStats[p.id].pj += 1;
+                            playerStats[p.id].goals += p.goals || 0;
+                            playerStats[p.id].assists += p.assists || 0;
+                            playerStats[p.id].ta += p.amarillas || 0;
+                            playerStats[p.id].tr += p.rojas || 0;
+                            playerStats[p.id].faltas += p.faltas || 0;
+                            playerStats[p.id].paradas += p.paradas || 0;
+                            playerStats[p.id].gRec += p.gRec || 0;
+                        }
+                    });
+                }
+            });
+
+            setPlayers(Object.values(playerStats).sort((a, b) => b.goals - a.goals));
             setLoading(false);
         };
 
-        fetchPlayers();
-    }, [user, teamId]);
+        fetchPlayerStats();
+    }, [user, teamId, activeFilter]);
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -121,15 +160,26 @@ export default function TeamPlayerStatsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Tabla de Jugadores</CardTitle>
-                <CardDescription>Busca un jugador por su nombre para ver sus estadísticas.</CardDescription>
-                <div className="pt-4">
+                <CardTitle>Controles</CardTitle>
+                <CardDescription>Filtra por competición y busca jugadores.</CardDescription>
+                <div className="pt-4 flex flex-col md:flex-row gap-4">
                     <Input 
                         placeholder="Buscar jugador..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="max-w-sm"
                     />
+                    <div className="flex flex-wrap items-center gap-2">
+                        {filters.map(filter => (
+                            <Button 
+                                key={filter} 
+                                variant={activeFilter === filter ? 'default' : 'outline'}
+                                onClick={() => setActiveFilter(filter)}
+                            >
+                                {filter}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -137,8 +187,8 @@ export default function TeamPlayerStatsPage() {
                     <Skeleton className="h-96 w-full" />
                 ) : players.length === 0 ? (
                     <div className="text-center py-16">
-                        <p className="text-muted-foreground">No se encontraron jugadores.</p>
-                        <p className="text-sm text-muted-foreground mt-2">Añade jugadores a tu equipo para ver sus estadísticas aquí.</p>
+                        <p className="text-muted-foreground">No se encontraron datos para los filtros seleccionados.</p>
+                        <p className="text-sm text-muted-foreground mt-2">Añade jugadores y partidos a tu equipo para ver sus estadísticas aquí.</p>
                     </div>
                 ) : (
                 <div className="rounded-md border overflow-x-auto">
@@ -186,3 +236,5 @@ export default function TeamPlayerStatsPage() {
     </div>
   );
 }
+
+    
