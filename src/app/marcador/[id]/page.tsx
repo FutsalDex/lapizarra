@@ -160,7 +160,7 @@ export default function MarcadorEnVivoPage() {
                 events: data.events || [],
                 teamStats1: data.teamStats1 || defaultTeamStats,
                 teamStats2: data.teamStats2 || defaultTeamStats,
-                opponentStats1: data.opponentStats1 || defaultOpponentStats,
+                opponentStats1: data.opponentStats1 || defaultTeamStats,
                 opponentStats2: data.opponentStats2 || defaultOpponentStats,
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
@@ -778,15 +778,15 @@ const renderTeamStats = () => {
 
         <Card>
              <CardContent className="p-4 md:p-6 text-center space-y-4">
-                 <div className="flex flex-col md:flex-row justify-around items-center w-full max-w-4xl mx-auto gap-2">
-                    <div className="flex flex-col items-center order-1 md:order-1">
+                 <div className="grid grid-cols-3 items-center w-full max-w-4xl mx-auto">
+                    <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-2xl font-bold w-full truncate text-center">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums order-2 md:order-2">
+                    <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums text-center">
                         {localScore} - {visitorScore}
                     </div>
-                    <div className="flex flex-col items-center order-3 md:order-3">
+                    <div className="flex flex-col items-center">
                         <h2 className="text-lg md:text-2xl font-bold w-full truncate text-center">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
