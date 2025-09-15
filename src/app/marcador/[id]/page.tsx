@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBatch, increment, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -93,6 +94,7 @@ export default function MarcadorEnVivoPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,8 @@ export default function MarcadorEnVivoPage() {
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const matchRef = useRef(match);
   
+  const isAdmin = user?.email === 'futsaldex@gmail.com';
+
   // Keep ref in sync with state
   useEffect(() => {
     matchRef.current = match;
@@ -218,7 +222,7 @@ export default function MarcadorEnVivoPage() {
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
  const finalizeMatch = async () => {
-    if (!match || match.isFinished) return;
+    if (!match || (match.isFinished && !isAdmin)) return;
     setIsSaving(true);
     
     const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
@@ -226,7 +230,7 @@ export default function MarcadorEnVivoPage() {
     
     const opponentScore = match.userTeam === 'local' ? match.visitorScore : match.localScore;
 
-    const dataToUpdate = {
+    const dataToUpdate: Partial<MatchDetails> = {
         ...match,
         localScore: match.userTeam === 'local' ? userTeamScore : opponentScore,
         visitorScore: match.userTeam === 'visitor' ? userTeamScore : opponentScore,
@@ -272,9 +276,25 @@ export default function MarcadorEnVivoPage() {
     }
 }
 
+const reopenMatch = async () => {
+    if (!match || !isAdmin) return;
+    setIsSaving(true);
+    try {
+        const matchDocRef = doc(db, 'matches', id);
+        await updateDoc(matchDocRef, { isFinished: false });
+        toast({ title: "Partido Reabierto", description: "Ahora puedes volver a editar el partido." });
+        setMatch(prev => prev ? {...prev, isFinished: false} : null);
+    } catch (error) {
+        console.error("Error reopening match:", error);
+        toast({ title: "Error", description: "No se pudo reabrir el partido.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
+};
+
 
  const handleStatChange = (playerIndex: number, stat: PlayerStatKeys, delta: 1 | -1) => {
-    if (match?.isFinished) return;
+    if (match?.isFinished && !isAdmin) return;
     setMatch(prev => {
         if (!prev) return null;
 
@@ -336,7 +356,7 @@ export default function MarcadorEnVivoPage() {
 }
 
   const handleTeamStatChange = (period: 'teamStats1' | 'teamStats2', stat: TeamStatKeys, delta: 1 | -1) => {
-    if (match?.isFinished) return;
+    if (match?.isFinished && !isAdmin) return;
     setMatch(prev => {
         if (!prev) return null;
         const currentStatValue = prev[period][stat];
@@ -354,7 +374,7 @@ export default function MarcadorEnVivoPage() {
   };
 
   const handleOpponentStatChange = (period: 'opponentStats1' | 'opponentStats2', stat: OpponentStatKeys, delta: 1 | -1) => {
-    if (match?.isFinished) return;
+    if (match?.isFinished && !isAdmin) return;
     setMatch(prev => {
         if (!prev) return null;
 
@@ -392,7 +412,7 @@ export default function MarcadorEnVivoPage() {
   };
 
    const handlePlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
-        if (match?.isFinished) return;
+        if (match?.isFinished && !isAdmin) return;
         setMatch(prev => {
             if (!prev) return null;
             const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -405,7 +425,7 @@ export default function MarcadorEnVivoPage() {
     };
 
     const addPlayer = () => {
-        if (match?.isFinished) return;
+        if (match?.isFinished && !isAdmin) return;
         setMatch(prev => {
             if (!prev) return prev;
             const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -428,9 +448,9 @@ export default function MarcadorEnVivoPage() {
     return (
         <TableCell className="text-center px-1">
             <div className="flex items-center justify-center gap-0 sm:gap-1">
-                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
                 <span className="w-4 text-center text-sm sm:text-base">{value}</span>
-                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
             </div>
         </TableCell>
     )
@@ -443,12 +463,12 @@ export default function MarcadorEnVivoPage() {
   };
 
   const handleTimerToggle = () => {
-      if (match?.isFinished) return;
+      if (match?.isFinished && !isAdmin) return;
       setMatch(prev => prev ? {...prev, isActive: !prev.isActive } : null)
   }
 
   const handlePeriodChange = (newPeriod: '1ª Parte' | '2ª Parte') => {
-      if (match?.isFinished) return;
+      if (match?.isFinished && !isAdmin) return;
       setMatch(prev => {
         if (!prev || prev.period === newPeriod) return prev;
 
@@ -468,7 +488,7 @@ export default function MarcadorEnVivoPage() {
   }
   
   const resetTimer = () => {
-    if (match?.isFinished) return;
+    if (match?.isFinished && !isAdmin) return;
     setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25*60 } : null);
   }
 
@@ -553,7 +573,7 @@ export default function MarcadorEnVivoPage() {
                                             className="h-8 w-14 text-center" 
                                             value={player.number} 
                                             onChange={(e) => handlePlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} 
-                                            readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')} 
+                                            readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))} 
                                         />
                                     </TableCell>
                                     <TableCell className="sticky left-[70px] bg-background/95 z-10 px-2">
@@ -561,7 +581,7 @@ export default function MarcadorEnVivoPage() {
                                             className="h-8" 
                                             value={player.name} 
                                             onChange={(e) => handlePlayerInfoChange(index, 'name', e.target.value)} 
-                                            readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')}
+                                            readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))}
                                         />
                                     </TableCell>
                                     <StatButtonCell playerIndex={index} stat="goals" />
@@ -580,7 +600,7 @@ export default function MarcadorEnVivoPage() {
                         </TableFooter>
                     </Table>
                     
-                    {!match.isFinished && (
+                    {(!match.isFinished || isAdmin) && (
                         <div className="p-2 text-right">
                             <Button variant="outline" size="sm" onClick={addPlayer}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -618,9 +638,9 @@ const renderOpponentStats = () => {
                                 <TableCell className="font-medium">{config.label}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
                                         <span className="w-4 text-center">{match[opponentPeriodKey][config.key]}</span>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -649,9 +669,9 @@ const renderTeamStats = () => {
             <TableCell className="font-medium">{label}</TableCell>
             <TableCell>
                 <div className="flex items-center justify-center gap-1">
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
                     <span className="w-4 text-center">{match[periodKey][statKey]}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
                 </div>
             </TableCell>
         </TableRow>
@@ -750,29 +770,36 @@ const renderTeamStats = () => {
                         <span className="hidden sm:inline">Volver</span>
                     </Link>
                 </Button>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button variant="destructive" disabled={isSaving || match.isFinished}>
-                            {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : (isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<CheckCircle className="mr-2 h-4 w-4"/>)}
-                            {match.isFinished ? 'Finalizado' : 'Finalizar'}
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Finalizar y guardar estadísticas?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                               Esta acción consolidará permanentemente las estadísticas del partido en los totales de tus jugadores. Una vez finalizado, el partido no se podrá volver a editar.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={finalizeMatch} disabled={isSaving}>
-                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                Sí, finalizar
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                {isAdmin && match.isFinished ? (
+                    <Button variant="secondary" onClick={reopenMatch} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<Unlock className="mr-2 h-4 w-4"/>}
+                        Reabrir Partido
+                    </Button>
+                 ) : (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isSaving || match.isFinished}>
+                                {match.isFinished ? <Lock className="mr-2 h-4 w-4"/> : (isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> :<CheckCircle className="mr-2 h-4 w-4"/>)}
+                                {match.isFinished ? 'Finalizado' : 'Finalizar'}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Finalizar y guardar estadísticas?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                Esta acción consolidará permanentemente las estadísticas del partido en los totales de tus jugadores. Una vez finalizado, el partido no se podrá volver a editar.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={finalizeMatch} disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    Sí, finalizar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 )}
             </div>
         </div>
 
@@ -802,17 +829,17 @@ const renderTeamStats = () => {
 
 
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-                    <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || match.isFinished}>
+                    <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || (match.isFinished && !isAdmin)}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {match.isActive ? 'Pausar' : 'Iniciar'}
                     </Button>
-                     <Button onClick={resetTimer} variant="outline" disabled={match.isFinished}>
+                     <Button onClick={resetTimer} variant="outline" disabled={match.isFinished && !isAdmin}>
                         <RefreshCw className="mr-2"/>
                         Reiniciar
                     </Button>
                     <div className="flex items-center rounded-md border p-1">
-                        <Button onClick={() => handlePeriodChange('1ª Parte')} variant={match.period === '1ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished}>1ª Parte</Button>
-                        <Button onClick={() => handlePeriodChange('2ª Parte')} variant={match.period === '2ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished}>2ª Parte</Button>
+                        <Button onClick={() => handlePeriodChange('1ª Parte')} variant={match.period === '1ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished && !isAdmin}>1ª Parte</Button>
+                        <Button onClick={() => handlePeriodChange('2ª Parte')} variant={match.period === '2ª Parte' ? 'secondary': 'ghost'} size="sm" disabled={match.isFinished && !isAdmin}>2ª Parte</Button>
                     </div>
                 </div>
                 
@@ -839,3 +866,5 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
