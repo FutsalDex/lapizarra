@@ -723,8 +723,9 @@ const renderTeamStats = () => {
   );
 
   const currentPeriodKey = match.period === '1ª Parte' ? '1' : '2';
-  const localTimeoutUsed = match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0;
-  const visitorTimeoutUsed = match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0;
+  const localTimeoutUsed = (match.userTeam === 'local' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'visitor' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
+  const visitorTimeoutUsed = (match.userTeam === 'visitor' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'local' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
+
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
@@ -779,27 +780,27 @@ const renderTeamStats = () => {
             <CardContent className="p-4 md:p-6">
                  <div className="grid grid-cols-2 items-start w-full max-w-4xl mx-auto text-center gap-2">
                     <div className="flex flex-col items-center">
-                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
+                        <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
                     <div className="flex flex-col items-center">
-                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
+                        <h2 className="text-lg md:text-xl font-bold w-full truncate">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
                 </div>
 
+                <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums my-4 text-center">
+                    {localScore} - {visitorScore}
+                </div>
+
                 <div className="flex items-center justify-center gap-4 my-4">
-                    <TimeoutIndicator used={match.userTeam === 'local' ? localTimeoutUsed : visitorTimeoutUsed} />
-                    <div className="text-4xl md:text-6xl font-bold text-primary tabular-nums">
-                        {localScore} - {visitorScore}
+                    <TimeoutIndicator used={localTimeoutUsed} />
+                    <div className="text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg w-fit mx-auto">
+                        {formatTime(match.timeLeft)}
                     </div>
-                    <TimeoutIndicator used={match.userTeam === 'visitor' ? localTimeoutUsed : visitorTimeoutUsed} />
+                    <TimeoutIndicator used={visitorTimeoutUsed} />
                 </div>
 
-
-                 <div className="text-6xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg w-fit mx-auto">
-                    {formatTime(match.timeLeft)}
-                </div>
 
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
                     <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || match.isFinished}>
@@ -839,12 +840,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
-
-    
-
-
-
-
-
