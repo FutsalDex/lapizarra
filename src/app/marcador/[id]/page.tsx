@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -164,7 +164,7 @@ export default function MarcadorEnVivoPage() {
                 events: data.events || [],
                 teamStats1: data.teamStats1 || defaultTeamStats,
                 teamStats2: data.teamStats2 || defaultTeamStats,
-                opponentStats1: data.opponentStats1 || defaultTeamStats,
+                opponentStats1: data.opponentStats1 || defaultOpponentStats,
                 opponentStats2: data.opponentStats2 || defaultOpponentStats,
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
@@ -639,7 +639,7 @@ const renderOpponentStats = () => {
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-1">
                                         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                                        <span className="w-4 text-center">{match[opponentPeriodKey][config.key]}</span>
+                                        <span className="w-4 text-center">{match[opponentPeriodKey][config.key] ?? 0}</span>
                                         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
                                     </div>
                                 </TableCell>
@@ -866,5 +866,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
