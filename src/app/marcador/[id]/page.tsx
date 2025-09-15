@@ -6,7 +6,7 @@ import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, writeBat
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Play, Pause, RefreshCw, Settings, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -414,10 +414,10 @@ export default function MarcadorEnVivoPage() {
 
     return (
         <TableCell className="text-center px-1">
-            <div className="flex items-center justify-center gap-1">
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
-                <span className="w-4 text-center">{value}</span>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
+            <div className="flex items-center justify-center gap-0 sm:gap-1">
+                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
+                <span className="w-4 text-center text-sm sm:text-base">{value}</span>
+                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
             </div>
         </TableCell>
     )
@@ -497,12 +497,39 @@ export default function MarcadorEnVivoPage() {
   const visitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
   const opponentPeriodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+
+  const StatColumnHeader = ({ full, abbr, isIcon=false, iconContent }: { full: string, abbr: string, isIcon?: boolean, iconContent?: React.ReactNode }) => (
+    <TableHead className="text-center px-1">
+        {isIcon ? (
+            <div className="inline-block w-4 h-5 border border-black mx-auto" style={{backgroundColor: full}}>{iconContent}</div>
+        ) : (
+            <>
+                <span className="hidden sm:inline">{full}</span>
+                <span className="sm:hidden">{abbr}</span>
+            </>
+        )}
+    </TableHead>
+  );
+
+  const tableHeaders = (
+    <TableRow>
+        <TableHead className="sticky left-0 bg-background/95 z-20 px-2 min-w-[70px]">Dorsal</TableHead>
+        <TableHead className="sticky left-[70px] bg-background/95 z-20 px-2 min-w-[150px]">Nombre</TableHead>
+        <StatColumnHeader full="Goles" abbr="G" />
+        <StatColumnHeader full="Asist." abbr="As" />
+        <StatColumnHeader full="yellow" abbr="" isIcon />
+        <StatColumnHeader full="red" abbr="" isIcon />
+        <StatColumnHeader full="Faltas" abbr="F" />
+        <StatColumnHeader full="Paradas" abbr="P" />
+        <StatColumnHeader full="GC" abbr="GC" />
+        <StatColumnHeader full="1vs1" abbr="1vs1" />
+    </TableRow>
+  )
   
   const renderTeamTable = (isUserTeam: boolean) => {
     if (!isUserTeam) {
         return renderOpponentStats();
     }
-
 
     const players = userPlayers || [];
 
@@ -514,28 +541,13 @@ export default function MarcadorEnVivoPage() {
                 </div>
                 <div className="rounded-b-md border border-t-0 overflow-x-auto">
                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="px-2">Dorsal</TableHead>
-                                <TableHead className="px-2 min-w-[150px]">Nombre</TableHead>
-                                <TableHead className="text-center px-1">Goles</TableHead>
-                                <TableHead className="text-center px-1">As</TableHead>
-                                <TableHead className="text-center px-1">
-                                    <div className="inline-block w-4 h-5 bg-yellow-400 border border-black mx-auto"></div>
-                                </TableHead>
-                                <TableHead className="text-center px-1">
-                                    <div className="inline-block w-4 h-5 bg-red-600 border border-black mx-auto"></div>
-                                </TableHead>
-                                <TableHead className="text-center px-1">Faltas</TableHead>
-                                <TableHead className="text-center px-1">Paradas</TableHead>
-                                <TableHead className="text-center px-1">GC</TableHead>
-                                <TableHead className="text-center px-1">1vs1</TableHead>
-                            </TableRow>
+                        <TableHeader className="[&_tr]:border-b-0">
+                            {tableHeaders}
                         </TableHeader>
                         <TableBody>
                             {players.map((player, index) => (
                                 <TableRow key={player.id}>
-                                    <TableCell className="px-2">
+                                    <TableCell className="sticky left-0 bg-background/95 z-10 px-2">
                                         <Input 
                                             className="h-8 w-14 text-center" 
                                             value={player.number} 
@@ -543,7 +555,7 @@ export default function MarcadorEnVivoPage() {
                                             readOnly={match.isFinished || !player.id.startsWith('local-') && !player.id.startsWith('visitor-')} 
                                         />
                                     </TableCell>
-                                    <TableCell className="px-2">
+                                    <TableCell className="sticky left-[70px] bg-background/95 z-10 px-2">
                                         <Input 
                                             className="h-8" 
                                             value={player.name} 
@@ -562,6 +574,9 @@ export default function MarcadorEnVivoPage() {
                                 </TableRow>
                             ))}
                         </TableBody>
+                        <TableFooter className="bg-secondary/50">
+                            {tableHeaders}
+                        </TableFooter>
                     </Table>
                     
                     {!match.isFinished && (
@@ -593,7 +608,7 @@ const renderOpponentStats = () => {
                 <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                 <div className="p-4 flex flex-col space-y-4 border-b">
+                <div className="p-4 flex flex-col space-y-4 border-b">
                      <StatCounter 
                         label="Goles Rival"
                         value={opponentScore}
@@ -763,14 +778,14 @@ const renderTeamStats = () => {
             <CardContent className="p-4 md:p-6">
                  <div className="grid grid-cols-3 items-start w-full max-w-4xl mx-auto mb-4 text-center gap-4">
                     <div className="flex flex-col items-center">
-                        <h2 className="text-xl md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.localTeam}</h2>
                         <FoulsIndicator count={match.localFouls} />
                     </div>
                     <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums self-center">
                         {localScore} - {visitorScore}
                     </div>
                     <div className="flex flex-col items-center">
-                        <h2 className="text-xl md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold w-full truncate">{match.visitorTeam}</h2>
                         <FoulsIndicator count={match.visitorFouls} />
                     </div>
                 </div>
@@ -821,4 +836,5 @@ const renderTeamStats = () => {
     
 
     
+
 
