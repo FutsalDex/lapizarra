@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface Match {
   id: string;
@@ -38,6 +39,9 @@ interface Team {
   name: string;
 }
 
+type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
+const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
+
 export default function TeamMatchesPage() {
   const { user } = useAuth();
   const params = useParams();
@@ -46,6 +50,7 @@ export default function TeamMatchesPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
   useEffect(() => {
     if (!user || !teamId) {
@@ -75,6 +80,13 @@ export default function TeamMatchesPage() {
     }
   }, [user, teamId]);
   
+  const filteredMatches = useMemo(() => {
+    if (activeFilter === 'Todos') {
+      return matches;
+    }
+    return matches.filter(match => match.matchType === activeFilter);
+  }, [matches, activeFilter]);
+  
   const handleDeleteMatch = async (matchId: string) => {
       try {
           await deleteDoc(doc(db, 'matches', matchId));
@@ -87,7 +99,7 @@ export default function TeamMatchesPage() {
 
   return (
     <div className="container mx-auto max-w-6xl py-12 px-4">
-      <div className="flex justify-between items-center mb-12">
+      <div className="flex justify-between items-center mb-8">
         <div className="text-left">
            <div className="mb-4">
                 <Button asChild variant="outline">
@@ -110,25 +122,49 @@ export default function TeamMatchesPage() {
           </div>
         </div>
         <AddMatchDialog teamId={teamId}>
-          <Button size="lg">
+          <Button size="lg" className="shrink-0">
             <PlusCircle className="mr-2 h-5 w-5" />
             Añadir Partido
           </Button>
         </AddMatchDialog>
       </div>
+      
+      <Card className="mb-8">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {filters.map(filter => (
+                <Button 
+                    key={filter} 
+                    variant={activeFilter === filter ? 'default' : 'outline'}
+                    onClick={() => setActiveFilter(filter)}
+                >
+                    {filter}
+                </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
         </div>
-      ) : matches.length === 0 ? (
+      ) : filteredMatches.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <p className="text-muted-foreground">Aún no has añadido ningún partido para este equipo.</p>
-          <p className="text-sm text-muted-foreground mt-2">Haz clic en "Añadir Partido" para empezar.</p>
+          <p className="text-muted-foreground">
+            {activeFilter === 'Todos' 
+                ? 'Aún no has añadido ningún partido para este equipo.'
+                : `No se encontraron partidos de tipo "${activeFilter}".`
+            }
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {activeFilter === 'Todos' ? 'Haz clic en "Añadir Partido" para empezar.' : 'Prueba a seleccionar otro filtro.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {matches.map(match => (
+          {filteredMatches.map(match => (
             <Card key={match.id} className="text-center hover:shadow-lg transition-shadow flex flex-col">
               <CardContent className="p-6 flex-grow flex flex-col justify-center items-center">
                   <h3 className="font-semibold">{match.localTeam} vs {match.visitorTeam}</h3>
