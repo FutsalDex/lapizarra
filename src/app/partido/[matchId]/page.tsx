@@ -41,6 +41,7 @@ interface PlayerStats {
 }
 
 interface GoalEvent {
+    id: string; // Unique ID for the event
     type: 'goal';
     playerId: string;
     playerName: string;
@@ -88,13 +89,18 @@ export default function MatchDetailsPage() {
         // Manual fix for match J7wVYfI5UyXMiPkN5
         if (matchId === 'J7wVYfI5UyXMiPkN5') {
             const visitorHasGoalEvent = events.some((e: GoalEvent) => e.team === 'visitor');
-            if (!visitorHasGoalEvent && data.visitorScore > 0) {
-                 events.push({
+            if (!visitorHasGoalEvent && data.visitorScore === 1) {
+                const visitorGoal: GoalEvent = {
+                    id: 'manual-goal-J7wVYfI5UyXMiPkN5',
                     type: 'goal',
+                    playerId: 'opponent',
                     playerName: 'FSC Horta C',
                     team: 'visitor',
                     minute: 2,
-                 } as GoalEvent);
+                    period: '1ª Parte',
+                    teamId: data.teamId,
+                };
+                 events.push(visitorGoal);
                  events.sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
             }
         }
