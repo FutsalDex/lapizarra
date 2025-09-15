@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -65,6 +65,8 @@ export default function TeamMembersPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
+  const [processingMember, setProcessingMember] = useState<string | null>(null);
+
 
   const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
@@ -79,7 +81,7 @@ export default function TeamMembersPage() {
       if (teamDoc.exists()) {
         const teamData = teamDoc.data() as Team;
         if (teamData.ownerId === user.uid) {
-            setTeam({ ownerRole: 'Propietario', ...teamData});
+            setTeam({ ownerRole: teamData.ownerRole || 'Propietario', ...teamData});
         } else {
             router.push('/gestion-equipos');
         }
@@ -147,6 +149,19 @@ export default function TeamMembersPage() {
           console.error("Error updating owner role:", error);
           toast({ title: 'Error', description: 'No se pudo actualizar tu rol.', variant: 'destructive'});
       }
+  }
+
+  const handleDeleteMember = async (memberId: string) => {
+    setProcessingMember(memberId);
+    try {
+        await deleteDoc(doc(db, 'teamMembers', memberId));
+        toast({ title: "Miembro eliminado", description: "El usuario ha sido eliminado del equipo." });
+    } catch (error) {
+        console.error("Error deleting member:", error);
+        toast({ title: "Error", description: "No se pudo eliminar al miembro.", variant: "destructive" });
+    } finally {
+        setProcessingMember(null);
+    }
   }
 
   const copyToClipboard = () => {
@@ -258,8 +273,8 @@ export default function TeamMembersPage() {
                                 <TableCell>{member.email}</TableCell>
                                 <TableCell>{member.role}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="text-destructive">
-                                        <Trash2 className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteMember(member.id)} disabled={!!processingMember}>
+                                        {processingMember === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -267,7 +282,7 @@ export default function TeamMembersPage() {
                     </TableBody>
                 </Table>
             </div>
-             {members.length === 0 && (
+             {members.length === 0 && !loading && (
                 <p className="text-sm text-muted-foreground text-center mt-4">Aún no has añadido a nadie al equipo.</p>
             )}
         </CardContent>
@@ -279,7 +294,7 @@ export default function TeamMembersPage() {
             <AlertDialogHeader>
             <AlertDialogTitle>Enlace de Invitación Creado</AlertDialogTitle>
             <AlertDialogDescription>
-                Accede a este enlace para unirte al equipo: <span className="font-semibold text-primary">{team.name}</span>:
+                Copia y comparte este enlace con el miembro del equipo para que pueda unirse a <span className="font-semibold text-primary">{team.name}</span>.
             </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="relative rounded-md bg-muted px-4 py-2 font-mono text-sm break-all">
