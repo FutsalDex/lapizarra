@@ -20,7 +20,8 @@ import {
     Hand,
     Plus,
     Minus,
-    ArrowLeft
+    ArrowLeft,
+    Crosshair
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -66,6 +67,7 @@ interface Stats {
     goalsAgainst: number;
     goalsAgainst1stHalf: number;
     goalsAgainst2ndHalf: number;
+    totalShots: number;
     shotsOnTarget: number;
     shotsOffTarget: number;
     shotsBlocked: number;
@@ -104,7 +106,7 @@ export default function TeamStatsPage() {
                 played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0,
                 goalsFor: 0, goalsFor1stHalf: 0, goalsFor2ndHalf: 0,
                 goalsAgainst: 0, goalsAgainst1stHalf: 0, goalsAgainst2ndHalf: 0,
-                shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
+                totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
                 turnovers: 0, recoveries: 0,
             };
 
@@ -152,6 +154,8 @@ export default function TeamStatsPage() {
                   newStats.recoveries += match.teamStats2.recoveries || 0;
                 }
             });
+
+            newStats.totalShots = newStats.shotsOnTarget + newStats.shotsOffTarget + newStats.shotsBlocked;
 
             setStats(newStats);
             setLoading(false);
@@ -213,7 +217,6 @@ export default function TeamStatsPage() {
                     <StatCard title="Ganados" value={stats.won} icon={TrendingUp} />
                     <StatCard title="Empatados" value={stats.drawn} icon={Shield} />
                     <StatCard title="Perdidos" value={stats.lost} icon={TrendingDown} />
-                    <StatCard title="Faltas Cometidas" value={stats.fouls} icon={AlertOctagon} />
                 </CardContent>
             </Card>
 
@@ -222,9 +225,11 @@ export default function TeamStatsPage() {
                     <CardTitle>Rendimiento del Equipo</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-1">
+                    <StatCard title="Tiros Totales" value={stats.totalShots} icon={Crosshair} />
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
                     <StatCard title="Tiros Bloqueados" value={stats.shotsBlocked} icon={Hand} />
+                    <StatCard title="Faltas Cometidas" value={stats.fouls} icon={AlertOctagon} />
                     <StatCard title="Pérdidas de Balón" value={stats.turnovers} icon={RotateCcw} />
                     <StatCard title="Robos de Balón" value={stats.recoveries} icon={Shuffle} />
                 </CardContent>
@@ -258,3 +263,4 @@ export default function TeamStatsPage() {
   );
 }
 
+    
