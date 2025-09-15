@@ -83,6 +83,22 @@ export default function MatchDetailsPage() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         
+        let events = (data.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
+
+        // Manual fix for match J7wVYfI5UyXMiPkN5
+        if (matchId === 'J7wVYfI5UyXMiPkN5') {
+            const visitorHasGoalEvent = events.some((e: GoalEvent) => e.team === 'visitor');
+            if (!visitorHasGoalEvent && data.visitorScore > 0) {
+                 events.push({
+                    type: 'goal',
+                    playerName: 'FSC Horta C',
+                    team: 'visitor',
+                    minute: 2,
+                 } as GoalEvent);
+                 events.sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
+            }
+        }
+        
         setMatch({
             id: docSnap.id,
             teamId: data.teamId,
@@ -93,7 +109,7 @@ export default function MatchDetailsPage() {
             visitorTeam: data.visitorTeam,
             localScore: data.localScore,
             visitorScore: data.visitorScore,
-            events: (data.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute),
+            events: events,
             localPlayers: data.localPlayers || [],
             visitorPlayers: data.visitorPlayers || [],
         });
