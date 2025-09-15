@@ -359,7 +359,7 @@ export default function MarcadorEnVivoPage() {
         const foulsKey = opponentTeam === 'local' ? 'localFouls' : 'visitorFouls';
         let newFoulsCount = prev[foulsKey];
 
-        if (stat === 'faltas') {
+        if (stat === 'fouls') {
             newFoulsCount = Math.max(0, newFoulsCount + delta);
         }
         
@@ -422,17 +422,6 @@ export default function MarcadorEnVivoPage() {
         </TableCell>
     )
   }
-
-  const StatCounter = ({ label, value, onIncrement, onDecrement }: { label:string, value: number, onIncrement: () => void, onDecrement: () => void }) => (
-    <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{label}:</span>
-        <div className="flex items-center gap-1">
-            <Button size="icon" variant="outline" className="h-6 w-6" onClick={onDecrement} disabled={match?.isFinished}><Minus className="h-4 w-4"/></Button>
-            <span className="w-4 text-center font-bold">{value}</span>
-            <Button size="icon" variant="outline" className="h-6 w-6" onClick={onIncrement} disabled={match?.isFinished}><Plus className="h-4 w-4"/></Button>
-        </div>
-    </div>
-  );
 
    const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -596,6 +585,8 @@ export default function MarcadorEnVivoPage() {
 
 const renderOpponentStats = () => {
     const opponentStatsConfig: { key: OpponentStatKeys, label: string }[] = [
+        { key: 'goals', label: 'Goles Rival' },
+        { key: 'fouls', label: 'Faltas Rival' },
         { key: 'shotsOnTarget', label: 'Tiros a Puerta' },
         { key: 'shotsOffTarget', label: 'Tiros Fuera' },
         { key: 'shotsBlocked', label: 'Tiros Bloqueados' },
@@ -608,20 +599,6 @@ const renderOpponentStats = () => {
                 <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="p-4 flex flex-col space-y-4 border-b">
-                     <StatCounter 
-                        label="Goles Rival"
-                        value={opponentScore}
-                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', 1)}
-                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'goals', -1)}
-                    />
-                    <StatCounter 
-                        label="Faltas Rival"
-                        value={match[opponentTeam === 'local' ? 'localFouls' : 'visitorFouls']}
-                        onIncrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', 1)}
-                        onDecrement={() => handleOpponentStatChange(opponentPeriodKey, 'faltas', -1)}
-                    />
-                </div>
                 <Table>
                     <TableBody>
                          {opponentStatsConfig.map((config) => (
@@ -683,7 +660,7 @@ const renderTeamStats = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {teamStatsConfig.map(({ key, label }) => <StatRow key={key} statKey={key} label={label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
+                            {teamStatsConfig.map((config) => <StatRow key={config.key} statKey={config.key} label={config.label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -701,7 +678,7 @@ const renderTeamStats = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {eventsConfig.map(({ key, label }) => <StatRow key={key} statKey={key} label={label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
+                            {eventsConfig.map((config) => <StatRow key={config.key} statKey={config.key} label={config.label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -836,5 +813,6 @@ const renderTeamStats = () => {
     
 
     
+
 
 
