@@ -228,12 +228,16 @@ export default function MarcadorEnVivoPage() {
     const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
     const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     
-    const opponentScore = match.userTeam === 'local' ? match.visitorScore : match.localScore;
+    const opponentTeam = match.userTeam === 'local' ? 'visitor' : 'local';
+    const opponentScore = match[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
+    
+    const finalLocalScore = match.userTeam === 'local' ? userTeamScore : opponentScore;
+    const finalVisitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
     const dataToUpdate: Partial<MatchDetails> = {
         ...match,
-        localScore: match.userTeam === 'local' ? userTeamScore : opponentScore,
-        visitorScore: match.userTeam === 'visitor' ? userTeamScore : opponentScore,
+        localScore: finalLocalScore,
+        visitorScore: finalVisitorScore,
         isFinished: true,
         isActive: false
     };
@@ -266,7 +270,7 @@ export default function MarcadorEnVivoPage() {
 
         toast({ title: "¡Partido Finalizado!", description: "Las estadísticas han sido guardadas y añadidas a los totales de los jugadores." });
         
-        setMatch(prev => prev ? {...prev, isFinished: true, isActive: false} : null);
+        setMatch(prev => prev ? {...prev, isFinished: true, isActive: false, localScore: finalLocalScore, visitorScore: finalVisitorScore} : null);
 
     } catch (error) {
         console.error("Error finalizing match:", error);
