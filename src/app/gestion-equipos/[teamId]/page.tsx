@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ interface Member {
 
 interface Invitation {
     id: string;
-    email: string;
+    invitedUserEmail: string;
     role: string;
     status: 'pending' | 'accepted' | 'declined';
 }
@@ -333,8 +333,8 @@ export default function TeamMembersPage() {
                         ))}
                         {invitations.filter(i => i.status === 'pending').map(invite => (
                              <TableRow key={invite.id} className="bg-muted/50">
-                                <TableCell>{invite.email.split('@')[0]}</TableCell>
-                                <TableCell>{invite.email}</TableCell>
+                                <TableCell>{invite.invitedUserEmail.split('@')[0]}</TableCell>
+                                <TableCell>{invite.invitedUserEmail}</TableCell>
                                 <TableCell>{invite.role} (Pendiente)</TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="icon" onClick={() => {
