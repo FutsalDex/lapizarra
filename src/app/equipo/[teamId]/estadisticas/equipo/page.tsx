@@ -22,7 +22,8 @@ import {
     Plus,
     Minus,
     ArrowLeft,
-    Crosshair
+    Crosshair,
+    ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -62,6 +63,7 @@ interface Stats {
     drawn: number;
     lost: number;
     fouls: number;
+    faltasRecibidas: number;
     goalsFor: number;
     goalsFor1stHalf: number;
     goalsFor2ndHalf: number;
@@ -123,7 +125,7 @@ export default function TeamSpecificStatsPage() {
             }
 
             const newStats: Stats = {
-                played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0,
+                played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0, faltasRecibidas: 0,
                 goalsFor: 0, goalsFor1stHalf: 0, goalsFor2ndHalf: 0,
                 goalsAgainst: 0, goalsAgainst1stHalf: 0, goalsAgainst2ndHalf: 0,
                 totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
@@ -145,6 +147,12 @@ export default function TeamSpecificStatsPage() {
                 const userPlayers = isLocalTeam ? match.localPlayers : match.visitorPlayers;
                 if (userPlayers) {
                     newStats.fouls += userPlayers.reduce((acc: number, p: any) => acc + (p.faltas || 0), 0);
+                }
+                 if(match.opponentStats1) {
+                    newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
+                }
+                if(match.opponentStats2) {
+                    newStats.faltasRecibidas += match.opponentStats2.fouls || 0;
                 }
                 
                 const goals = match.events?.filter((e: any) => e.type === 'goal') || [];
@@ -272,6 +280,7 @@ export default function TeamSpecificStatsPage() {
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
                     <StatCard title="Tiros Bloqueados" value={stats.shotsBlocked} icon={Hand} />
                     <StatCard title="Faltas Cometidas" value={stats.fouls} icon={AlertOctagon} />
+                    <StatCard title="Faltas Recibidas" value={stats.faltasRecibidas} icon={ShieldCheck} />
                     <StatCard title="Pérdidas de Balón" value={stats.turnovers} icon={RotateCcw} />
                     <StatCard title="Robos de Balón" value={stats.recoveries} icon={Shuffle} />
                 </CardContent>
