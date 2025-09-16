@@ -197,48 +197,6 @@ export default function MarcadorEnVivoPage() {
     return () => unsubscribe();
 }, [id, toast]);
 
-    const updatePlayingTime = (matchState: MatchDetails): MatchDetails => {
-        const playersKey = matchState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-        const players = matchState[playersKey];
-        if (!players) return matchState;
-
-        const updatedPlayers = players.map(p => {
-            if (p.isPlaying && p.lastEntryTime > 0) {
-                const timePlayed = p.lastEntryTime - matchState.timeLeft;
-                return {
-                    ...p,
-                    timeOnCourt: p.timeOnCourt + timePlayed,
-                    lastEntryTime: matchState.timeLeft, // Reset entry time to current time
-                };
-            }
-            return p;
-        });
-
-        return { ...matchState, [playersKey]: updatedPlayers };
-    };
-
-  // Autosave timer
-  useEffect(() => {
-    const saveInterval = setInterval(async () => {
-        let currentMatch = matchRef.current;
-        if (currentMatch && !currentMatch.isFinished && !isSaving) {
-            try {
-                if (currentMatch.isActive) {
-                    currentMatch = updatePlayingTime(currentMatch);
-                }
-                const matchDocRef = doc(db, 'matches', currentMatch.id);
-                const { id: matchId, ...dataToSave } = currentMatch;
-                await updateDoc(matchDocRef, dataToSave);
-                setShowSavedIndicator(true);
-                setTimeout(() => setShowSavedIndicator(false), 2000);
-            } catch (error) {
-                console.error("Autosave failed: ", error);
-            }
-        }
-    }, 5000);
-
-    return () => clearInterval(saveInterval);
-  }, [isSaving]);
 
   // Timer logic
   useEffect(() => {
@@ -258,11 +216,56 @@ export default function MarcadorEnVivoPage() {
     };
   }, [match?.isActive, match?.timeLeft, match?.isFinished]);
 
+    const updateAllPlayingTimes = (matchState: MatchDetails): MatchDetails => {
+        const playersKey = matchState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = matchState[playersKey];
+        if (!players) return matchState;
+
+        const updatedPlayers = players.map(p => {
+            if (p.isPlaying && p.lastEntryTime > 0) {
+                const timePlayed = Math.max(0, p.lastEntryTime - matchState.timeLeft);
+                return {
+                    ...p,
+                    timeOnCourt: p.timeOnCourt + timePlayed,
+                    lastEntryTime: matchState.timeLeft, // Reset for next play interval
+                };
+            }
+            return p;
+        });
+
+        return { ...matchState, [playersKey]: updatedPlayers };
+    };
+
+    // Autosave timer
+    useEffect(() => {
+        const saveInterval = setInterval(async () => {
+            let currentMatch = matchRef.current;
+            if (currentMatch && !currentMatch.isFinished && !isSaving) {
+                try {
+                    // Update times before saving
+                    if (currentMatch.isActive) {
+                        currentMatch = updateAllPlayingTimes(currentMatch);
+                    }
+                    const matchDocRef = doc(db, 'matches', currentMatch.id);
+                    const { id: matchId, ...dataToSave } = currentMatch;
+                    await updateDoc(matchDocRef, dataToSave);
+                    setShowSavedIndicator(true);
+                    setTimeout(() => setShowSavedIndicator(false), 2000);
+                } catch (error) {
+                    console.error("Autosave failed: ", error);
+                }
+            }
+        }, 5000);
+
+        return () => clearInterval(saveInterval);
+    }, [isSaving]);
+
+
  const finalizeMatch = async () => {
     if (!match || (match.isFinished && !isAdmin)) return;
     setIsSaving(true);
     
-    let finalMatchState = updatePlayingTime(match);
+    let finalMatchState = updateAllPlayingTimes(match);
     
     const userPlayers = finalMatchState.userTeam === 'local' ? finalMatchState.localPlayers : finalMatchState.visitorPlayers;
     const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -273,7 +276,7 @@ export default function MarcadorEnVivoPage() {
       finalMatchState.visitorScore = userTeamScore;
     }
     
-    const dataToUpdate = {
+    const dataToUpdate: Partial<MatchDetails> = {
         ...finalMatchState,
         isActive: false,
         isFinished: true,
@@ -576,8 +579,9 @@ const reopenMatch = async () => {
   }
 
    const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const totalSeconds = Math.floor(seconds);
+    const minutes = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -586,23 +590,22 @@ const reopenMatch = async () => {
     setMatch(prev => {
         if (!prev) return null;
 
-        let newState = {...prev};
+        let newState: MatchDetails;
 
-        // When pausing, update time for all playing players
-        if (newState.isActive) {
-            newState = updatePlayingTime(newState);
+        if (prev.isActive) {
+            // Pausing timer
+            newState = updateAllPlayingTimes(prev);
             newState.isActive = false;
         } else {
-             // When starting, set entry time for all playing players
-            const playersKey = newState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-            const players = newState[playersKey];
-            if (players) {
-                const updatedPlayers = players.map(p => p.isPlaying ? { ...p, lastEntryTime: newState.timeLeft } : p);
-                newState = { ...newState, [playersKey]: updatedPlayers };
-            }
-            newState.isActive = true;
+            // Starting timer
+            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+            const players = prev[playersKey] ? [...prev[playersKey]!] : [];
+            const updatedPlayers = players.map(p => 
+                p.isPlaying ? { ...p, lastEntryTime: prev.timeLeft } : p
+            );
+            newState = { ...prev, isActive: true, [playersKey]: updatedPlayers };
         }
-
+        
         return newState;
     });
   }
@@ -612,7 +615,7 @@ const reopenMatch = async () => {
       setMatch(prev => {
         if (!prev || prev.period === newPeriod) return prev;
         
-        const updatedState = updatePlayingTime(prev);
+        const updatedState = updateAllPlayingTimes(prev);
 
         return {
             ...updatedState,
@@ -1012,3 +1015,5 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
