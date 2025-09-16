@@ -19,7 +19,12 @@ import {
 } from '@/components/ui/table';
 import { 
     Users, 
-    ArrowLeft
+    ArrowLeft,
+    Goal,
+    Hand,
+    AlertTriangle,
+    Shield,
+    ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,7 +46,32 @@ interface Player {
     faltas: number;
     paradas: number;
     gRec: number;
+    position?: string;
 }
+
+interface StatCardProps {
+    title: string;
+    icon: React.ElementType;
+    playerName: string;
+    value: number;
+}
+
+const StatCard = ({ title, icon: Icon, playerName, value }: StatCardProps) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-base font-bold">{playerName}</p>
+        </div>
+      </div>
+      <p className="text-right text-3xl font-bold mt-2">{value}</p>
+    </CardContent>
+  </Card>
+);
 
 type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
 const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
@@ -81,7 +111,8 @@ export default function TeamPlayerStatsPage() {
             const teamPlayers = playersSnapshot.docs.map(doc => ({
                 id: doc.id,
                 name: doc.data().name,
-                number: doc.data().number
+                number: doc.data().number,
+                position: doc.data().position
             }));
 
             // Get matches based on filter
@@ -97,7 +128,7 @@ export default function TeamPlayerStatsPage() {
             const playerStats: Record<string, Player> = {};
             teamPlayers.forEach(p => {
                 playerStats[p.id] = {
-                    name: p.name, number: p.number, teamName: currentTeamName,
+                    name: p.name, number: p.number, teamName: currentTeamName, position: p.position,
                     pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0,
                 };
             });
@@ -133,6 +164,17 @@ export default function TeamPlayerStatsPage() {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [players, searchTerm]);
 
+    const topScorer = useMemo(() => players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]), [players]);
+    const topAssistant = useMemo(() => players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]), [players]);
+    const mostFouls = useMemo(() => players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]), [players]);
+    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0), [players]);
+    const topGoalkeeperSaves = useMemo(() => goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]), [goalkeepers]);
+    const topGoalkeeperCleanest = useMemo(() => {
+        const gksWithGames = goalkeepers.filter(p => p.pj > 0);
+        if (gksWithGames.length === 0) return null;
+        return gksWithGames.reduce((min, p) => ((p.gRec/p.pj) < (min.gRec/min.pj)) ? p : min, gksWithGames[0]);
+    }, [goalkeepers]);
+
 
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4 space-y-8">
@@ -157,6 +199,16 @@ export default function TeamPlayerStatsPage() {
               </Link>
             </Button>
         </div>
+        
+        {players.length > 0 && !loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
+                {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
+                {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
+                {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
+                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado (Avg)" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={parseFloat((topGoalkeeperCleanest.gRec / topGoalkeeperCleanest.pj).toFixed(2))} />}
+            </div>
+        )}
 
         <Card>
             <CardHeader>
@@ -236,5 +288,7 @@ export default function TeamPlayerStatsPage() {
     </div>
   );
 }
+
+    
 
     
