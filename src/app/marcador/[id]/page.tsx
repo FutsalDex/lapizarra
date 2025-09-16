@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,9 @@ interface Player {
     paradas: number;
     gRec: number;
     vs1: number;
+    isPlaying: boolean; // New: To track if player is on court
+    timeOnCourt: number;  // New: Total seconds played
+    lastEntryTime: number; // New: Timestamp of last entry
 }
 
 interface GoalEvent {
@@ -85,7 +88,7 @@ interface MatchDetails {
     visitorFouls: number;
 }
 
-type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number'>;
+type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
 type TeamStatKeys = keyof TeamMatchStats;
 type OpponentStatKeys = keyof OpponentTeamStats;
 
@@ -149,7 +152,16 @@ export default function MarcadorEnVivoPage() {
                             name: d.data().name, 
                             number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                            isPlaying: false, timeOnCourt: 0, lastEntryTime: 0,
                         })).sort((a, b) => a.number - b.number);
+                    } else {
+                        // Ensure new fields exist
+                        teamPlayers = teamPlayers.map(p => ({
+                            ...p,
+                            isPlaying: p.isPlaying || false,
+                            timeOnCourt: p.timeOnCourt || 0,
+                            lastEntryTime: p.lastEntryTime || 0,
+                        }))
                     }
                 }
             }
@@ -183,12 +195,35 @@ export default function MarcadorEnVivoPage() {
     return () => unsubscribe();
 }, [id, toast]);
 
+    const updatePlayingTime = (matchState: MatchDetails): MatchDetails => {
+        const playersKey = matchState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = matchState[playersKey];
+        if (!players) return matchState;
+
+        const updatedPlayers = players.map(p => {
+            if (p.isPlaying && p.lastEntryTime > 0) {
+                const timePlayed = p.lastEntryTime - matchState.timeLeft;
+                return {
+                    ...p,
+                    timeOnCourt: p.timeOnCourt + timePlayed,
+                    lastEntryTime: matchState.timeLeft, // Reset entry time to current time
+                };
+            }
+            return p;
+        });
+
+        return { ...matchState, [playersKey]: updatedPlayers };
+    };
+
   // Autosave timer
   useEffect(() => {
     const saveInterval = setInterval(async () => {
-        const currentMatch = matchRef.current;
+        let currentMatch = matchRef.current;
         if (currentMatch && !currentMatch.isFinished && !isSaving) {
             try {
+                if (currentMatch.isActive) {
+                    currentMatch = updatePlayingTime(currentMatch);
+                }
                 const matchDocRef = doc(db, 'matches', currentMatch.id);
                 const { id: matchId, ...dataToSave } = currentMatch;
                 await updateDoc(matchDocRef, dataToSave);
@@ -225,17 +260,20 @@ export default function MarcadorEnVivoPage() {
     if (!match || (match.isFinished && !isAdmin)) return;
     setIsSaving(true);
     
-    const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
+    // Final update on playing time
+    const finalMatchState = updatePlayingTime(match);
+    
+    const userPlayers = finalMatchState.userTeam === 'local' ? finalMatchState.localPlayers : finalMatchState.visitorPlayers;
     const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     
-    const opponentTeam = match.userTeam === 'local' ? 'visitor' : 'local';
-    const opponentScore = match[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
+    const opponentTeam = finalMatchState.userTeam === 'local' ? 'visitor' : 'local';
+    const opponentScore = finalMatchState[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
     
-    const finalLocalScore = match.userTeam === 'local' ? userTeamScore : opponentScore;
-    const finalVisitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
+    const finalLocalScore = finalMatchState.userTeam === 'local' ? userTeamScore : opponentScore;
+    const finalVisitorScore = finalMatchState.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
-    const dataToUpdate: Partial<MatchDetails> = {
-        ...match,
+    const dataToUpdate = {
+        ...finalMatchState,
         localScore: finalLocalScore,
         visitorScore: finalVisitorScore,
         isFinished: true,
@@ -248,10 +286,10 @@ export default function MarcadorEnVivoPage() {
         
         batch.update(matchDocRef, dataToUpdate);
 
-        if (match.teamId && userPlayers) { 
+        if (finalMatchState.teamId && userPlayers) { 
              userPlayers.forEach(player => {
                 if (player.id && !player.id.startsWith('local-') && !player.id.startsWith('visitor-')) {
-                    const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
+                    const playerRef = doc(db, 'teams', finalMatchState.teamId, 'players', player.id);
                     batch.update(playerRef, {
                         pj: increment(1),
                         goals: increment(player.goals || 0),
@@ -488,9 +526,34 @@ const reopenMatch = async () => {
                 id: `${prev.userTeam}-${Date.now()}`,
                 name: 'Nuevo Jugador',
                 number: 0,
-                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0
+                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                isPlaying: false, timeOnCourt: 0, lastEntryTime: 0,
             };
             const players = [...(prev[playersKey] || []), newPlayer];
+            return { ...prev, [playersKey]: players };
+        });
+    };
+
+    const handleTogglePlay = (playerIndex: number) => {
+        if (match?.isFinished && !isAdmin) return;
+        setMatch(prev => {
+            if (!prev) return null;
+            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+            const players = prev[playersKey] ? [...prev[playersKey]!] : [];
+            const player = { ...players[playerIndex] };
+
+            if (player.isPlaying) {
+                // Player is stopping
+                const timePlayed = player.lastEntryTime - prev.timeLeft;
+                player.timeOnCourt += timePlayed;
+                player.isPlaying = false;
+                player.lastEntryTime = 0;
+            } else {
+                // Player is starting
+                player.isPlaying = true;
+                player.lastEntryTime = prev.timeLeft;
+            }
+            players[playerIndex] = player;
             return { ...prev, [playersKey]: players };
         });
     };
@@ -518,26 +581,42 @@ const reopenMatch = async () => {
   };
 
   const handleTimerToggle = () => {
-      if (match?.isFinished && !isAdmin) return;
-      setMatch(prev => prev ? {...prev, isActive: !prev.isActive } : null)
+    if (match?.isFinished && !isAdmin) return;
+    setMatch(prev => {
+        if (!prev) return null;
+        // When pausing, update time for all playing players
+        if (prev.isActive) {
+            return updatePlayingTime(prev);
+        }
+        // When starting, set entry time for all playing players
+        const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = prev[playersKey];
+        if (players) {
+            const updatedPlayers = players.map(p => p.isPlaying ? { ...p, lastEntryTime: prev.timeLeft } : p);
+            return { ...prev, isActive: !prev.isActive, [playersKey]: updatedPlayers };
+        }
+        return { ...prev, isActive: !prev.isActive };
+    });
   }
 
   const handlePeriodChange = (newPeriod: '1ª Parte' | '2ª Parte') => {
       if (match?.isFinished && !isAdmin) return;
       setMatch(prev => {
         if (!prev || prev.period === newPeriod) return prev;
+        
+        const updatedState = updatePlayingTime(prev);
 
         return {
-            ...prev,
+            ...updatedState,
             period: newPeriod,
             timeLeft: 25 * 60,
             isActive: false,
             localFouls: 0,
             visitorFouls: 0,
-            teamStats1: { ...prev.teamStats1, timeouts: 0},
-            teamStats2: { ...prev.teamStats2, timeouts: 0},
-            opponentStats1: { ...prev.opponentStats1, timeouts: 0},
-            opponentStats2: { ...prev.opponentStats2, timeouts: 0},
+            teamStats1: { ...updatedState.teamStats1, timeouts: 0},
+            teamStats2: { ...updatedState.teamStats2, timeouts: 0},
+            opponentStats1: { ...updatedState.opponentStats1, timeouts: 0},
+            opponentStats2: { ...updatedState.opponentStats2, timeouts: 0},
         };
       });
   }
@@ -590,7 +669,7 @@ const reopenMatch = async () => {
   const tableHeaders = (
     <TableRow>
         <TableHead className="sticky left-0 bg-background/95 z-20 px-2 min-w-[70px]">Dorsal</TableHead>
-        <TableHead className="sticky left-[70px] bg-background/95 z-20 px-2 min-w-[150px]">Nombre</TableHead>
+        <TableHead className="sticky left-[70px] bg-background/95 z-20 px-2 min-w-[200px]">Nombre</TableHead>
         <StatColumnHeader full="Goles" abbr="G" />
         <StatColumnHeader full="Asist." abbr="As" />
         <StatColumnHeader full="yellow" abbr="" isIcon />
@@ -631,13 +710,17 @@ const reopenMatch = async () => {
                                             readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))} 
                                         />
                                     </TableCell>
-                                    <TableCell className="sticky left-[70px] bg-background/95 z-10 px-2">
+                                    <TableCell className="sticky left-[70px] bg-background/95 z-10 px-2 flex items-center gap-2">
                                         <Input 
-                                            className="h-8" 
+                                            className={cn("h-8 flex-grow", player.isPlaying && "bg-green-100 dark:bg-green-900/30")} 
                                             value={player.name} 
-                                            onChange={(e) => handlePlayerInfoChange(index, 'name', e.target.value)} 
-                                            readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))}
+                                            onClick={() => handleTogglePlay(index)}
+                                            readOnly
                                         />
+                                        <div className="flex items-center gap-1 text-xs p-1 rounded-md bg-muted text-muted-foreground w-20 justify-center">
+                                            <Clock className="h-3 w-3" />
+                                            <span>{formatTime(player.timeOnCourt)}</span>
+                                        </div>
                                     </TableCell>
                                     <StatButtonCell playerIndex={index} stat="goals" />
                                     <StatButtonCell playerIndex={index} stat="assists" />
@@ -921,5 +1004,7 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
 
     
