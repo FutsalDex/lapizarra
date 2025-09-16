@@ -33,6 +33,7 @@ interface Player {
     isPlaying: boolean; // New: To track if player is on court
     timeOnCourt: number;  // New: Total seconds played
     lastEntryTime: number; // New: Timestamp of last entry
+    minutosJugados: number;
 }
 
 interface GoalEvent {
@@ -152,7 +153,7 @@ export default function MarcadorEnVivoPage() {
                             name: d.data().name, 
                             number: d.data().number,
                             goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                            isPlaying: false, timeOnCourt: 0, lastEntryTime: 0,
+                            isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
                         })).sort((a, b) => a.number - b.number);
                     } else {
                         // Ensure new fields exist
@@ -161,6 +162,7 @@ export default function MarcadorEnVivoPage() {
                             isPlaying: p.isPlaying || false,
                             timeOnCourt: p.timeOnCourt || 0,
                             lastEntryTime: p.lastEntryTime || 0,
+                            minutosJugados: p.minutosJugados || 0,
                         }))
                     }
                 }
@@ -261,7 +263,7 @@ export default function MarcadorEnVivoPage() {
     setIsSaving(true);
     
     // Final update on playing time
-    const finalMatchState = updatePlayingTime(match);
+    let finalMatchState = updatePlayingTime(match);
     
     const userPlayers = finalMatchState.userTeam === 'local' ? finalMatchState.localPlayers : finalMatchState.visitorPlayers;
     const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
@@ -298,7 +300,8 @@ export default function MarcadorEnVivoPage() {
                         ta: increment(player.amarillas || 0),
                         tr: increment(player.rojas || 0),
                         paradas: increment(player.paradas || 0),
-                        gRec: increment(player.gRec || 0)
+                        gRec: increment(player.gRec || 0),
+                        minutosJugados: increment(player.timeOnCourt || 0)
                     });
                 }
             });
@@ -339,7 +342,8 @@ const reopenMatch = async () => {
                        ta: increment(-(player.amarillas || 0)),
                        tr: increment(-(player.rojas || 0)),
                        paradas: increment(-(player.paradas || 0)),
-                       gRec: increment(-(player.gRec || 0))
+                       gRec: increment(-(player.gRec || 0)),
+                       minutosJugados: increment(-(player.timeOnCourt || 0))
                    });
                }
            });
@@ -527,7 +531,7 @@ const reopenMatch = async () => {
                 name: 'Nuevo Jugador',
                 number: 0,
                 goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                isPlaying: false, timeOnCourt: 0, lastEntryTime: 0,
+                isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
             };
             const players = [...(prev[playersKey] || []), newPlayer];
             return { ...prev, [playersKey]: players };

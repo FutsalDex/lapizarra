@@ -47,6 +47,7 @@ interface Player {
     paradas: number;
     gRec: number;
     position?: string;
+    minutosJugados?: number;
 }
 
 interface StatCardProps {
@@ -129,7 +130,7 @@ export default function TeamPlayerStatsPage() {
             teamPlayers.forEach(p => {
                 playerStats[p.id] = {
                     name: p.name, number: p.number, teamName: currentTeamName, position: p.position,
-                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0,
+                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, minutosJugados: 0,
                 };
             });
 
@@ -148,6 +149,7 @@ export default function TeamPlayerStatsPage() {
                             playerStats[p.id].faltas += p.faltas || 0;
                             playerStats[p.id].paradas += p.paradas || 0;
                             playerStats[p.id].gRec += p.gRec || 0;
+                            playerStats[p.id].minutosJugados += p.timeOnCourt || 0;
                         }
                     });
                 }
@@ -174,6 +176,10 @@ export default function TeamPlayerStatsPage() {
         if (gksWithGames.length === 0) return null;
         return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
     }, [goalkeepers]);
+
+    const formatSeconds = (seconds: number) => {
+        return Math.floor(seconds / 60);
+    }
 
 
   return (
@@ -251,6 +257,7 @@ export default function TeamPlayerStatsPage() {
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Equipo</TableHead>
                                 <TableHead className="text-center">PJ</TableHead>
+                                <TableHead className="text-center">Min. Jugados</TableHead>
                                 <TableHead className="text-center">Goles</TableHead>
                                 <TableHead className="text-center">Asist.</TableHead>
                                 <TableHead className="text-center">TA</TableHead>
@@ -267,6 +274,7 @@ export default function TeamPlayerStatsPage() {
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.teamName}</TableCell>
                                     <TableCell className="text-center">{player.pj || 0}</TableCell>
+                                    <TableCell className="text-center">{formatSeconds(player.minutosJugados || 0)}</TableCell>
                                     <TableCell className="text-center">{player.goals || 0}</TableCell>
                                     <TableCell className="text-center">{player.assists || 0}</TableCell>
                                     <TableCell className="text-center">{player.ta || 0}</TableCell>
@@ -294,4 +302,3 @@ export default function TeamPlayerStatsPage() {
     
 
     
-

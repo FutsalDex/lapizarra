@@ -145,7 +145,8 @@ export default function TeamRosterPage() {
                 tr: 0,
                 faltas: 0,
                 paradas: 0,
-                gRec: 0
+                gRec: 0,
+                minutosJugados: 0
             });
              toast({ title: "Jugador Añadido", description: "Se ha añadido un nuevo jugador a la plantilla." });
         } catch (error) {
