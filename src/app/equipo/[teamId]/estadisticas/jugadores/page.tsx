@@ -153,7 +153,7 @@ export default function TeamPlayerStatsPage() {
                 }
             });
 
-            setPlayers(Object.values(playerStats).sort((a, b) => b.goals - a.goals));
+            setPlayers(Object.values(playerStats).sort((a, b) => a.number - b.number));
             setLoading(false);
         };
 
@@ -247,6 +247,7 @@ export default function TeamPlayerStatsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="text-center">Dorsal</TableHead>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Equipo</TableHead>
                                 <TableHead className="text-center">PJ</TableHead>
@@ -262,6 +263,7 @@ export default function TeamPlayerStatsPage() {
                         <TableBody>
                             {filteredPlayers.map((player, index) => (
                                 <TableRow key={index}>
+                                    <TableCell className="text-center font-medium">{player.number}</TableCell>
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.teamName}</TableCell>
                                     <TableCell className="text-center">{player.pj || 0}</TableCell>
@@ -292,3 +294,4 @@ export default function TeamPlayerStatsPage() {
     
 
     
+
