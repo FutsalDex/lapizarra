@@ -172,7 +172,7 @@ export default function TeamPlayerStatsPage() {
     const topGoalkeeperCleanest = useMemo(() => {
         const gksWithGames = goalkeepers.filter(p => p.pj > 0);
         if (gksWithGames.length === 0) return null;
-        return gksWithGames.reduce((min, p) => ((p.gRec/p.pj) < (min.gRec/min.pj)) ? p : min, gksWithGames[0]);
+        return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
     }, [goalkeepers]);
 
 
@@ -206,7 +206,7 @@ export default function TeamPlayerStatsPage() {
                 {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
-                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado (Avg)" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={parseFloat((topGoalkeeperCleanest.gRec / topGoalkeeperCleanest.pj).toFixed(2))} />}
+                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
             </div>
         )}
 
