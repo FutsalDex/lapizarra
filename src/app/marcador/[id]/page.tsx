@@ -266,20 +266,11 @@ export default function MarcadorEnVivoPage() {
     let finalMatchState = updatePlayingTime(match);
     
     const userPlayers = finalMatchState.userTeam === 'local' ? finalMatchState.localPlayers : finalMatchState.visitorPlayers;
-    const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
     
-    const opponentTeam = finalMatchState.userTeam === 'local' ? 'visitor' : 'local';
-    const opponentScore = finalMatchState[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
-    
-    const finalLocalScore = finalMatchState.userTeam === 'local' ? userTeamScore : opponentScore;
-    const finalVisitorScore = finalMatchState.userTeam === 'visitor' ? userTeamScore : opponentScore;
-
     const dataToUpdate = {
         ...finalMatchState,
-        localScore: finalLocalScore,
-        visitorScore: finalVisitorScore,
+        isActive: false,
         isFinished: true,
-        isActive: false
     };
     
     try {
@@ -311,7 +302,7 @@ export default function MarcadorEnVivoPage() {
 
         toast({ title: "¡Partido Finalizado!", description: "Las estadísticas han sido guardadas y añadidas a los totales de los jugadores." });
         
-        setMatch(prev => prev ? {...prev, isFinished: true, isActive: false, localScore: finalLocalScore, visitorScore: finalVisitorScore} : null);
+        setMatch(prev => prev ? {...prev, isFinished: true, isActive: false} : null);
 
     } catch (error) {
         console.error("Error finalizing match:", error);
@@ -588,18 +579,25 @@ const reopenMatch = async () => {
     if (match?.isFinished && !isAdmin) return;
     setMatch(prev => {
         if (!prev) return null;
+
+        let newState = {...prev};
+
         // When pausing, update time for all playing players
-        if (prev.isActive) {
-            return updatePlayingTime(prev);
+        if (newState.isActive) {
+            newState = updatePlayingTime(newState);
+            newState.isActive = false;
+        } else {
+             // When starting, set entry time for all playing players
+            const playersKey = newState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+            const players = newState[playersKey];
+            if (players) {
+                const updatedPlayers = players.map(p => p.isPlaying ? { ...p, lastEntryTime: newState.timeLeft } : p);
+                newState = { ...newState, [playersKey]: updatedPlayers };
+            }
+            newState.isActive = true;
         }
-        // When starting, set entry time for all playing players
-        const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-        const players = prev[playersKey];
-        if (players) {
-            const updatedPlayers = players.map(p => p.isPlaying ? { ...p, lastEntryTime: prev.timeLeft } : p);
-            return { ...prev, isActive: !prev.isActive, [playersKey]: updatedPlayers };
-        }
-        return { ...prev, isActive: !prev.isActive };
+
+        return newState;
     });
   }
 
@@ -1008,7 +1006,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
-
-    
