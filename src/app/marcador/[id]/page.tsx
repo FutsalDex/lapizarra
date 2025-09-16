@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -579,7 +578,7 @@ const reopenMatch = async () => {
   }
 
    const formatTime = (seconds: number) => {
-    const totalSeconds = Math.floor(seconds);
+    const totalSeconds = Math.max(0, Math.floor(seconds));
     const minutes = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

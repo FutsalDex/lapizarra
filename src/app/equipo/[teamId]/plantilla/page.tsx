@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Users, PlusCircle, Trash2, Save, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc, resetAndSeed } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';

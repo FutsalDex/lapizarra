@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -178,6 +177,7 @@ export default function TeamPlayerStatsPage() {
     }, [goalkeepers]);
 
     const formatSeconds = (seconds: number) => {
+        if (seconds < 0) return 0;
         return Math.floor(seconds / 60);
     }
 
@@ -302,3 +302,4 @@ export default function TeamPlayerStatsPage() {
     
 
     
+

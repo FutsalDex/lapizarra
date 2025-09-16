@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -40,6 +39,7 @@ interface Player {
     faltas: number;
     paradas: number;
     gRec: number;
+    minutosJugados?: number;
 }
 
 export default function PlayerStatsPage() {
@@ -93,6 +93,11 @@ export default function PlayerStatsPage() {
     const filteredPlayers = useMemo(() => {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [players, searchTerm]);
+
+    const formatSeconds = (seconds: number) => {
+        if (seconds < 0) return 0;
+        return Math.floor(seconds / 60);
+    }
 
 
   return (
@@ -148,6 +153,7 @@ export default function PlayerStatsPage() {
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Equipo</TableHead>
                                 <TableHead className="text-center">PJ</TableHead>
+                                <TableHead className="text-center">Min. Jugados</TableHead>
                                 <TableHead className="text-center">Goles</TableHead>
                                 <TableHead className="text-center">Asist.</TableHead>
                                 <TableHead className="text-center">TA</TableHead>
@@ -163,6 +169,7 @@ export default function PlayerStatsPage() {
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.teamName}</TableCell>
                                     <TableCell className="text-center">{player.pj || 0}</TableCell>
+                                    <TableCell className="text-center">{formatSeconds(player.minutosJugados || 0)}</TableCell>
                                     <TableCell className="text-center">{player.goals || 0}</TableCell>
                                     <TableCell className="text-center">{player.assists || 0}</TableCell>
                                     <TableCell className="text-center">{player.ta || 0}</TableCell>
