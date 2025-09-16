@@ -285,8 +285,32 @@ const reopenMatch = async () => {
     setIsSaving(true);
     try {
         const matchDocRef = doc(db, 'matches', id);
-        await updateDoc(matchDocRef, { isFinished: false });
-        toast({ title: "Partido Reabierto", description: "Ahora puedes volver a editar el partido." });
+        const batch = writeBatch(db);
+
+        // Revert player stats
+        const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
+        if (match.teamId && userPlayers) { 
+            userPlayers.forEach(player => {
+               if (player.id && !player.id.startsWith('local-') && !player.id.startsWith('visitor-')) {
+                   const playerRef = doc(db, 'teams', match.teamId, 'players', player.id);
+                   batch.update(playerRef, {
+                       pj: increment(-1),
+                       goals: increment(-(player.goals || 0)),
+                       assists: increment(-(player.assists || 0)),
+                       faltas: increment(-(player.faltas || 0)),
+                       ta: increment(-(player.amarillas || 0)),
+                       tr: increment(-(player.rojas || 0)),
+                       paradas: increment(-(player.paradas || 0)),
+                       gRec: increment(-(player.gRec || 0))
+                   });
+               }
+           });
+       }
+        
+        batch.update(matchDocRef, { isFinished: false });
+        await batch.commit();
+
+        toast({ title: "Partido Reabierto", description: "Ahora puedes volver a editar el partido. Las estadísticas han sido revertidas." });
         setMatch(prev => prev ? {...prev, isFinished: false} : null);
     } catch (error) {
         console.error("Error reopening match:", error);
@@ -897,3 +921,5 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
+    
