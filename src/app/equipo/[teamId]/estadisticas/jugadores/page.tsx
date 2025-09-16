@@ -23,7 +23,9 @@ import {
     Hand,
     AlertTriangle,
     Shield,
-    ShieldCheck
+    ShieldCheck,
+    Hourglass,
+    Timer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -175,9 +177,19 @@ export default function TeamPlayerStatsPage() {
         if (gksWithGames.length === 0) return null;
         return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
     }, [goalkeepers]);
+    const mostMinutesPlayed = useMemo(() => {
+        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+        if (playersWithMinutes.length === 0) return null;
+        return playersWithMinutes.reduce((max, p) => (p.minutosJugados || 0) > (max.minutosJugados || 0) ? p : max, playersWithMinutes[0]);
+    }, [players]);
+    const leastMinutesPlayed = useMemo(() => {
+        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+        if (playersWithMinutes.length === 0) return null;
+        return playersWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, playersWithMinutes[0]);
+    }, [players]);
 
     const formatSeconds = (seconds: number) => {
-        if (seconds < 0) return 0;
+        if (!seconds || seconds < 0) return 0;
         return Math.floor(seconds / 60);
     }
 
@@ -207,12 +219,14 @@ export default function TeamPlayerStatsPage() {
         </div>
         
         {players.length > 0 && !loading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
                 {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
+                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatSeconds(mostMinutesPlayed.minutosJugados || 0)} />}
+                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatSeconds(leastMinutesPlayed.minutosJugados || 0)} />}
             </div>
         )}
 
@@ -302,4 +316,5 @@ export default function TeamPlayerStatsPage() {
     
 
     
+
 
