@@ -74,15 +74,28 @@ export default function GestionEquiposPage() {
             }
 
             const uniqueTeamIds = [...new Set(teamIds)];
-            const teamsData: Team[] = [];
             
-            // Fetch team details for each shared team
-            for (const teamId of uniqueTeamIds) {
-                const teamDoc = await getDoc(doc(db, 'teams', teamId));
-                if (teamDoc.exists()) {
-                    teamsData.push({ id: teamDoc.id, ...teamDoc.data() } as Team);
+            // Firestore 'in' query has a limit of 30 elements.
+            // We need to chunk the array if it's larger.
+            const chunks: string[][] = [];
+            for (let i = 0; i < uniqueTeamIds.length; i += 30) {
+                chunks.push(uniqueTeamIds.slice(i, i + 30));
+            }
+
+            const teamsData: Team[] = [];
+
+            for (const chunk of chunks) {
+                 if (chunk.length > 0) {
+                    const teamsQuery = query(collection(db, 'teams'), where('__name__', 'in', chunk));
+                    const teamsSnapshot = await getDocs(teamsQuery);
+                    teamsSnapshot.forEach(teamDoc => {
+                        if (teamDoc.exists()) {
+                            teamsData.push({ id: teamDoc.id, ...teamDoc.data() } as Team);
+                        }
+                    });
                 }
             }
+            
             setSharedTeams(teamsData);
 
         }, (error) => {
