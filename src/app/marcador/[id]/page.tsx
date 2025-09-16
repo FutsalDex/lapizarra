@@ -262,10 +262,16 @@ export default function MarcadorEnVivoPage() {
     if (!match || (match.isFinished && !isAdmin)) return;
     setIsSaving(true);
     
-    // Final update on playing time
     let finalMatchState = updatePlayingTime(match);
     
     const userPlayers = finalMatchState.userTeam === 'local' ? finalMatchState.localPlayers : finalMatchState.visitorPlayers;
+    const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
+    
+    if (finalMatchState.userTeam === 'local') {
+      finalMatchState.localScore = userTeamScore;
+    } else {
+      finalMatchState.visitorScore = userTeamScore;
+    }
     
     const dataToUpdate = {
         ...finalMatchState,
@@ -539,7 +545,7 @@ const reopenMatch = async () => {
 
             if (player.isPlaying) {
                 // Player is stopping
-                const timePlayed = player.lastEntryTime - prev.timeLeft;
+                const timePlayed = Math.max(0, player.lastEntryTime - prev.timeLeft);
                 player.timeOnCourt += timePlayed;
                 player.isPlaying = false;
                 player.lastEntryTime = 0;
