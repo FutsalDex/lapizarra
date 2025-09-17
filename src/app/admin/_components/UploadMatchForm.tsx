@@ -33,7 +33,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: false }); // raw: false to get formatted text
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: false }); 
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
@@ -119,7 +119,7 @@ export default function UploadMatchForm() {
         <FileQuestion className="h-4 w-4" />
         <AlertTitle>¿Cómo funciona?</AlertTitle>
         <AlertDescription>
-          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `equipoLocal`, `equipoVisitante`, `fecha`, `tipoPartido`, `competicion` (opcional), `jornada` (opcional), `golesLocal` (opcional), `golesVisitante` (opcional), `idEquipo`, `finalizado` (TRUE/FALSE).
+          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `equipoLocal`, `equipoVisitante`, `fecha`, `tipoPartido`, `competicion` (opcional), `jornada` (opcional), `golesLocal` (opcional), `golesVisitante` (opcional), `idEquipo`, `finalizado` (TRUE/FALSE). El formato de la fecha debe ser DD/MM/AAAA.
         </AlertDescription>
       </Alert>
 
