@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -176,14 +177,14 @@ export default function TeamMatchesPage() {
                  <Button asChild variant="ghost" size="icon">
                   <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
                 </Button>
-                <Button asChild variant="ghost" size="icon">
-                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
-                </Button>
                 <AddMatchDialog matchData={match} teamId={teamId}>
                     <Button variant="ghost" size="icon">
                         <Edit className="h-5 w-5" />
                     </Button>
                 </AddMatchDialog>
+                <Button asChild variant="ghost" size="icon">
+                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
+                </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
