@@ -52,7 +52,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, {raw: false}); 
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet); 
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
@@ -63,11 +63,14 @@ export default function UploadMatchForm() {
         for (const match of matchesData) {
             if (match.equipoLocal && match.equipoVisitante && match.fecha) {
                 
-                let matchDate;
+                let matchDate: Date | undefined;
                 
+                // Handle Excel serial date number
                 if (typeof match.fecha === 'number') {
                     matchDate = excelSerialDateToJSDate(match.fecha);
-                } else if (typeof match.fecha === 'string') {
+                } 
+                // Handle string date format (DD/MM/YYYY)
+                else if (typeof match.fecha === 'string') {
                     const parts = match.fecha.split(/[/|-]/);
                     if (parts.length === 3) {
                         const day = parseInt(parts[0], 10);
@@ -82,7 +85,7 @@ export default function UploadMatchForm() {
                         if (year < 100) { 
                             year += 2000;
                         }
-                        
+                        // Correctly construct date using new Date(year, monthIndex, day)
                         matchDate = new Date(year, month - 1, day);
                     }
                 }
@@ -175,4 +178,3 @@ export default function UploadMatchForm() {
     </div>
   );
 }
-
