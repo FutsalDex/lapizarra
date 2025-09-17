@@ -41,26 +41,26 @@ export default function UploadMatchForm() {
         const matchesCollection = collection(db, 'matches');
         let count = 0;
         for (const match of matchesData) {
-            if (match.localTeam && match.visitorTeam && match.date) {
+            if (match.equipoLocal && match.equipoVisitante && match.fecha) {
                 // Basic validation
-                const date = new Date(match.date);
+                const date = new Date(match.fecha);
                 if (isNaN(date.getTime())) {
-                    console.warn(`Fecha inválida para el partido: ${match.localTeam} vs ${match.visitorTeam}`);
+                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}`);
                     continue;
                 }
 
                 const docData = {
-                  localTeam: match.localTeam,
-                  visitorTeam: match.visitorTeam,
+                  localTeam: match.equipoLocal,
+                  visitorTeam: match.equipoVisitante,
                   date: date.toISOString(),
-                  matchType: match.matchType || 'Amistoso',
-                  competition: match.competition || '',
-                  matchday: match.matchday || '',
-                  localScore: match.localScore || 0,
-                  visitorScore: match.visitorScore || 0,
-                  teamId: match.teamId || '', // Make sure teamId is in the Excel file
+                  matchType: match.tipoPartido || 'Amistoso',
+                  competition: match.competicion || '',
+                  matchday: match.jornada || '',
+                  localScore: match.golesLocal || 0,
+                  visitorScore: match.golesVisitante || 0,
+                  teamId: match.idEquipo || '', // Make sure teamId is in the Excel file
                   userId: user.uid,
-                  isFinished: match.isFinished !== undefined ? !!match.isFinished : false,
+                  isFinished: match.finalizado !== undefined ? !!match.finalizado : false,
                   createdAt: new Date(),
                 };
                 await addDoc(matchesCollection, docData);
@@ -97,7 +97,7 @@ export default function UploadMatchForm() {
         <FileQuestion className="h-4 w-4" />
         <AlertTitle>¿Cómo funciona?</AlertTitle>
         <AlertDescription>
-          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `localTeam`, `visitorTeam`, `date` (formato YYYY-MM-DD), `matchType`, `competition` (opcional), `matchday` (opcional), `localScore` (opcional), `visitorScore` (opcional), `teamId`, `isFinished` (TRUE/FALSE).
+          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `equipoLocal`, `equipoVisitante`, `fecha` (formato YYYY-MM-DD), `tipoPartido`, `competicion` (opcional), `jornada` (opcional), `golesLocal` (opcional), `golesVisitante` (opcional), `idEquipo`, `finalizado` (TRUE/FALSE).
         </AlertDescription>
       </Alert>
 
