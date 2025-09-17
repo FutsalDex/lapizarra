@@ -75,7 +75,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [teamData, setTeamData] = useState<TeamData | null>(null);
+  const [teamData, setTeamDataState] = useState<TeamData | null>(null);
 
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
@@ -99,7 +99,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
         const teamDoc = await getDoc(teamDocRef);
         if(teamDoc.exists()) {
             const data = teamDoc.data() as TeamData;
-            setTeamData(data);
+            setTeamDataState(data);
             if (form.getValues('matchType') === 'Liga' || !matchData) {
               form.setValue('competition', data.competition || '');
             }
@@ -291,7 +291,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Competición</FormLabel>
-                            <FormControl><Input {...field} defaultValue={teamData?.competition} /></FormControl>
+                            <FormControl><Input {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )}
