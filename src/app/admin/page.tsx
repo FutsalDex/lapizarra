@@ -14,12 +14,13 @@ import {
   UploadCloud,
   ClipboardList,
   Users,
+  Trophy,
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminPage() {
   return (
-    <div className="container mx-auto max-w-6xl py-12 px-4">
+    <div className="container mx-auto max-w-7xl py-12 px-4">
       <div className="text-center mb-12">
         <div className="flex justify-center mb-4">
             <ShieldCheck className="h-16 w-16 text-primary" />
@@ -32,7 +33,7 @@ export default function AdminPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Card de Gestión de Ejercicios */}
         <Card className="shadow-lg">
           <CardHeader>
@@ -83,6 +84,25 @@ export default function AdminPage() {
             </Button>
           </CardContent>
         </Card>
+        
+        {/* Card de Gestión de Partidos */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Gestión de Partidos</CardTitle>
+            <CardDescription>
+              Añade partidos a la base de datos de forma masiva a través de un archivo Excel.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full" size="lg">
+              <Link href="/admin/gestion-partidos">
+                <Trophy className="mr-2 h-5 w-5" />
+                Subir Partidos por Lote
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );
