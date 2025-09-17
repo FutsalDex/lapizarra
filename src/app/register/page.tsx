@@ -69,18 +69,8 @@ export default function RegisterPage() {
         displayName: name,
       });
 
-      // Create user document in Firestore
-      const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, {
-            email: user.email,
-            displayName: name,
-            photoURL: user.photoURL,
-            createdAt: new Date(),
-            favorites: [],
-            role: 'Registered',
-            subscription: 'Trial'
-      });
-
+      // User document creation is handled by AuthContext to prevent race conditions
+      
       router.push(redirectPath);
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));

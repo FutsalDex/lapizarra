@@ -27,6 +27,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Check if user document exists, if not, create it.
+        // This handles new user registration safely.
+        const userDocRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (!docSnap.exists()) {
+          try {
+            await setDoc(userDocRef, {
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              createdAt: new Date(),
+              favorites: [],
+              role: 'Registered',
+              subscription: 'Trial',
+            });
+          } catch (error) {
+            console.error("Error creating user document in AuthContext:", error);
+          }
+        }
+      }
       setUser(user);
       setLoading(false);
     });
