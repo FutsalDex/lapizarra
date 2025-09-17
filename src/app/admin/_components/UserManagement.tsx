@@ -27,7 +27,8 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface User {
-  id: string;
+  docId: string; // Document ID from Firestore
+  id: string; // User UID from Auth
   email: string;
   displayName?: string;
   role?: 'Admin' | 'Subscribed' | 'Registered' | 'Guest';
@@ -45,7 +46,8 @@ export default function UserManagement() {
       const usersData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id,
+          docId: doc.id, // Use Firestore document ID as the unique key
+          id: data.uid, // Keep the user's auth UID if needed elsewhere
           email: data.email || 'N/A',
           displayName: data.displayName,
           role: data.role || 'Registered', // Default role
@@ -103,7 +105,7 @@ export default function UserManagement() {
             </TableHeader>
             <TableBody>
                 {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.docId}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Subscribed' ? 'default' : 'secondary'}>
