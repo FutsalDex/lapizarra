@@ -12,26 +12,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/context/AuthContext';
 
-// Function to convert Excel serial date to JS Date
-function excelSerialDateToJSDate(serial: number) {
-  const utc_days  = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;                                        
-  const date_info = new Date(utc_value * 1000);
-
-  const fractional_day = serial - Math.floor(serial) + 0.0000001;
-
-  let total_seconds = Math.floor(86400 * fractional_day);
-
-  const seconds = total_seconds % 60;
-
-  total_seconds -= seconds;
-
-  const hours = Math.floor(total_seconds / (60 * 60));
-  const minutes = Math.floor(total_seconds / 60) % 60;
-
-  return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
-}
-
 
 export default function UploadMatchForm() {
   const { toast } = useToast();
@@ -53,7 +33,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: false }); // raw: false to get formatted text
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
@@ -63,18 +43,31 @@ export default function UploadMatchForm() {
         let count = 0;
         for (const match of matchesData) {
             if (match.equipoLocal && match.equipoVisitante && match.fecha) {
+                
                 let matchDate;
-                if (typeof match.fecha === 'number') {
-                    matchDate = excelSerialDateToJSDate(match.fecha);
-                } else if (match.fecha instanceof Date) {
-                    matchDate = match.fecha;
+                const dateStr = match.fecha.toString();
+                // Handles formats like DD/MM/YYYY, D/M/YY, etc.
+                const parts = dateStr.split(/[/|-]/); 
+                if (parts.length === 3) {
+                    let day = parseInt(parts[0], 10);
+                    let month = parseInt(parts[1], 10);
+                    let year = parseInt(parts[2], 10);
+                    
+                    if (year < 100) { // Handle 2-digit years
+                        year += 2000;
+                    }
+                    
+                    // Create date string in YYYY-MM-DD format to avoid timezone issues
+                    const isoDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    matchDate = new Date(isoDateString);
+
                 } else {
-                    console.warn(`Formato de fecha no reconocido para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Se saltará este partido.`);
-                    continue;
+                     console.warn(`Formato de fecha no reconocido: "${dateStr}". Se saltará este partido.`);
+                     continue;
                 }
 
                 if (isNaN(matchDate.getTime())) {
-                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Se saltará este partido.`);
+                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
                     continue;
                 }
 
@@ -87,9 +80,9 @@ export default function UploadMatchForm() {
                   matchday: match.jornada || '',
                   localScore: match.golesLocal || 0,
                   visitorScore: match.golesVisitante || 0,
-                  teamId: match.idEquipo || '', // Make sure teamId is in the Excel file
+                  teamId: match.idEquipo || '',
                   userId: user.uid,
-                  isFinished: match.finalizado !== undefined ? !!match.finalizado : false,
+                  isFinished: match.finalizado !== undefined ? (String(match.finalizado).toUpperCase() === 'TRUE') : false,
                   createdAt: new Date(),
                 };
                 await addDoc(matchesCollection, docData);
