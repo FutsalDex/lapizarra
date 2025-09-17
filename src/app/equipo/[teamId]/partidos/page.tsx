@@ -174,7 +174,10 @@ export default function TeamMatchesPage() {
                   <Badge variant="secondary">{match.matchType}</Badge>
               </CardContent>
               <CardFooter className="flex justify-center gap-2 border-t pt-4">
-                 <Button asChild variant="ghost" size="icon">
+                <Button asChild variant="ghost" size="icon">
+                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon">
                   <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
                 </Button>
                 <AddMatchDialog matchData={match} teamId={teamId}>
@@ -182,9 +185,6 @@ export default function TeamMatchesPage() {
                         <Edit className="h-5 w-5" />
                     </Button>
                 </AddMatchDialog>
-                <Button asChild variant="ghost" size="icon">
-                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
-                </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
