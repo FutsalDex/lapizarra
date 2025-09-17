@@ -12,6 +12,25 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/context/AuthContext';
 
+// Function to convert Excel serial date to JS Date
+const excelSerialDateToJSDate = (serial: number) => {
+    const utc_days  = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;                                        
+    const date_info = new Date(utc_value * 1000);
+
+    const fractional_day = serial - Math.floor(serial) + 0.0000001;
+
+    let total_seconds = Math.floor(86400 * fractional_day);
+
+    const seconds = total_seconds % 60;
+    total_seconds -= seconds;
+
+    const hours = Math.floor(total_seconds / (60 * 60));
+    const minutes = Math.floor(total_seconds / 60) % 60;
+
+    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+}
+
 
 export default function UploadMatchForm() {
   const { toast } = useToast();
@@ -33,7 +52,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { cellDates: true }); 
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, {raw: false}); 
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
@@ -46,8 +65,8 @@ export default function UploadMatchForm() {
                 
                 let matchDate;
                 
-                if (match.fecha instanceof Date && !isNaN(match.fecha.getTime())) {
-                    matchDate = match.fecha;
+                if (typeof match.fecha === 'number') {
+                    matchDate = excelSerialDateToJSDate(match.fecha);
                 } else if (typeof match.fecha === 'string') {
                     const parts = match.fecha.split(/[/|-]/);
                     if (parts.length === 3) {
@@ -60,11 +79,10 @@ export default function UploadMatchForm() {
                            continue;
                         }
 
-                        if (year < 100) { // Handle 2-digit years like '25' -> 2025
+                        if (year < 100) { 
                             year += 2000;
                         }
                         
-                        // Month is 0-indexed in JS Date constructor.
                         matchDate = new Date(year, month - 1, day);
                     }
                 }
@@ -94,10 +112,19 @@ export default function UploadMatchForm() {
             }
         }
         
-        toast({
-          title: '¡Éxito!',
-          description: `${count} partidos han sido añadidos desde el archivo Excel.`,
-        });
+        if (count > 0) {
+            toast({
+              title: '¡Éxito!',
+              description: `${count} partidos han sido añadidos desde el archivo Excel.`,
+            });
+        } else {
+             toast({
+              title: 'Atención',
+              description: `No se ha añadido ningún partido. Revisa el formato del archivo Excel y los datos de los partidos.`,
+              variant: 'destructive'
+            });
+        }
+
 
       } catch (error: any) {
         console.error('Error uploading batch matches: ', error);
@@ -148,3 +175,4 @@ export default function UploadMatchForm() {
     </div>
   );
 }
+
