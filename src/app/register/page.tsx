@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -62,9 +63,24 @@ export default function RegisterPage() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, {
+      const user = userCredential.user;
+      
+      await updateProfile(user, {
         displayName: name,
       });
+
+      // Create user document in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+            email: user.email,
+            displayName: name,
+            photoURL: user.photoURL,
+            createdAt: new Date(),
+            favorites: [],
+            role: 'Registered',
+            subscription: 'Trial'
+      });
+
       router.push(redirectPath);
     } catch (err: any) {
       setError(getFirebaseErrorMessage(err));
