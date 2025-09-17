@@ -94,10 +94,12 @@ export default function PlayerStatsPage() {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [players, searchTerm]);
 
-    const formatSeconds = (seconds: number) => {
-        if (seconds < 0) return 0;
-        return Math.floor(seconds / 60);
-    }
+    const formatTime = (totalSeconds: number) => {
+        if (!totalSeconds || totalSeconds < 0) return '00:00';
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
 
 
   return (
@@ -169,7 +171,7 @@ export default function PlayerStatsPage() {
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.teamName}</TableCell>
                                     <TableCell className="text-center">{player.pj || 0}</TableCell>
-                                    <TableCell className="text-center">{formatSeconds(player.minutosJugados || 0)}</TableCell>
+                                    <TableCell className="text-center">{formatTime(player.minutosJugados || 0)}</TableCell>
                                     <TableCell className="text-center">{player.goals || 0}</TableCell>
                                     <TableCell className="text-center">{player.assists || 0}</TableCell>
                                     <TableCell className="text-center">{player.ta || 0}</TableCell>

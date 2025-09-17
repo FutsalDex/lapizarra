@@ -55,7 +55,7 @@ interface StatCardProps {
     title: string;
     icon: React.ElementType;
     playerName: string;
-    value: number;
+    value: number | string;
 }
 
 const StatCard = ({ title, icon: Icon, playerName, value }: StatCardProps) => (
@@ -188,10 +188,12 @@ export default function TeamPlayerStatsPage() {
         return playersWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, playersWithMinutes[0]);
     }, [players]);
 
-    const formatSeconds = (seconds: number) => {
-        if (!seconds || seconds < 0) return 0;
-        return Math.floor(seconds / 60);
-    }
+    const formatTime = (totalSeconds: number) => {
+        if (!totalSeconds || totalSeconds < 0) return '00:00';
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
 
 
   return (
@@ -225,8 +227,8 @@ export default function TeamPlayerStatsPage() {
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
-                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatSeconds(mostMinutesPlayed.minutosJugados || 0)} />}
-                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatSeconds(leastMinutesPlayed.minutosJugados || 0)} />}
+                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
+                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
             </div>
         )}
 
@@ -288,7 +290,7 @@ export default function TeamPlayerStatsPage() {
                                     <TableCell className="font-medium">{player.name}</TableCell>
                                     <TableCell>{player.teamName}</TableCell>
                                     <TableCell className="text-center">{player.pj || 0}</TableCell>
-                                    <TableCell className="text-center">{formatSeconds(player.minutosJugados || 0)}</TableCell>
+                                    <TableCell className="text-center">{formatTime(player.minutosJugados || 0)}</TableCell>
                                     <TableCell className="text-center">{player.goals || 0}</TableCell>
                                     <TableCell className="text-center">{player.assists || 0}</TableCell>
                                     <TableCell className="text-center">{player.ta || 0}</TableCell>
@@ -316,5 +318,6 @@ export default function TeamPlayerStatsPage() {
     
 
     
+
 
 

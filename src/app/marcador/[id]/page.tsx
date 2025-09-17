@@ -553,6 +553,15 @@ const reopenMatch = async () => {
                 player.lastEntryTime = 0;
             } else {
                 // Player is starting
+                const playingCount = players.filter(p => p.isPlaying).length;
+                if (playingCount >= 5) {
+                    toast({
+                        title: "Límite de jugadores",
+                        description: "Ya hay 5 jugadores en pista.",
+                        variant: "destructive"
+                    });
+                    return prev;
+                }
                 player.isPlaying = true;
                 player.lastEntryTime = prev.timeLeft;
             }
