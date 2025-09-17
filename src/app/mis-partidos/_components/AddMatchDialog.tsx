@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -51,7 +50,6 @@ const matchSchema = z.object({
   localTeam: z.string().min(1, "El nombre del equipo local es requerido."),
   visitorTeam: z.string().min(1, "El nombre del equipo visitante es requerido."),
   date: z.date({ required_error: 'Debes seleccionar una fecha.' }),
-  time: z.string().optional(),
   matchType: z.string().min(1, "Debes seleccionar un tipo de partido."),
   competition: z.string().optional(),
   matchday: z.string().optional(),
@@ -75,7 +73,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [teamData, setTeamDataState] = useState<TeamData | null>(null);
+  const [teamDataState, setTeamDataState] = useState<TeamData | null>(null);
 
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
@@ -83,7 +81,6 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
       localTeam: '',
       visitorTeam: '',
       date: new Date(),
-      time: '',
       matchType: '',
       competition: '',
       matchday: '',
@@ -118,18 +115,17 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
             ...matchData,
             date: new Date(matchData.date),
         });
-    } else if (teamData) {
+    } else if (teamDataState) {
         form.reset({
             localTeam: '',
             visitorTeam: '',
             date: new Date(),
-            time: '',
             matchType: '',
-            competition: teamData.competition || '',
+            competition: teamDataState.competition || '',
             matchday: '',
         })
     }
-  }, [matchData, teamData, form, open]);
+  }, [matchData, teamDataState, form, open]);
 
 
   const onSubmit = async (data: MatchFormValues) => {
@@ -139,13 +135,9 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
     }
     setLoading(true);
     
-    const combinedDate = data.time 
-        ? parse(data.time, 'HH:mm', data.date)
-        : data.date;
-
     const submissionData = {
         ...data,
-        date: combinedDate.toISOString(),
+        date: data.date.toISOString(),
         teamId: teamId,
         userId: user.uid,
         competition: data.matchType === 'Liga' ? data.competition : '',
@@ -199,7 +191,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                          <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <Button type="button" variant="outline" onClick={() => form.setValue('localTeam', teamData?.name || '')}>Mi Equipo</Button>
+                        <Button type="button" variant="outline" onClick={() => form.setValue('localTeam', teamDataState?.name || '')}>Mi Equipo</Button>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -215,14 +207,14 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                         <Button type="button" variant="outline" onClick={() => form.setValue('visitorTeam', teamData?.name || '')}>Mi Equipo</Button>
+                         <Button type="button" variant="outline" onClick={() => form.setValue('visitorTeam', teamDataState?.name || '')}>Mi Equipo</Button>
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1">
                  <FormField
                     control={form.control}
                     name="date"
@@ -245,17 +237,6 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                             <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
                             </PopoverContent>
                         </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="time"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Hora</FormLabel>
-                            <FormControl><Input type="time" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
