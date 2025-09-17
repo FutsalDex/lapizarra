@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Edit, History, BarChartHorizontal } from 'lucide-react';
+import { ArrowLeft, Edit, History, BarChartHorizontal, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,6 +38,7 @@ interface PlayerStats {
   paradas: number;
   gRec: number;
   vs1: number;
+  timeOnCourt?: number;
 }
 
 interface GoalEvent {
@@ -150,6 +151,13 @@ export default function MatchDetailsPage() {
   if (!match) {
     return <div>Partido no encontrado.</div>;
   }
+  
+  const formatTime = (totalSeconds?: number) => {
+    if (totalSeconds === undefined || totalSeconds < 0) return '00:00';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const renderTeamContent = (teamType: 'local' | 'visitor') => {
     const teamName = teamType === 'local' ? match.localTeam : match.visitorTeam;
@@ -182,6 +190,7 @@ export default function MatchDetailsPage() {
                 <TableRow>
                   <TableHead>#</TableHead>
                   <TableHead>Nombre</TableHead>
+                  <TableHead>Min. Jugados</TableHead>
                   <TableHead>G</TableHead>
                   <TableHead>As</TableHead>
                   <TableHead className="hidden sm:table-cell">TA</TableHead>
@@ -193,10 +202,11 @@ export default function MatchDetailsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.map(player => (
+                {(players || []).map(player => (
                   <TableRow key={player.id}>
                     <TableCell>{player.number ?? 0}</TableCell>
                     <TableCell>{player.name}</TableCell>
+                    <TableCell>{formatTime(player.timeOnCourt)}</TableCell>
                     <TableCell>{player.goals ?? 0}</TableCell>
                     <TableCell>{player.assists ?? 0}</TableCell>
                     <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
