@@ -32,7 +32,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { cellDates: true });
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
