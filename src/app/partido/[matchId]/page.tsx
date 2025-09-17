@@ -88,27 +88,6 @@ export default function MatchDetailsPage() {
             id: docSnap.id,
             ...data
         };
-
-        // Manual fix for match J7wVYfI5UyXMiPkN5
-        if (processedData.id === 'J7wVYfI5UyXMiPkN5' && processedData.visitorScore === 1) {
-            const visitorHasGoalEvent = (processedData.events || []).some((e: GoalEvent) => e.team === 'visitor');
-            if (!visitorHasGoalEvent) {
-                const visitorGoal: GoalEvent = {
-                    id: 'manual-goal-J7wVYfI5UyXMiPkN5',
-                    type: 'goal',
-                    playerId: 'opponent',
-                    playerName: 'FSC Horta C',
-                    team: 'visitor',
-                    minute: 2,
-                    period: '1ª Parte',
-                    teamId: data.teamId,
-                };
-                if (!processedData.events) {
-                    processedData.events = [];
-                }
-                processedData.events.push(visitorGoal);
-            }
-        }
         
         const sortedEvents = (processedData.events || []).sort((a: GoalEvent, b: GoalEvent) => a.minute - b.minute);
 
@@ -233,7 +212,7 @@ export default function MatchDetailsPage() {
                  <History className="h-5 w-5" />
                  <h2 className="text-xl font-semibold">Detalles del Partido</h2>
             </div>
-            <p className="font-semibold text-lg">{match.date} &middot; {match.matchType} &middot; {match.competition}</p>
+            <p className="font-semibold text-lg">{match.date} &middot; {match.matchType} {match.matchType === 'Liga' ? `&middot; ${match.competition}` : ''}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.push(`/equipo/${match.teamId}/partidos`)}>

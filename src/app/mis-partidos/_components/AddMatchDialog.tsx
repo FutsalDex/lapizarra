@@ -90,6 +90,8 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
     },
   });
 
+  const matchType = form.watch('matchType');
+
    useEffect(() => {
     const fetchTeamData = async () => {
         if (!teamId) return;
@@ -98,14 +100,16 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
         if(teamDoc.exists()) {
             const data = teamDoc.data() as TeamData;
             setTeamData(data);
-            form.setValue('competition', data.competition || '');
+            if (form.getValues('matchType') === 'Liga' || !matchData) {
+              form.setValue('competition', data.competition || '');
+            }
         }
     }
 
     if (open) {
         fetchTeamData();
     }
-   }, [teamId, open, form]);
+   }, [teamId, open, form, matchData]);
 
 
   useEffect(() => {
@@ -144,6 +148,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
         date: combinedDate.toISOString(),
         teamId: teamId,
         userId: user.uid,
+        competition: data.matchType === 'Liga' ? data.competition : '',
     };
 
     try {
@@ -279,17 +284,19 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                 />
 
              <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="competition"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Competición</FormLabel>
-                        <FormControl><Input {...field} disabled /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                 {matchType === 'Liga' && (
+                    <FormField
+                        control={form.control}
+                        name="competition"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Competición</FormLabel>
+                            <FormControl><Input {...field} defaultValue={teamData?.competition} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                 )}
                  <FormField
                     control={form.control}
                     name="matchday"
