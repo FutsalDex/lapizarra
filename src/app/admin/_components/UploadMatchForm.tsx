@@ -14,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 
 
 export default function UploadMatchForm() {
-  const { toast } = useAuth();
+  const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,32 +46,30 @@ export default function UploadMatchForm() {
                 
                 let matchDate;
                 
-                // The xlsx library with `raw: false` can return either a string or a Date object.
-                // We need to handle both cases robustly.
-                if (match.fecha instanceof Date) {
-                    matchDate = match.fecha;
-                } else {
-                    const dateStr = match.fecha.toString();
-                    const parts = dateStr.split(/[/|-]/);
-                    if (parts.length === 3) {
-                        const day = parseInt(parts[0], 10);
-                        const month = parseInt(parts[1], 10);
-                        let year = parseInt(parts[2], 10);
-                        
-                        if (year < 100) { // Handle 2-digit years like '25' -> 2025
-                            year += 2000;
-                        }
-                        
-                        // Create date in the local timezone of the server.
-                        // Month is 0-indexed in JS Date constructor.
-                        matchDate = new Date(year, month - 1, day);
+                const dateStr = match.fecha.toString();
+                const parts = dateStr.split(/[/|-]/);
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10);
+                    let year = parseInt(parts[2], 10);
+                    
+                    if (year < 100) { // Handle 2-digit years like '25' -> 2025
+                        year += 2000;
                     }
-                }
+                    
+                    // Create date in local timezone of the server.
+                    // Month is 0-indexed in JS Date constructor.
+                    matchDate = new Date(year, month - 1, day);
 
-                if (!matchDate || isNaN(matchDate.getTime())) {
-                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
+                    if (!matchDate || isNaN(matchDate.getTime())) {
+                        console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
+                        continue; // Skip this record
+                    }
+                } else {
+                    console.warn(`Formato de fecha no reconocido para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
                     continue; // Skip this record
                 }
+
 
                 const docData = {
                   localTeam: match.equipoLocal,
