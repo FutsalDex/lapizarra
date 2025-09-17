@@ -33,7 +33,7 @@ export default function UploadMatchForm() {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: false }); 
+        const matchesData: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true }); 
 
         if (!Array.isArray(matchesData) || matchesData.length === 0) {
             throw new Error("El archivo de Excel está vacío o tiene un formato incorrecto.");
@@ -45,24 +45,28 @@ export default function UploadMatchForm() {
             if (match.equipoLocal && match.equipoVisitante && match.fecha) {
                 
                 let matchDate;
-                
                 const dateStr = match.fecha.toString();
                 const parts = dateStr.split(/[/|-]/);
+
                 if (parts.length === 3) {
                     const day = parseInt(parts[0], 10);
                     const month = parseInt(parts[1], 10);
                     let year = parseInt(parts[2], 10);
-                    
+
+                    if (isNaN(day) || isNaN(month) || isNaN(year)) {
+                        console.warn(`Fecha inválida (partes no numéricas) para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor: "${match.fecha}".`);
+                        continue;
+                    }
+
                     if (year < 100) { // Handle 2-digit years like '25' -> 2025
                         year += 2000;
                     }
                     
-                    // Create date in local timezone of the server.
                     // Month is 0-indexed in JS Date constructor.
                     matchDate = new Date(year, month - 1, day);
 
-                    if (!matchDate || isNaN(matchDate.getTime())) {
-                        console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
+                    if (isNaN(matchDate.getTime())) {
+                        console.warn(`Fecha inválida (NaN) para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor procesado: y=${year}, m=${month}, d=${day}.`);
                         continue; // Skip this record
                     }
                 } else {
@@ -144,4 +148,3 @@ export default function UploadMatchForm() {
     </div>
   );
 }
-
