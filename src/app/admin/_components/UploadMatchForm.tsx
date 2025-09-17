@@ -42,17 +42,16 @@ export default function UploadMatchForm() {
         let count = 0;
         for (const match of matchesData) {
             if (match.equipoLocal && match.equipoVisitante && match.fecha) {
-                // Basic validation
-                const date = new Date(match.fecha);
-                if (isNaN(date.getTime())) {
-                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}`);
+                // Basic validation for the date
+                if (!(match.fecha instanceof Date) || isNaN(match.fecha.getTime())) {
+                    console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Se saltará este partido.`);
                     continue;
                 }
 
                 const docData = {
                   localTeam: match.equipoLocal,
                   visitorTeam: match.equipoVisitante,
-                  date: date.toISOString(),
+                  date: match.fecha.toISOString(),
                   matchType: match.tipoPartido || 'Amistoso',
                   competition: match.competicion || '',
                   matchday: match.jornada || '',
@@ -97,7 +96,7 @@ export default function UploadMatchForm() {
         <FileQuestion className="h-4 w-4" />
         <AlertTitle>¿Cómo funciona?</AlertTitle>
         <AlertDescription>
-          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `equipoLocal`, `equipoVisitante`, `fecha` (formato YYYY-MM-DD), `tipoPartido`, `competicion` (opcional), `jornada` (opcional), `golesLocal` (opcional), `golesVisitante` (opcional), `idEquipo`, `finalizado` (TRUE/FALSE).
+          Sube un archivo Excel (.xlsx) con los partidos. Las columnas deben ser: `equipoLocal`, `equipoVisitante`, `fecha` (formato de fecha estándar), `tipoPartido`, `competicion` (opcional), `jornada` (opcional), `golesLocal` (opcional), `golesVisitante` (opcional), `idEquipo`, `finalizado` (TRUE/FALSE).
         </AlertDescription>
       </Alert>
 
