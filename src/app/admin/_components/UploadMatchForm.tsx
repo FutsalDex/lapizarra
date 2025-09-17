@@ -45,28 +45,29 @@ export default function UploadMatchForm() {
             if (match.equipoLocal && match.equipoVisitante && match.fecha) {
                 
                 let matchDate;
-                const dateStr = match.fecha.toString();
-                // Handles formats like DD/MM/YYYY, D/M/YY, etc.
-                const parts = dateStr.split(/[/|-]/); 
-                if (parts.length === 3) {
-                    let day = parseInt(parts[0], 10);
-                    let month = parseInt(parts[1], 10);
-                    let year = parseInt(parts[2], 10);
-                    
-                    if (year < 100) { // Handle 2-digit years
-                        year += 2000;
-                    }
-                    
-                    // Create date string in YYYY-MM-DD format to avoid timezone issues
-                    const isoDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    matchDate = new Date(isoDateString);
-
+                // Check if the date is already a JS Date object
+                if (match.fecha instanceof Date && !isNaN(match.fecha.getTime())) {
+                    matchDate = match.fecha;
                 } else {
-                     console.warn(`Formato de fecha no reconocido: "${dateStr}". Se saltará este partido.`);
-                     continue;
+                    // Otherwise, parse it from a string (e.g., "DD/MM/YYYY")
+                    const dateStr = match.fecha.toString();
+                    const parts = dateStr.split(/[/|-]/);
+                    if (parts.length === 3) {
+                        let day = parseInt(parts[0], 10);
+                        let month = parseInt(parts[1], 10);
+                        let year = parseInt(parts[2], 10);
+                        
+                        if (year < 100) { // Handle 2-digit years
+                            year += 2000;
+                        }
+                        
+                        // Create date string in YYYY-MM-DD format to avoid timezone issues
+                        // Note: Month is 0-indexed in JS Dates, so month - 1
+                        matchDate = new Date(Date.UTC(year, month - 1, day));
+                    }
                 }
 
-                if (isNaN(matchDate.getTime())) {
+                if (!matchDate || isNaN(matchDate.getTime())) {
                     console.warn(`Fecha inválida para el partido: ${match.equipoLocal} vs ${match.equipoVisitante}. Valor de fecha: "${match.fecha}". Se saltará este partido.`);
                     continue;
                 }
