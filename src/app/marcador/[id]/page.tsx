@@ -87,6 +87,7 @@ interface MatchDetails {
     opponentStats2: OpponentTeamStats; // 2nd half for opponent
     localFouls: number;
     visitorFouls: number;
+    endTime?: number | null; // Timestamp for when the timer should end
 }
 
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
@@ -201,20 +202,48 @@ export default function MarcadorEnVivoPage() {
   // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    if (match?.isActive && match.timeLeft > 0 && !match.isFinished) {
+    if (match?.isActive && !match.isFinished) {
       interval = setInterval(() => {
         setMatch(prevMatch => {
-          if (prevMatch && prevMatch.timeLeft > 0 && prevMatch.isActive) {
-            return { ...prevMatch, timeLeft: prevMatch.timeLeft - 1 };
+          if (!prevMatch || !prevMatch.isActive || !prevMatch.endTime) {
+            return prevMatch;
           }
-          return prevMatch;
+          const newTimeLeft = Math.round((prevMatch.endTime - Date.now()) / 1000);
+          if (newTimeLeft <= 0) {
+            return { ...prevMatch, timeLeft: 0, isActive: false, endTime: null };
+          }
+          return { ...prevMatch, timeLeft: newTimeLeft };
         });
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [match?.isActive, match?.timeLeft, match?.isFinished]);
+  }, [match?.isActive, match?.isFinished]);
+
+   // Handle visibility change to correct timer drift
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && matchRef.current?.isActive) {
+                setMatch(prevMatch => {
+                    if (!prevMatch || !prevMatch.isActive || !prevMatch.endTime) {
+                       return prevMatch;
+                    }
+                    const newTimeLeft = Math.round((prevMatch.endTime - Date.now()) / 1000);
+                    if (newTimeLeft <= 0) {
+                        return { ...prevMatch, timeLeft: 0, isActive: false, endTime: null };
+                    }
+                    return { ...prevMatch, timeLeft: newTimeLeft };
+                });
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
 
     const updateAllPlayingTimes = (matchState: MatchDetails): MatchDetails => {
         const playersKey = matchState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -612,6 +641,7 @@ const reopenMatch = async () => {
             // Pausing timer
             newState = updateAllPlayingTimes(prev);
             newState.isActive = false;
+            newState.endTime = null;
         } else {
             // Starting timer
             const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
@@ -619,7 +649,12 @@ const reopenMatch = async () => {
             const updatedPlayers = players.map(p => 
                 p.isPlaying ? { ...p, lastEntryTime: prev.timeLeft } : p
             );
-            newState = { ...prev, isActive: true, [playersKey]: updatedPlayers };
+            newState = { 
+                ...prev, 
+                isActive: true, 
+                endTime: Date.now() + prev.timeLeft * 1000,
+                [playersKey]: updatedPlayers 
+            };
         }
         
         return newState;
@@ -644,13 +679,14 @@ const reopenMatch = async () => {
             teamStats2: { ...updatedState.teamStats2, timeouts: 0},
             opponentStats1: { ...updatedState.opponentStats1, timeouts: 0},
             opponentStats2: { ...updatedState.opponentStats2, timeouts: 0},
+            endTime: null,
         };
       });
   }
   
   const resetTimer = () => {
     if (match?.isFinished && !isAdmin) return;
-    setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25*60 } : null);
+    setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25*60, endTime: null } : null);
   }
 
   if (loading) {
@@ -1031,5 +1067,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
