@@ -27,7 +27,8 @@ import {
     ShieldCheck,
     Hourglass,
     Timer,
-    ShieldAlert
+    ShieldAlert,
+    Crosshair
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -49,6 +50,7 @@ interface Player {
     faltas: number;
     paradas: number;
     gRec: number;
+    vs1: number;
     position?: string;
     minutosJugados?: number;
 }
@@ -133,7 +135,7 @@ export default function TeamPlayerStatsPage() {
             teamPlayers.forEach(p => {
                 playerStats[p.id] = {
                     name: p.name, number: p.number, teamName: currentTeamName, position: p.position,
-                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, minutosJugados: 0,
+                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, vs1: 0, minutosJugados: 0,
                 };
             });
 
@@ -152,6 +154,7 @@ export default function TeamPlayerStatsPage() {
                             playerStats[p.id].faltas += p.faltas || 0;
                             playerStats[p.id].paradas += p.paradas || 0;
                             playerStats[p.id].gRec += p.gRec || 0;
+                            playerStats[p.id].vs1 += p.vs1 || 0;
                             playerStats[p.id].minutosJugados += p.timeOnCourt || 0;
                         }
                     });
@@ -172,8 +175,9 @@ export default function TeamPlayerStatsPage() {
     const topScorer = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]) : null, [players]);
     const topAssistant = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]) : null, [players]);
     const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
-    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0), [players]);
+    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0 || p.vs1 > 0), [players]);
     const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
+    const top1v1Saver = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.vs1 > max.vs1 ? p : max, goalkeepers[0]) : null, [goalkeepers]);
     const topGoalkeeperCleanest = useMemo(() => {
         const gksWithGames = goalkeepers.filter(p => p.pj > 0);
         if (gksWithGames.length === 0) return null;
@@ -233,6 +237,7 @@ export default function TeamPlayerStatsPage() {
                 {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
+                {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
                 {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldAlert} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
                 {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
@@ -281,7 +286,7 @@ export default function TeamPlayerStatsPage() {
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Equipo</TableHead>
                                 <TableHead className="text-center">PJ</TableHead>
-                                <TableHead className="text-center">Min. Jugados</TableHead>
+                                <TableHead className="text-center">Min.</TableHead>
                                 <TableHead className="text-center">Goles</TableHead>
                                 <TableHead className="text-center">Asist.</TableHead>
                                 <TableHead className="text-center">TA</TableHead>

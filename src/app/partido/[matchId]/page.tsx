@@ -169,7 +169,7 @@ export default function MatchDetailsPage() {
                 <TableRow>
                   <TableHead>#</TableHead>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Min. Jugados</TableHead>
+                  <TableHead>Min.</TableHead>
                   <TableHead>G</TableHead>
                   <TableHead>As</TableHead>
                   <TableHead className="hidden sm:table-cell">TA</TableHead>
