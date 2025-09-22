@@ -80,6 +80,7 @@ interface Stats {
     shotsBlocked: number;
     turnovers: number;
     recoveries: number;
+    yellowCards: number;
 }
 
 type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
@@ -133,7 +134,7 @@ export default function TeamSpecificStatsPage() {
                 goalsFor: 0, goalsFor1stHalf: 0, goalsFor2ndHalf: 0,
                 goalsAgainst: 0, goalsAgainst1stHalf: 0, goalsAgainst2ndHalf: 0,
                 totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
-                turnovers: 0, recoveries: 0,
+                turnovers: 0, recoveries: 0, yellowCards: 0,
             };
             
 
@@ -152,6 +153,7 @@ export default function TeamSpecificStatsPage() {
                 const userPlayers = isLocalTeam ? match.localPlayers : match.visitorPlayers;
                 if (userPlayers) {
                     newStats.fouls += userPlayers.reduce((acc: number, p: any) => acc + (p.faltas || 0), 0);
+                    newStats.yellowCards += userPlayers.reduce((acc: number, p: any) => acc + (p.amarillas || 0), 0);
                 }
                  if(match.opponentStats1) {
                     newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
@@ -209,6 +211,10 @@ export default function TeamSpecificStatsPage() {
         </div>
     )
   }
+
+  const YellowCardIcon = () => (
+    <div className="w-4 h-5 bg-yellow-400 border border-yellow-600 rounded-sm" />
+  );
 
   return (
     <div className="container mx-auto max-w-5xl py-12 px-4 space-y-8">
@@ -290,6 +296,7 @@ export default function TeamSpecificStatsPage() {
                     <StatCard title="Faltas Recibidas" value={stats.faltasRecibidas} icon={ShieldCheck} />
                     <StatCard title="Pérdidas de Balón" value={stats.turnovers} icon={RotateCcw} />
                     <StatCard title="Robos de Balón" value={stats.recoveries} icon={Shuffle} />
+                    <StatCard title="Tarjetas Amarillas" value={stats.yellowCards} icon={YellowCardIcon} />
                 </CardContent>
             </Card>
 
