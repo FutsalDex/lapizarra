@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Trophy, PlusCircle, Eye, BarChartHorizontal, Trash2, ArrowLeft, Edit } from 'lucide-react';
 import AddMatchDialog from '@/app/mis-partidos/_components/AddMatchDialog';
-import { collection, onSnapshot, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,10 +58,10 @@ export default function TeamMatchesPage() {
       setLoading(false);
       return;
     }
-    const q = query(collection(db, 'matches'), where('teamId', '==', teamId));
+    const q = query(collection(db, 'matches'), where('teamId', '==', teamId), orderBy('date', 'desc'));
     const unsubscribeMatches = onSnapshot(q, (snapshot) => {
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-      setMatches(matchesData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      setMatches(matchesData);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching matches: ", error);
