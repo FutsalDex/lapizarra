@@ -69,7 +69,7 @@ export default function UploadMatchForm() {
                 if (typeof match.fecha === 'number') {
                     matchDate = excelSerialDateToJSDate(match.fecha);
                 } 
-                // Handle string date format (DD/MM/YYYY)
+                // Handle string date format (DD/MM/AAAA)
                 else if (typeof match.fecha === 'string') {
                     const parts = match.fecha.split(/[/|-]/);
                     if (parts.length === 3) {
