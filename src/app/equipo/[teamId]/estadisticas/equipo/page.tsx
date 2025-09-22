@@ -281,7 +281,7 @@ export default function TeamSpecificStatsPage() {
                 <CardHeader>
                     <CardTitle>Rendimiento del Equipo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-1">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <StatCard title="Tiros Totales" value={stats.totalShots} icon={Crosshair} />
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
