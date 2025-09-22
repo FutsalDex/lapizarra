@@ -58,7 +58,7 @@ export default function TeamMatchesPage() {
       setLoading(false);
       return;
     }
-    const q = query(collection(db, 'matches'), where('teamId', '==', teamId), orderBy('date', 'desc'));
+    const q = query(collection(db, 'matches'), where('teamId', '==', teamId), orderBy('date', 'asc'));
     const unsubscribeMatches = onSnapshot(q, (snapshot) => {
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
       setMatches(matchesData);
