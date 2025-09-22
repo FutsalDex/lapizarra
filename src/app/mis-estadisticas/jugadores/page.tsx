@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -24,7 +25,8 @@ import {
     Shield,
     ShieldCheck,
     Hourglass,
-    Timer
+    Timer,
+    ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -180,6 +182,11 @@ export default function PlayerStatsPage() {
         if (gksWithGames.length === 0) return null;
         return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
     }, [goalkeepers]);
+    const topGoalkeeperMostGoals = useMemo(() => {
+        const gksWithGames = goalkeepers.filter(p => p.pj > 0);
+        if (gksWithGames.length === 0) return null;
+        return gksWithGames.reduce((max, p) => (p.gRec > max.gRec) ? p : max, gksWithGames[0]);
+    }, [goalkeepers]);
     const mostMinutesPlayed = useMemo(() => {
         const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
         if (playersWithMinutes.length === 0) return null;
@@ -231,6 +238,7 @@ export default function PlayerStatsPage() {
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
+                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldAlert} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
                 {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
                 {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
             </div>
