@@ -17,12 +17,19 @@ import {
 } from '@/components/ui/table';
 import { 
     Users, 
-    ArrowLeft
+    ArrowLeft,
+    Goal,
+    Hand,
+    AlertTriangle,
+    Shield,
+    ShieldCheck,
+    Hourglass,
+    Timer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, getDocs, collectionGroup, QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -39,14 +46,43 @@ interface Player {
     faltas: number;
     paradas: number;
     gRec: number;
+    position?: string;
     minutosJugados?: number;
 }
+
+interface StatCardProps {
+    title: string;
+    icon: React.ElementType;
+    playerName: string;
+    value: number | string;
+}
+
+const StatCard = ({ title, icon: Icon, playerName, value }: StatCardProps) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-base font-bold">{playerName}</p>
+        </div>
+      </div>
+      <p className="text-right text-3xl font-bold mt-2">{value}</p>
+    </CardContent>
+  </Card>
+);
+
+type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
+const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
 
 export default function PlayerStatsPage() {
     const { user } = useAuth();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
      useEffect(() => {
         if (!user) {
@@ -54,7 +90,7 @@ export default function PlayerStatsPage() {
             return;
         }
 
-        const fetchPlayers = async () => {
+        const fetchPlayersAndStats = async () => {
             setLoading(true);
 
             // 1. Get user's teams
@@ -68,31 +104,93 @@ export default function PlayerStatsPage() {
                 return;
             }
 
-            // 2. Get all players from those teams
-            const playersQuery = collectionGroup(db, 'players');
-            const playersSnapshot = await getDocs(playersQuery);
-            
-            const allPlayers = playersSnapshot.docs
+            // 2. Get players from those teams
+            const playersGroupQuery = collectionGroup(db, 'players');
+            const playersSnapshot = await getDocs(playersGroupQuery);
+            const teamPlayers = playersSnapshot.docs
                 .filter(doc => teamIds.includes(doc.ref.parent.parent?.id || ''))
-                .map(doc => {
-                    const data = doc.data();
-                    const teamId = doc.ref.parent.parent?.id || '';
-                    return {
-                        ...data,
-                        teamName: teamsMap.get(teamId) || 'N/A',
-                    } as Player;
-                });
+                .map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name,
+                    number: doc.data().number,
+                    position: doc.data().position,
+                    teamId: doc.ref.parent.parent?.id || '',
+                }));
 
-            setPlayers(allPlayers.sort((a, b) => b.goals - a.goals));
+            // 3. Get matches based on filter
+            const queryConstraints: QueryConstraint[] = [where('teamId', 'in', teamIds), where('isFinished', '==', true)];
+            if (activeFilter !== 'Todos') {
+                queryConstraints.push(where('matchType', '==', activeFilter));
+            }
+            const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
+            const matchesSnapshot = await getDocs(matchesQuery);
+            const matches = matchesSnapshot.docs.map(doc => doc.data());
+
+            // 4. Aggregate stats
+            const playerStats: Record<string, Player> = {};
+            teamPlayers.forEach(p => {
+                playerStats[p.id] = {
+                    name: p.name, number: p.number, teamName: teamsMap.get(p.teamId) || 'N/A', position: p.position,
+                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, minutosJugados: 0,
+                };
+            });
+
+            matches.forEach(match => {
+                const teamName = teamsMap.get(match.teamId);
+                if (!teamName) return;
+
+                const isLocal = match.localTeam === teamName;
+                const matchPlayers = isLocal ? match.localPlayers : match.visitorPlayers;
+                
+                if (matchPlayers) {
+                    matchPlayers.forEach((p: any) => {
+                        if (playerStats[p.id]) {
+                            playerStats[p.id].pj += 1;
+                            playerStats[p.id].goals += p.goals || 0;
+                            playerStats[p.id].assists += p.assists || 0;
+                            playerStats[p.id].ta += p.amarillas || 0;
+                            playerStats[p.id].tr += p.rojas || 0;
+                            playerStats[p.id].faltas += p.faltas || 0;
+                            playerStats[p.id].paradas += p.paradas || 0;
+                            playerStats[p.id].gRec += p.gRec || 0;
+                            playerStats[p.id].minutosJugados += p.timeOnCourt || 0;
+                        }
+                    });
+                }
+            });
+
+            setPlayers(Object.values(playerStats).sort((a, b) => a.number - b.number));
             setLoading(false);
         };
 
-        fetchPlayers();
-    }, [user]);
+        fetchPlayersAndStats();
+    }, [user, activeFilter]);
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [players, searchTerm]);
+
+    const topScorer = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]) : null, [players]);
+    const topAssistant = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]) : null, [players]);
+    const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
+    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0), [players]);
+    const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
+    const topGoalkeeperCleanest = useMemo(() => {
+        const gksWithGames = goalkeepers.filter(p => p.pj > 0);
+        if (gksWithGames.length === 0) return null;
+        return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
+    }, [goalkeepers]);
+    const mostMinutesPlayed = useMemo(() => {
+        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+        if (playersWithMinutes.length === 0) return null;
+        return playersWithMinutes.reduce((max, p) => (p.minutosJugados || 0) > (max.minutosJugados || 0) ? p : max, playersWithMinutes[0]);
+    }, [players]);
+    const leastMinutesPlayed = useMemo(() => {
+        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+        if (playersWithMinutes.length === 0) return null;
+        return playersWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, playersWithMinutes[0]);
+    }, [players]);
+
 
     const formatTime = (totalSeconds: number) => {
         if (!totalSeconds || totalSeconds < 0) return '00:00';
@@ -125,18 +223,41 @@ export default function PlayerStatsPage() {
               </Link>
             </Button>
         </div>
+        
+        {players.length > 0 && !loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
+                {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
+                {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
+                {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
+                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
+                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
+                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
+            </div>
+        )}
 
         <Card>
             <CardHeader>
                 <CardTitle>Tabla de Jugadores</CardTitle>
-                <CardDescription>Busca un jugador por su nombre para ver sus estadísticas.</CardDescription>
-                <div className="pt-4">
+                <CardDescription>Busca un jugador por su nombre o filtra por competición para ver sus estadísticas.</CardDescription>
+                <div className="pt-4 flex flex-col md:flex-row gap-4">
                     <Input 
                         placeholder="Buscar jugador..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="max-w-sm"
                     />
+                     <div className="flex flex-wrap items-center gap-2">
+                        {filters.map(filter => (
+                            <Button 
+                                key={filter} 
+                                variant={activeFilter === filter ? 'default' : 'outline'}
+                                onClick={() => setActiveFilter(filter)}
+                            >
+                                {filter}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -144,8 +265,8 @@ export default function PlayerStatsPage() {
                     <Skeleton className="h-96 w-full" />
                 ) : players.length === 0 ? (
                     <div className="text-center py-16">
-                        <p className="text-muted-foreground">No se encontraron jugadores.</p>
-                        <p className="text-sm text-muted-foreground mt-2">Añade jugadores a tus equipos para ver sus estadísticas aquí.</p>
+                        <p className="text-muted-foreground">No se encontraron datos de jugadores.</p>
+                        <p className="text-sm text-muted-foreground mt-2">Añade jugadores a tus equipos y registra partidos para ver sus estadísticas aquí.</p>
                     </div>
                 ) : (
                 <div className="rounded-md border overflow-x-auto">
