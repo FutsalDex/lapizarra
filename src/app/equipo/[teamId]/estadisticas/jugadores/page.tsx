@@ -167,11 +167,11 @@ export default function TeamPlayerStatsPage() {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [players, searchTerm]);
 
-    const topScorer = useMemo(() => players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]), [players]);
-    const topAssistant = useMemo(() => players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]), [players]);
-    const mostFouls = useMemo(() => players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]), [players]);
+    const topScorer = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]) : null, [players]);
+    const topAssistant = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]) : null, [players]);
+    const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
     const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0), [players]);
-    const topGoalkeeperSaves = useMemo(() => goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]), [goalkeepers]);
+    const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
     const topGoalkeeperCleanest = useMemo(() => {
         const gksWithGames = goalkeepers.filter(p => p.pj > 0);
         if (gksWithGames.length === 0) return null;
