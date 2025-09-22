@@ -61,47 +61,6 @@ const StatCard = ({ title, value, icon: Icon, subtitle, color = 'text-primary' }
     </Card>
 );
 
-interface PlayerStatCardProps {
-    title: string;
-    icon: React.ElementType;
-    playerName: string;
-    value: number | string;
-}
-
-const PlayerStatCard = ({ title, icon: Icon, playerName, value }: PlayerStatCardProps) => (
-  <Card>
-    <CardContent className="p-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Icon className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-base font-bold">{playerName}</p>
-        </div>
-      </div>
-      <p className="text-right text-3xl font-bold mt-2">{value}</p>
-    </CardContent>
-  </Card>
-);
-
-interface Player {
-    name: string;
-    number: number;
-    teamName: string;
-    pj: number;
-    goals: number;
-    assists: number;
-    ta: number;
-    tr: number;
-    faltas: number;
-    paradas: number;
-    gRec: number;
-    vs1: number;
-    position?: string;
-    minutosJugados?: number;
-}
-
 interface Stats {
     played: number;
     won: number;
@@ -131,7 +90,6 @@ export default function TeamSpecificStatsPage() {
     const params = useParams();
     const teamId = params.teamId as string;
     const [stats, setStats] = useState<Stats | null>(null);
-    const [players, setPlayers] = useState<Player[]>([]);
     const [teamName, setTeamName] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
@@ -155,15 +113,6 @@ export default function TeamSpecificStatsPage() {
             const currentTeamName = teamDoc.data().name;
             setTeamName(currentTeamName);
 
-            const playersQuery = query(collection(db, 'teams', teamId, 'players'));
-            const playersSnapshot = await getDocs(playersQuery);
-            const teamPlayers = playersSnapshot.docs.map(doc => ({
-                id: doc.id,
-                name: doc.data().name,
-                number: doc.data().number,
-                position: doc.data().position
-            }));
-
             const queryConstraints: QueryConstraint[] = [where('teamId', '==', teamId), where('isFinished', '==', true)];
             if(activeFilter !== 'Todos') {
                 queryConstraints.push(where('matchType', '==', activeFilter));
@@ -175,7 +124,6 @@ export default function TeamSpecificStatsPage() {
 
             if (matches.length === 0) {
                 setStats(null);
-                setPlayers([]);
                 setLoading(false);
                 return;
             }
@@ -188,13 +136,6 @@ export default function TeamSpecificStatsPage() {
                 turnovers: 0, recoveries: 0,
             };
             
-            const playerStats: Record<string, Player> = {};
-            teamPlayers.forEach(p => {
-                playerStats[p.id] = {
-                    name: p.name, number: p.number, teamName: currentTeamName, position: p.position,
-                    pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, vs1: 0, minutosJugados: 0,
-                };
-            });
 
             matches.forEach(match => {
                 const isLocalTeam = currentTeamName === match.localTeam;
@@ -211,20 +152,6 @@ export default function TeamSpecificStatsPage() {
                 const userPlayers = isLocalTeam ? match.localPlayers : match.visitorPlayers;
                 if (userPlayers) {
                     newStats.fouls += userPlayers.reduce((acc: number, p: any) => acc + (p.faltas || 0), 0);
-                    userPlayers.forEach((p: any) => {
-                        if (playerStats[p.id]) {
-                            playerStats[p.id].pj += 1;
-                            playerStats[p.id].goals += p.goals || 0;
-                            playerStats[p.id].assists += p.assists || 0;
-                            playerStats[p.id].ta += p.amarillas || 0;
-                            playerStats[p.id].tr += p.rojas || 0;
-                            playerStats[p.id].faltas += p.faltas || 0;
-                            playerStats[p.id].paradas += p.paradas || 0;
-                            playerStats[p.id].gRec += p.gRec || 0;
-                            playerStats[p.id].vs1 += p.vs1 || 0;
-                            playerStats[p.id].minutosJugados += p.timeOnCourt || 0;
-                        }
-                    });
                 }
                  if(match.opponentStats1) {
                     newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
@@ -264,46 +191,13 @@ export default function TeamSpecificStatsPage() {
             newStats.totalShots = newStats.shotsOnTarget + newStats.shotsOffTarget + newStats.shotsBlocked;
 
             setStats(newStats);
-            setPlayers(Object.values(playerStats));
             setLoading(false);
         };
 
         fetchStats();
     }, [user, teamId, activeFilter]);
 
-    const topScorer = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]) : null, [players]);
-    const topAssistant = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]) : null, [players]);
-    const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
-    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0 || p.vs1 > 0), [players]);
-    const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
-    const top1v1Saver = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.vs1 > max.vs1 ? p : max, goalkeepers[0]) : null, [goalkeepers]);
-    const topGoalkeeperCleanest = useMemo(() => {
-        const gksWithGames = goalkeepers.filter(p => p.pj > 0);
-        if (gksWithGames.length === 0) return null;
-        return gksWithGames.reduce((min, p) => (p.gRec < min.gRec) ? p : min, gksWithGames[0]);
-    }, [goalkeepers]);
-    const topGoalkeeperMostGoals = useMemo(() => {
-        const gksWithGames = goalkeepers.filter(p => p.pj > 0);
-        if (gksWithGames.length === 0) return null;
-        return gksWithGames.reduce((max, p) => (p.gRec > max.gRec) ? p : max, gksWithGames[0]);
-    }, [goalkeepers]);
-    const mostMinutesPlayed = useMemo(() => {
-        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
-        if (playersWithMinutes.length === 0) return null;
-        return playersWithMinutes.reduce((max, p) => (p.minutosJugados || 0) > (max.minutosJugados || 0) ? p : max, playersWithMinutes[0]);
-    }, [players]);
-    const leastMinutesPlayed = useMemo(() => {
-        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
-        if (playersWithMinutes.length === 0) return null;
-        return playersWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, playersWithMinutes[0]);
-    }, [players]);
-
-    const formatTime = (totalSeconds: number) => {
-        if (!totalSeconds || totalSeconds < 0) return '00:00';
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
+    
 
   if(loading && !stats) {
     return (
@@ -382,25 +276,6 @@ export default function TeamSpecificStatsPage() {
                     <StatCard title="Perdidos" value={stats.lost} icon={TrendingDown} />
                 </CardContent>
             </Card>
-
-             {players.length > 0 && !loading && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Jugadores Destacados</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {topScorer && topScorer.goals > 0 && <PlayerStatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
-                        {topAssistant && topAssistant.assists > 0 && <PlayerStatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
-                        {mostFouls && mostFouls.faltas > 0 && <PlayerStatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
-                        {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <PlayerStatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
-                        {top1v1Saver && top1v1Saver.vs1 > 0 && <PlayerStatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
-                        {topGoalkeeperCleanest && <PlayerStatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
-                        {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <PlayerStatCard title="Portero Más Goleado" icon={ShieldAlert} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
-                        {mostMinutesPlayed && <PlayerStatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
-                        {leastMinutesPlayed && <PlayerStatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
-                    </CardContent>
-                </Card>
-            )}
 
             <Card>
                 <CardHeader>
