@@ -114,15 +114,14 @@ export default function TeamSpecificStatsPage() {
             const currentTeamName = teamDoc.data().name;
             setTeamName(currentTeamName);
 
-            const queryConstraints: QueryConstraint[] = [where('teamId', '==', teamId)];
+            const queryConstraints: QueryConstraint[] = [where('teamId', '==', teamId), where('isFinished', '==', true)];
             if(activeFilter !== 'Todos') {
                 queryConstraints.push(where('matchType', '==', activeFilter));
             }
             
             const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
             const matchesSnapshot = await getDocs(matchesQuery);
-            const allMatches = matchesSnapshot.docs.map(doc => doc.data());
-            const matches = allMatches.filter(m => m.isFinished || (m.localScore !== undefined && m.visitorScore !== undefined));
+            const matches = matchesSnapshot.docs.map(doc => doc.data());
 
             if (matches.length === 0) {
                 setStats(null);
@@ -328,3 +327,5 @@ export default function TeamSpecificStatsPage() {
     </div>
   );
 }
+
+    

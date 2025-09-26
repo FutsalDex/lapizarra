@@ -27,7 +27,8 @@ import {
     Hourglass,
     Timer,
     ShieldAlert,
-    Crosshair
+    Crosshair,
+    ShieldOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -122,14 +123,13 @@ export default function PlayerStatsPage() {
                 }));
 
             // 3. Get matches based on filter
-            const queryConstraints: QueryConstraint[] = [where('teamId', 'in', teamIds)];
+            const queryConstraints: QueryConstraint[] = [where('teamId', 'in', teamIds), where('isFinished', '==', true)];
             if (activeFilter !== 'Todos') {
                 queryConstraints.push(where('matchType', '==', activeFilter));
             }
             const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
             const matchesSnapshot = await getDocs(matchesQuery);
-            const allMatches = matchesSnapshot.docs.map(doc => doc.data());
-            const matches = allMatches.filter(m => m.isFinished || (m.localScore !== undefined && m.visitorScore !== undefined));
+            const matches = matchesSnapshot.docs.map(doc => doc.data());
 
 
             // 4. Aggregate stats
@@ -245,7 +245,7 @@ export default function PlayerStatsPage() {
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
-                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldAlert} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
+                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldOff} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
                 {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
                 {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
             </div>
@@ -331,3 +331,5 @@ export default function PlayerStatsPage() {
     </div>
   );
 }
+
+    

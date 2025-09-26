@@ -75,6 +75,7 @@ interface Stats {
     shotsBlocked: number;
     turnovers: number;
     recoveries: number;
+    yellowCards: number;
 }
 
 export default function TeamStatsPage() {
@@ -100,10 +101,9 @@ export default function TeamStatsPage() {
                 return;
             }
 
-            const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', teamIds));
+            const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', teamIds), where('isFinished', '==', true));
             const matchesSnapshot = await getDocs(matchesQuery);
-            const allMatches = matchesSnapshot.docs.map(doc => doc.data());
-            const matches = allMatches.filter(m => m.isFinished || (m.localScore !== undefined && m.visitorScore !== undefined));
+            const matches = matchesSnapshot.docs.map(doc => doc.data());
 
 
             const newStats: Stats = {
@@ -111,7 +111,7 @@ export default function TeamStatsPage() {
                 goalsFor: 0, goalsFor1stHalf: 0, goalsFor2ndHalf: 0,
                 goalsAgainst: 0, goalsAgainst1stHalf: 0, goalsAgainst2ndHalf: 0,
                 totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
-                turnovers: 0, recoveries: 0,
+                turnovers: 0, recoveries: 0, yellowCards: 0
             };
 
             matches.forEach(match => {
@@ -129,6 +129,7 @@ export default function TeamStatsPage() {
                 const userPlayers = isLocalTeam ? match.localPlayers : match.visitorPlayers;
                 if (userPlayers) {
                     newStats.fouls += userPlayers.reduce((acc: number, p: any) => acc + (p.faltas || 0), 0);
+                    newStats.yellowCards += userPlayers.reduce((acc: number, p: any) => acc + (p.amarillas || 0), 0);
                 }
                  if(match.opponentStats1) {
                     newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
@@ -184,6 +185,10 @@ export default function TeamStatsPage() {
         </div>
     )
   }
+  
+  const YellowCardIcon = () => (
+    <div className="w-4 h-5 bg-yellow-400 border border-yellow-600 rounded-sm" />
+  );
 
   return (
     <div className="container mx-auto max-w-5xl py-12 px-4 space-y-8">
@@ -234,7 +239,7 @@ export default function TeamStatsPage() {
                 <CardHeader>
                     <CardTitle>Rendimiento del Equipo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-1">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <StatCard title="Tiros Totales" value={stats.totalShots} icon={Crosshair} />
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
@@ -243,6 +248,7 @@ export default function TeamStatsPage() {
                     <StatCard title="Faltas Recibidas" value={stats.faltasRecibidas} icon={ShieldCheck} />
                     <StatCard title="Pérdidas de Balón" value={stats.turnovers} icon={RotateCcw} />
                     <StatCard title="Robos de Balón" value={stats.recoveries} icon={Shuffle} />
+                    <StatCard title="Tarjetas Amarillas" value={stats.yellowCards} icon={YellowCardIcon} />
                 </CardContent>
             </Card>
 
@@ -273,3 +279,5 @@ export default function TeamStatsPage() {
     </div>
   );
 }
+
+    
