@@ -26,7 +26,6 @@ import Link from 'next/link';
 import { doc, onSnapshot, query, collection, where, writeBatch, addDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
@@ -97,7 +96,7 @@ export default function TeamRosterPage() {
         };
     }, [teamId]);
 
-    const handlePlayerChange = (playerId: string, field: keyof Player, value: any) => {
+    const handlePlayerChange = (playerId: string, field: keyof Omit<Player, 'id' | 'active'>, value: any) => {
         setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, [field]: value} : p));
     }
     
@@ -107,12 +106,10 @@ export default function TeamRosterPage() {
         
         players.forEach(player => {
             const playerRef = doc(db, 'teams', teamId, 'players', player.id);
-            const { id, ...playerData } = player; // Exclude id from the data being written
             batch.update(playerRef, { 
-                name: playerData.name,
-                number: playerData.number,
-                position: playerData.position,
-                active: playerData.active
+                name: player.name,
+                number: player.number,
+                position: player.position,
             });
         });
         
@@ -255,7 +252,7 @@ export default function TeamRosterPage() {
       <Card>
         <CardHeader>
           <CardTitle>Plantilla del Equipo</CardTitle>
-          <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Solo los jugadores "Activos" aparecerán en el módulo de partidos.</CardDescription>
+          <CardDescription>Introduce los datos de tus jugadores. Máximo 20. Todos los jugadores estarán disponibles para la convocatoria.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="rounded-md border overflow-x-auto">
@@ -263,9 +260,8 @@ export default function TeamRosterPage() {
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-[8%]">Dorsal</TableHead>
-                        <TableHead className="w-[20%] min-w-[150px]">Nombre</TableHead>
-                        <TableHead className="w-[15%] min-w-[150px]">Posición</TableHead>
-                        <TableHead className="w-[8%]">Activo</TableHead>
+                        <TableHead className="w-[25%] min-w-[150px]">Nombre</TableHead>
+                        <TableHead className="w-[20%] min-w-[150px]">Posición</TableHead>
                         <TableHead className="text-right w-[10%]">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -289,7 +285,6 @@ export default function TeamRosterPage() {
                                     </SelectContent>
                                 </Select>
                             </TableCell>
-                            <TableCell className="text-center"><Switch checked={player.active} onCheckedChange={(checked) => handlePlayerChange(player.id, 'active', checked)} /></TableCell>
                             <TableCell className="text-right">
                                  <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
                                     <Trash2 className="h-4 w-4" />
