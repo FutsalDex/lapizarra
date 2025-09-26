@@ -25,7 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 interface Player {
   id: string;
@@ -55,33 +55,34 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
   const [saving, setSaving] = useState(false);
   const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-
-  const userTeamName = useMemo(async () => {
-    const teamDoc = await getDoc(doc(db, 'teams', teamId));
-    return teamDoc.exists() ? teamDoc.data().name : '';
-  }, [teamId]);
+  const [userTeamName, setUserTeamName] = useState<string>('');
 
   useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchTeamAndPlayers = async () => {
       if (!open || !teamId) return;
       setLoading(true);
+
+      // Fetch team name
+      const teamDoc = await getDoc(doc(db, 'teams', teamId));
+      const currentTeamName = teamDoc.exists() ? teamDoc.data().name : '';
+      setUserTeamName(currentTeamName);
       
+      // Fetch active players
       const q = query(collection(db, 'teams', teamId, 'players'), where('active', '==', true));
       const querySnapshot = await getDocs(q);
       const playersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
       setTeamPlayers(playersData.sort((a, b) => a.number - b.number));
       
-      // Initialize selected players
-      const name = await userTeamName;
-      const matchPlayers = name === match.localTeam ? match.localPlayers : match.visitorPlayers;
+      // Initialize selected players based on which team the user is
+      const matchPlayers = currentTeamName === match.localTeam ? match.localPlayers : match.visitorPlayers;
       const initialSelected = new Set(matchPlayers?.map(p => p.id) || []);
       setSelectedPlayers(initialSelected);
 
       setLoading(false);
     };
 
-    fetchPlayers();
-  }, [open, teamId, match, userTeamName]);
+    fetchTeamAndPlayers();
+  }, [open, teamId, match]);
   
   const handleSelectPlayer = (playerId: string) => {
     setSelectedPlayers(prev => {
@@ -97,8 +98,7 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
   
   const handleSaveConvocatoria = async () => {
     setSaving(true);
-    const name = await userTeamName;
-    const playersKey = name === match.localTeam ? 'localPlayers' : 'visitorPlayers';
+    const playersKey = userTeamName === match.localTeam ? 'localPlayers' : 'visitorPlayers';
     
     const selectedPlayerData = teamPlayers
       .filter(p => selectedPlayers.has(p.id))
