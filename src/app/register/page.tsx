@@ -69,7 +69,7 @@ export default function RegisterPage() {
         displayName: name,
       });
 
-      // User document creation is handled by AuthContext to prevent race conditions
+      // User document creation is now handled by AuthContext to prevent race conditions
       
       router.push(redirectPath);
     } catch (err: any) {

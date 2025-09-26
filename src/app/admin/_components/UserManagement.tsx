@@ -95,6 +95,7 @@ export default function UserManagement() {
             <TableHeader>
                 <TableRow>
                 <TableHead>Email</TableHead>
+                <TableHead>Nombre</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead className="hidden sm:table-cell">Suscripción</TableHead>
                 <TableHead className="hidden md:table-cell">Miembro desde</TableHead>
@@ -107,6 +108,7 @@ export default function UserManagement() {
                 {filteredUsers.map((user) => (
                 <TableRow key={user.docId}>
                     <TableCell className="font-medium">{user.email}</TableCell>
+                    <TableCell>{user.displayName}</TableCell>
                     <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Subscribed' ? 'default' : 'secondary'}>
                         {user.role}

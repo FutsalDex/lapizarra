@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!docSnap.exists()) {
           try {
             await setDoc(userDocRef, {
+              uid: user.uid,
               email: user.email,
               displayName: user.displayName,
               photoURL: user.photoURL,
