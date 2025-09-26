@@ -183,6 +183,12 @@ export default function TeamMatchesPage() {
                     Convocar
                   </Button>
                 </ConvocatoriaDialog>
+                 <Button asChild variant="ghost" size="icon">
+                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
+                </Button>
+                 <Button asChild variant="ghost" size="icon">
+                  <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
+                </Button>
                 <AddMatchDialog matchData={match} teamId={teamId}>
                     <Button variant="ghost" size="icon">
                         <Edit className="h-5 w-5" />
@@ -207,12 +213,6 @@ export default function TeamMatchesPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                 <Button asChild variant="ghost" size="icon">
-                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
-                </Button>
-                 <Button asChild variant="ghost" size="icon">
-                  <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
-                </Button>
               </CardFooter>
             </Card>
           ))}
