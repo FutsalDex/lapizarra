@@ -732,7 +732,7 @@ const reopenMatch = async () => {
   const tableHeaders = (
     <TableRow>
         <TableHead className="sticky left-0 bg-background/95 z-20 px-1 md:px-2 min-w-[50px] md:min-w-[70px]">Dorsal</TableHead>
-        <TableHead className="sticky left-[50px] md:left-[70px] bg-background/95 z-20 px-1 md:px-2 min-w-[120px] md:min-w-[200px]">Nombre</TableHead>
+        <TableHead className="sticky left-[50px] md:left-[70px] bg-background/95 z-20 px-1 md:px-2 min-w-[150px] md:min-w-[200px]">Nombre</TableHead>
         <StatColumnHeader full="Goles" abbr="G" />
         <StatColumnHeader full="Asist." abbr="As" />
         <StatColumnHeader full="yellow" abbr="" isIcon />
