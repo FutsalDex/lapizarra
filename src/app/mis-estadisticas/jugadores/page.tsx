@@ -122,13 +122,15 @@ export default function PlayerStatsPage() {
                 }));
 
             // 3. Get matches based on filter
-            const queryConstraints: QueryConstraint[] = [where('teamId', 'in', teamIds), where('isFinished', '==', true)];
+            const queryConstraints: QueryConstraint[] = [where('teamId', 'in', teamIds)];
             if (activeFilter !== 'Todos') {
                 queryConstraints.push(where('matchType', '==', activeFilter));
             }
             const matchesQuery = query(collection(db, 'matches'), ...queryConstraints);
             const matchesSnapshot = await getDocs(matchesQuery);
-            const matches = matchesSnapshot.docs.map(doc => doc.data());
+            const allMatches = matchesSnapshot.docs.map(doc => doc.data());
+            const matches = allMatches.filter(m => m.isFinished || (m.localScore !== undefined && m.visitorScore !== undefined));
+
 
             // 4. Aggregate stats
             const playerStats: Record<string, Player> = {};

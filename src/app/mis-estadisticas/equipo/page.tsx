@@ -100,9 +100,11 @@ export default function TeamStatsPage() {
                 return;
             }
 
-            const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', teamIds), where('isFinished', '==', true));
+            const matchesQuery = query(collection(db, 'matches'), where('teamId', 'in', teamIds));
             const matchesSnapshot = await getDocs(matchesQuery);
-            const matches = matchesSnapshot.docs.map(doc => doc.data());
+            const allMatches = matchesSnapshot.docs.map(doc => doc.data());
+            const matches = allMatches.filter(m => m.isFinished || (m.localScore !== undefined && m.visitorScore !== undefined));
+
 
             const newStats: Stats = {
                 played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0, faltasRecibidas: 0,
@@ -271,5 +273,3 @@ export default function TeamStatsPage() {
     </div>
   );
 }
-
-    
