@@ -613,11 +613,11 @@ const reopenMatch = async () => {
     const value = player?.[stat] ?? 0;
 
     return (
-        <TableCell className="text-center px-1">
-            <div className="flex items-center justify-center gap-0 sm:gap-1">
-                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                <span className="w-4 text-center text-sm sm:text-base">{value}</span>
-                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-6 sm:w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+        <TableCell className="text-center p-0 md:px-1">
+            <div className="flex items-center justify-center gap-0">
+                <Button size="icon" variant="ghost" className="h-5 w-5 md:h-6 md:w-6" onClick={() => handleStatChange(playerIndex, stat, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-3 w-3 md:h-4 md:w-4"/></Button>
+                <span className="w-4 text-center text-sm">{value}</span>
+                <Button size="icon" variant="ghost" className="h-5 w-5 md:h-6 md:w-6" onClick={() => handleStatChange(playerIndex, stat, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-3 w-3 md:h-4 md:w-4"/></Button>
             </div>
         </TableCell>
     )
@@ -731,8 +731,8 @@ const reopenMatch = async () => {
 
   const tableHeaders = (
     <TableRow>
-        <TableHead className="sticky left-0 bg-background/95 z-20 px-2 min-w-[70px]">Dorsal</TableHead>
-        <TableHead className="sticky left-[70px] bg-background/95 z-20 px-2 min-w-[200px]">Nombre</TableHead>
+        <TableHead className="sticky left-0 bg-background/95 z-20 px-1 md:px-2 min-w-[50px] md:min-w-[70px]">Dorsal</TableHead>
+        <TableHead className="sticky left-[50px] md:left-[70px] bg-background/95 z-20 px-1 md:px-2 min-w-[120px] md:min-w-[200px]">Nombre</TableHead>
         <StatColumnHeader full="Goles" abbr="G" />
         <StatColumnHeader full="Asist." abbr="As" />
         <StatColumnHeader full="yellow" abbr="" isIcon />
@@ -765,22 +765,22 @@ const reopenMatch = async () => {
                         <TableBody>
                             {players.map((player, index) => (
                                 <TableRow key={player.id}>
-                                    <TableCell className="sticky left-0 bg-background/95 z-10 px-2">
+                                    <TableCell className="sticky left-0 bg-background/95 z-10 px-1 md:px-2">
                                         <Input 
-                                            className="h-8 w-14 text-center" 
+                                            className="h-8 w-12 text-center" 
                                             value={player.number} 
                                             onChange={(e) => handlePlayerInfoChange(index, 'number', parseInt(e.target.value) || 0)} 
                                             readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))} 
                                         />
                                     </TableCell>
-                                    <TableCell className="sticky left-[70px] bg-background/95 z-10 px-2 flex items-center gap-2">
+                                    <TableCell className="sticky left-[50px] md:left-[70px] bg-background/95 z-10 px-1 md:px-2 flex items-center gap-2">
                                         <Input 
                                             className={cn("h-8 flex-grow", player.isPlaying && "bg-green-100 dark:bg-green-900/30")} 
                                             value={player.name} 
                                             onClick={() => handleTogglePlay(index)}
                                             readOnly
                                         />
-                                        <div className="flex items-center gap-1 text-xs p-1 rounded-md bg-muted text-muted-foreground w-20 justify-center">
+                                        <div className="flex items-center gap-1 text-xs p-1 rounded-md bg-muted text-muted-foreground w-16 justify-center">
                                             <Clock className="h-3 w-3" />
                                             <span>{formatTime(player.timeOnCourt)}</span>
                                         </div>
