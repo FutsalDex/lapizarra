@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -59,6 +60,7 @@ export default function TeamAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [recordExists, setRecordExists] = useState(false);
+  const [recordedDates, setRecordedDates] = useState<Date[]>([]);
   const { toast } = useToast();
 
    useEffect(() => {
@@ -77,10 +79,18 @@ export default function TeamAttendancePage() {
             setPlayers(playersData.sort((a,b) => a.number - b.number));
             setLoading(false);
         });
+        
+        // Fetch all recorded dates for the calendar
+        const attendanceCollectionRef = collection(db, 'teams', teamId, 'attendance');
+        const unsubscribeAttendanceDates = onSnapshot(attendanceCollectionRef, (snapshot) => {
+            const dates = snapshot.docs.map(doc => new Date(doc.id));
+            setRecordedDates(dates);
+        });
 
         return () => {
             unsubscribeTeam();
             unsubscribePlayers();
+            unsubscribeAttendanceDates();
         };
     }, [teamId]);
     
@@ -212,6 +222,8 @@ export default function TeamAttendancePage() {
                   onSelect={setDate}
                   initialFocus
                   locale={es}
+                  modifiers={{ recorded: recordedDates }}
+                  modifiersStyles={{ recorded: { backgroundColor: 'hsl(var(--primary) / 0.2)'} }}
                 />
               </PopoverContent>
             </Popover>
@@ -289,9 +301,3 @@ export default function TeamAttendancePage() {
     </div>
   );
 }
-
-    
-
-    
-
-
