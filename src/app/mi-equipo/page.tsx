@@ -34,7 +34,7 @@ const modules = [
     href: '/gestion-equipos',
   },
   {
-    title: 'Mis Sesiones Guardadas',
+    title: 'Mis Sesiones',
     description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manualmente.',
     icon: ClipboardList,
     href: '/mis-sesiones',
