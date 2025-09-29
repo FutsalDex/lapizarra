@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -134,12 +133,11 @@ export default function ExerciseDetailPage() {
 
       <Card className="overflow-hidden">
         <div className="relative h-80 w-full bg-muted">
-             <Image
+             <img
                 src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/800/600`}
                 alt={exercise.Ejercicio}
                 data-ai-hint={exercise.aiHint || 'futsal drill court'}
-                fill
-                className="object-contain"
+                className="object-contain w-full h-full"
             />
         </div>
         <CardContent className="p-6 md:p-8 space-y-8">
