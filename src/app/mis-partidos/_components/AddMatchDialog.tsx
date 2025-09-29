@@ -50,6 +50,7 @@ const matchSchema = z.object({
   localTeam: z.string().min(1, "El nombre del equipo local es requerido."),
   visitorTeam: z.string().min(1, "El nombre del equipo visitante es requerido."),
   date: z.date({ required_error: 'Debes seleccionar una fecha.' }),
+  hour: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
   matchType: z.string().min(1, "Debes seleccionar un tipo de partido."),
   competition: z.string().optional(),
   matchday: z.string().optional(),
@@ -81,6 +82,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
       localTeam: '',
       visitorTeam: '',
       date: new Date(),
+      hour: '00:00',
       matchType: '',
       competition: '',
       matchday: '',
@@ -111,15 +113,18 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
 
   useEffect(() => {
     if (matchData && open) {
+        const matchDate = new Date(matchData.date);
         form.reset({
             ...matchData,
-            date: new Date(matchData.date),
+            date: matchDate,
+            hour: format(matchDate, 'HH:mm'),
         });
     } else if (teamDataState) {
         form.reset({
             localTeam: '',
             visitorTeam: '',
             date: new Date(),
+            hour: '12:00',
             matchType: '',
             competition: teamDataState.competition || '',
             matchday: '',
@@ -135,13 +140,21 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
     }
     setLoading(true);
     
+    const [hours, minutes] = data.hour.split(':').map(Number);
+    const combinedDate = new Date(data.date);
+    combinedDate.setHours(hours, minutes);
+
     const submissionData = {
         ...data,
-        date: data.date.toISOString(),
+        date: combinedDate.toISOString(),
         teamId: teamId,
         userId: user.uid,
         competition: data.matchType === 'Liga' ? data.competition : '',
     };
+    
+    // Remove hour from submission data as it's now part of the ISO date
+    delete (submissionData as any).hour;
+
 
     try {
         if(matchData?.id) {
@@ -214,7 +227,7 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                 )}
               />
 
-            <div className="grid grid-cols-1">
+            <div className="grid grid-cols-2 gap-4">
                  <FormField
                     control={form.control}
                     name="date"
@@ -237,6 +250,19 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                             <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
                             </PopoverContent>
                         </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="hour"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                         <FormLabel>Hora</FormLabel>
+                            <FormControl>
+                               <Input type="time" {...field} />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
