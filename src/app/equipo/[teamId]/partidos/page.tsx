@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Trophy, PlusCircle, Eye, BarChartHorizontal, Trash2, ArrowLeft, Edit, ClipboardList } from 'lucide-react';
+import { Trophy, PlusCircle, Eye, Clock, Trash2, ArrowLeft, Edit, ClipboardList } from 'lucide-react';
 import AddMatchDialog from '@/app/mis-partidos/_components/AddMatchDialog';
 import { collection, onSnapshot, query, where, doc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -184,7 +184,7 @@ export default function TeamMatchesPage() {
                   </Button>
                 </ConvocatoriaDialog>
                  <Button asChild variant="ghost" size="icon">
-                  <Link href={`/marcador/${match.id}`}><BarChartHorizontal className="h-5 w-5" /></Link>
+                  <Link href={`/marcador/${match.id}`}><Clock className="h-5 w-5" /></Link>
                 </Button>
                  <Button asChild variant="ghost" size="icon">
                   <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
