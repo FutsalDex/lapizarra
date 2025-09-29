@@ -15,7 +15,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Tag, ClipboardList, BarChart2, Info, Users, Clock, Goal, Repeat, Lightbulb, Image as ImageIcon, Download } from 'lucide-react';
-import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import '../../print.css';
@@ -82,6 +81,10 @@ export default function ExerciseDetailPage() {
     }
   }, [id]);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
         <div className="container mx-auto max-w-4xl py-12 px-4 space-y-8">
@@ -114,7 +117,7 @@ export default function ExerciseDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver a la Biblioteca
         </Button>
-         <Button onClick={() => window.print()}>
+         <Button onClick={handlePrint}>
           <Download className="mr-2 h-4 w-4" />
           Descargar PDF
         </Button>
