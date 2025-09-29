@@ -133,11 +133,11 @@ export default function Header() {
               </Button>
               <Button 
                 asChild 
-                variant={pathname === '/register' ? 'secondary' : 'secondary'}
+                variant={pathname === '/register' ? 'secondary' : 'ghost'}
                 className={cn(
                     pathname === '/register'
                         ? 'bg-white text-primary hover:bg-white/90'
-                        : 'bg-white text-primary hover:bg-white/90'
+                        : 'hover:bg-white/20 hover:text-white'
                 )}
               >
                 <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
