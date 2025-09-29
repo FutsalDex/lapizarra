@@ -53,7 +53,7 @@ interface Player {
 export default function TeamAttendancePage() {
   const params = useParams();
   const teamId = params.teamId as string;
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus | undefined>>({});
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [team, setTeam] = useState<Team | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -102,30 +102,40 @@ export default function TeamAttendancePage() {
         const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
         
         // Always reset state when date changes
-        setAttendance({});
+        const newAttendance: Record<string, undefined> = {};
+        players.forEach(p => {
+            newAttendance[p.id] = undefined;
+        });
+        setAttendance(newAttendance);
         setRecordExists(false);
 
         const unsubscribe = onSnapshot(attendanceDocRef, (doc) => {
             if (doc.exists()) {
                 setAttendance(doc.data().statuses);
                 setRecordExists(true);
-            } else {
-                 setAttendance({});
             }
         });
 
         return () => unsubscribe();
-    }, [date, teamId]);
+    }, [date, teamId, players]);
 
 
   const handleAttendanceChange = (playerId: string, status: AttendanceStatus) => {
     setAttendance(prev => ({ ...prev, [playerId]: status }));
   };
+  
+  const handleClearAttendance = () => {
+    const newAttendance: Record<string, undefined> = {};
+    players.forEach(p => {
+        newAttendance[p.id] = undefined;
+    });
+    setAttendance(newAttendance);
+  }
 
   const handleSaveAttendance = async () => {
       if (!date || !teamId) return;
        // Check if all players have a status
-      if (Object.keys(attendance).length !== players.length) {
+      if (Object.values(attendance).some(status => status === undefined)) {
         toast({
             title: "Faltan datos",
             description: "Por favor, marca la asistencia para todos los jugadores.",
@@ -278,7 +288,7 @@ export default function TeamAttendancePage() {
                 </Table>
                 </div>
                 <div className="flex justify-end mt-6 gap-4">
-                    <Button size="lg" variant="outline" onClick={() => setAttendance({})} disabled={isSaving}>
+                    <Button size="lg" variant="outline" onClick={handleClearAttendance} disabled={isSaving}>
                         <Eraser className="mr-2 h-4 w-4" />
                         Limpiar Registros
                     </Button>
