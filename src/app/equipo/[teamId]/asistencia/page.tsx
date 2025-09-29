@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ClipboardCheck, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
+import { CalendarIcon, ClipboardCheck, Trash2, ArrowLeft, Loader2, Eraser } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -109,6 +109,8 @@ export default function TeamAttendancePage() {
             if (doc.exists()) {
                 setAttendance(doc.data().statuses);
                 setRecordExists(true);
+            } else {
+                 setAttendance({});
             }
         });
 
@@ -276,6 +278,10 @@ export default function TeamAttendancePage() {
                 </Table>
                 </div>
                 <div className="flex justify-end mt-6 gap-4">
+                    <Button size="lg" variant="outline" onClick={() => setAttendance({})} disabled={isSaving}>
+                        <Eraser className="mr-2 h-4 w-4" />
+                        Limpiar Registros
+                    </Button>
                     <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving || !recordExists}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                         Eliminar Registro
