@@ -89,7 +89,7 @@ export default function RegisterPage() {
           </div>
           <CardTitle className="text-2xl font-headline">Registro</CardTitle>
           <CardDescription>
-            Crea tu cuenta para empezar tu prueba gratuita de 48 horas.
+            Crea tu cuenta para acceder a todas las funcionalidades.
           </CardDescription>
         </CardHeader>
         <CardContent>

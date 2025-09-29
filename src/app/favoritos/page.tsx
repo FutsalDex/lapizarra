@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Eye, Trash2, HeartCrack } from 'lucide-react';
+import { Eye, Trash2, HeartCrack, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { collection, onSnapshot, query, where, doc, updateDoc, arrayRemove, getDocs } from 'firebase/firestore';
@@ -61,7 +61,7 @@ export default function FavoritosPage() {
         return;
     }
     if (!user) {
-      router.push('/login?redirect=/favoritos');
+      setLoading(false);
       return;
     }
 
@@ -169,9 +169,21 @@ export default function FavoritosPage() {
       </div>
       
       {!user ? (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">Debes iniciar sesión para ver tus favoritos.</p>
-        </div>
+          <Card className="flex flex-col items-center justify-center text-center py-24 px-6 bg-secondary/50 border-dashed">
+            <CardContent className="space-y-4">
+                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                <HeartCrack className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold">Inicia Sesión para Guardar Favoritos</h3>
+                <p className="text-muted-foreground">Regístrate o inicia sesión para guardar y organizar tus ejercicios preferidos.</p>
+                <Button asChild>
+                    <Link href="/login?redirect=/favoritos">
+                      <LogIn className="mr-2 h-4 w-4"/>
+                      Iniciar Sesión
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
       ) : favoriteExercises.length === 0 ? (
         <Card className="flex flex-col items-center justify-center text-center py-24 px-6 bg-secondary/50 border-dashed">
             <CardContent className="space-y-4">

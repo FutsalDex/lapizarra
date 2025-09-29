@@ -59,7 +59,7 @@ export default function MiEquipoPage() {
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push('/login?redirect=/mi-equipo');
+            router.push('/gestion-equipos');
         }
     }, [user, loading, router]);
 

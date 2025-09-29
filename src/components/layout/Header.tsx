@@ -26,16 +26,13 @@ import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 
 
-const baseNav = [
-  { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen, public: true },
-];
-
-const userNav = [
+const mainNav = [
+  { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
   { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
   { title: "Favoritos", href: "/favoritos", icon: Heart },
   { title: "Suscripción", href: "/suscripcion", icon: Star },
-]
+];
 
 const adminNav = [
     { title: "Panel Admin", href: "/admin", icon: Shield },
@@ -46,10 +43,10 @@ export default function Header() {
   const router = useRouter();
 
   const isAdmin = user?.email === "futsaldex@gmail.com";
-  let mainNav = user ? [...baseNav, ...userNav] : [...baseNav];
+  let finalNav = [...mainNav];
   
   if (user && isAdmin) {
-    mainNav = [...mainNav, ...adminNav];
+    finalNav = [...finalNav, ...adminNav];
   }
 
 
@@ -68,7 +65,7 @@ export default function Header() {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            {mainNav.map((item) => (
+            {finalNav.map((item) => (
               <Link
                 key={item.title}
                 href={item.href}
@@ -152,7 +149,7 @@ export default function Header() {
                 </Link>
               </SheetClose>
               <div className="flex flex-col space-y-3">
-                {mainNav.map((item) => (
+                {finalNav.map((item) => (
                   <SheetClose asChild key={item.title}>
                     <Link
                       href={item.href}
