@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ShieldPlus, Users, Edit, Trash2, Settings, UserCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -39,11 +39,17 @@ interface Team {
     ownerId: string;
 }
 
+interface UserProfile {
+    role: 'Registered' | 'Subscribed' | 'Admin';
+    subscription: string;
+}
+
 export default function GestionEquiposPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [myTeams, setMyTeams] = useState<Team[]>([]);
     const [sharedTeams, setSharedTeams] = useState<Team[]>([]);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,6 +57,14 @@ export default function GestionEquiposPage() {
             setLoading(false);
             return;
         }
+
+        // Fetch user profile to get role
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribeUserProfile = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setUserProfile(doc.data() as UserProfile);
+            }
+        });
 
         // Fetch user's own teams
         const myTeamsQuery = query(collection(db, "teams"), where("ownerId", "==", user.uid));
@@ -106,6 +120,7 @@ export default function GestionEquiposPage() {
         return () => {
             unsubscribeMyTeams();
             unsubscribeSharedTeams();
+            unsubscribeUserProfile();
         };
     }, [user]);
 
@@ -124,6 +139,25 @@ export default function GestionEquiposPage() {
                 variant: "destructive"
             });
         }
+    }
+
+    const canCreateTeam = () => {
+        if (!userProfile) return false;
+        if (userProfile.role === 'Admin') return true;
+        if (userProfile.role === 'Subscribed' && myTeams.length < 5) return true;
+        if (userProfile.role === 'Registered' && myTeams.length < 2) return true;
+        return false;
+    }
+    
+    const getLimitMessage = () => {
+        if (!userProfile) return '';
+        if (userProfile.role === 'Registered') {
+            return 'Has alcanzado el límite de 2 equipos para usuarios registrados. Considera suscribirte para crear más.';
+        }
+        if (userProfile.role === 'Subscribed') {
+            return 'Has alcanzado el límite de 5 equipos para tu plan de suscripción.';
+        }
+        return '';
     }
 
   return (
@@ -147,15 +181,34 @@ export default function GestionEquiposPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Crear Nuevo Equipo</CardTitle>
-                    <CardDescription>Añade un nuevo equipo para empezar a gestionarlo.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <TeamForm />
-                </CardContent>
-            </Card>
+            {canCreateTeam() ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Crear Nuevo Equipo</CardTitle>
+                        <CardDescription>Añade un nuevo equipo para empezar a gestionarlo.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <TeamForm />
+                    </CardContent>
+                </Card>
+            ) : !loading && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Límite de Equipos Alcanzado</CardTitle>
+                        <CardDescription>{getLimitMessage()}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                            Puedes gestionar tus equipos existentes o eliminar alguno para crear uno nuevo.
+                        </p>
+                    </CardContent>
+                     {userProfile?.role === 'Registered' && (
+                        <CardFooter>
+                            <Button className="w-full">Ver Planes de Suscripción</Button>
+                        </CardFooter>
+                    )}
+                </Card>
+            )}
         </div>
         <div className="lg:col-span-2 space-y-8">
              <Card>
