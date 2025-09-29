@@ -20,7 +20,7 @@ import {
 import { Heart, Search, Eye, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { collection, onSnapshot, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, arrayUnion, arrayRemove, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -57,7 +57,7 @@ const ageCategoryLabels: { [key: string]: string } = {
 };
 
 export default function EjerciciosPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -68,7 +68,15 @@ export default function EjerciciosPage() {
   const [selectedAge, setSelectedAge] = useState('Todas');
 
   useEffect(() => {
-    const q = query(collection(db, "exercises"), where("Visible", "==", true));
+    if (authLoading) return;
+    
+    let q;
+    if (user) {
+        q = query(collection(db, "exercises"), where("Visible", "==", true));
+    } else {
+        q = query(collection(db, "exercises"), where("Visible", "==", true), limit(15));
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const exercisesData = snapshot.docs.map(doc => ({ 
           id: doc.id, 
@@ -82,7 +90,7 @@ export default function EjerciciosPage() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (!user) return;
@@ -207,7 +215,7 @@ export default function EjerciciosPage() {
               </SelectContent>
             </Select>
         </div>
-        <p className="text-sm text-muted-foreground">Mostrando {filteredExercises.length} de {exercises.length} ejercicios.</p>
+        <p className="text-sm text-muted-foreground">Mostrando {filteredExercises.length} de {user ? exercises.length : '15'} ejercicios.</p>
       </div>
 
       {loading ? (
@@ -286,5 +294,3 @@ export default function EjerciciosPage() {
     </div>
   );
 }
-
-    

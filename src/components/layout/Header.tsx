@@ -27,13 +27,13 @@ import { auth } from "@/lib/firebase";
 
 
 const baseNav = [
-  { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen },
-  { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
-  { title: "Favoritos", href: "/favoritos", icon: Heart },
-  { title: "Suscripción", href: "/suscripcion", icon: Star },
+  { title: "Ver ejercicios", href: "/ejercicios", icon: BookOpen, public: true },
 ];
 
 const userNav = [
+  { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
+  { title: "Favoritos", href: "/favoritos", icon: Heart },
+  { title: "Suscripción", href: "/suscripcion", icon: Star },
 ]
 
 const adminNav = [
@@ -45,8 +45,9 @@ export default function Header() {
   const router = useRouter();
 
   const isAdmin = user?.email === "futsaldex@gmail.com";
-  let mainNav = [...baseNav, ...userNav];
-  if (isAdmin) {
+  let mainNav = user ? [...baseNav, ...userNav] : [...baseNav];
+  
+  if (user && isAdmin) {
     mainNav = [...mainNav, ...adminNav];
   }
 

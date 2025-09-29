@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 
 interface Exercise {
@@ -49,14 +50,18 @@ const ageCategoryLabels: { [key: string]: string } = {
 };
 
 export default function FavoritosPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [favoriteExercises, setFavoriteExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+        return;
+    }
     if (!user) {
-      setLoading(false);
+      router.push('/login?redirect=/favoritos');
       return;
     }
 
@@ -99,7 +104,7 @@ export default function FavoritosPage() {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, authLoading, router]);
 
   const removeFromFavorites = async (exerciseId: string) => {
     if (!user) return;
@@ -118,7 +123,7 @@ export default function FavoritosPage() {
     }
   };
   
-  if (loading) {
+  if (loading || authLoading) {
     return (
         <div className="container mx-auto py-12 px-4">
              <div className="text-left mb-8">
@@ -231,5 +236,3 @@ export default function FavoritosPage() {
     </div>
   );
 }
-
-    

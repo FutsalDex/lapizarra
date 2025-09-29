@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const modules = [
    {
@@ -52,7 +54,19 @@ const modules = [
 ];
 
 export default function MiEquipoPage() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login?redirect=/mi-equipo');
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user) {
+        return null;
+    }
+
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4">
       <div className="text-center mb-12">
