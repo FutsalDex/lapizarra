@@ -186,8 +186,8 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
           </Table>
         </ScrollArea>
         )}
-        <DialogFooter className="justify-between">
-          <Button variant="link" onClick={handleSelectAll} className="p-0 h-auto">
+        <DialogFooter className="sm:justify-between">
+          <Button variant="outline" onClick={handleSelectAll}>
             {selectedPlayers.size === teamPlayers.length ? 'Desmarcar Todos' : 'Marcar Todos'}
           </Button>
           <div className="flex gap-2">
