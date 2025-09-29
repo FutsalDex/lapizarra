@@ -83,10 +83,6 @@ export default function ExerciseDetailPage() {
     }
   }, [id]);
 
-  const handlePrint = () => {
-    window.print();
-  }
-
   if (loading) {
     return (
         <div className="container mx-auto max-w-4xl py-12 px-4 space-y-8">
@@ -119,7 +115,7 @@ export default function ExerciseDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver a la Biblioteca
         </Button>
-         <Button onClick={handlePrint}>
+         <Button onClick={() => window.print()}>
           <Download className="mr-2 h-4 w-4" />
           Descargar PDF
         </Button>
@@ -203,5 +199,3 @@ export default function ExerciseDetailPage() {
     </div>
   );
 }
-
-    
