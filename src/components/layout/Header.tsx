@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 
 const mainNav = [
@@ -43,6 +44,7 @@ export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const isAdmin = user?.email === "futsaldex@gmail.com";
   let finalNav = [...mainNav];
@@ -58,7 +60,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-primary text-primary-foreground">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-primary text-primary-foreground print-hidden">
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
@@ -144,7 +146,7 @@ export default function Header() {
               </Button>
             </div>
           )}
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
