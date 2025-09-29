@@ -95,6 +95,17 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
         return newSet;
     });
   }
+
+  const handleSelectAll = () => {
+    if (selectedPlayers.size === teamPlayers.length) {
+      // All are selected, so deselect all
+      setSelectedPlayers(new Set());
+    } else {
+      // Not all are selected, so select all
+      const allPlayerIds = new Set(teamPlayers.map(p => p.id));
+      setSelectedPlayers(allPlayerIds);
+    }
+  };
   
   const handleSaveConvocatoria = async () => {
     setSaving(true);
@@ -139,9 +150,14 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Convocar Jugadores</DialogTitle>
-          <DialogDescription>
-            Selecciona los jugadores que participarán en el partido.
-          </DialogDescription>
+          <div className="flex justify-between items-center pt-2">
+            <DialogDescription>
+              Selecciona los jugadores que participarán en el partido.
+            </DialogDescription>
+             <Button variant="link" onClick={handleSelectAll} className="p-0 h-auto">
+              {selectedPlayers.size === teamPlayers.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+            </Button>
+          </div>
         </DialogHeader>
         {loading ? (
             <div className="flex justify-center items-center h-64">
