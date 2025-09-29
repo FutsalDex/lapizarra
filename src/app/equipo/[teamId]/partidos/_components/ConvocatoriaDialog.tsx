@@ -150,14 +150,9 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Convocar Jugadores</DialogTitle>
-          <div className="flex justify-between items-center pt-2">
-            <DialogDescription>
-              Selecciona los jugadores que participarán en el partido.
-            </DialogDescription>
-             <Button variant="link" onClick={handleSelectAll} className="p-0 h-auto">
-              {selectedPlayers.size === teamPlayers.length ? 'Desmarcar Todos' : 'Marcar Todos'}
-            </Button>
-          </div>
+          <DialogDescription>
+            Selecciona los jugadores que participarán en el partido.
+          </DialogDescription>
         </DialogHeader>
         {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -191,16 +186,21 @@ export default function ConvocatoriaDialog({ children, teamId, match }: Convocat
           </Table>
         </ScrollArea>
         )}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              Cancelar
-            </Button>
-          </DialogClose>
-          <Button onClick={handleSaveConvocatoria} disabled={loading || saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-            Guardar
+        <DialogFooter className="justify-between">
+          <Button variant="link" onClick={handleSelectAll} className="p-0 h-auto">
+            {selectedPlayers.size === teamPlayers.length ? 'Desmarcar Todos' : 'Marcar Todos'}
           </Button>
+          <div className="flex gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button onClick={handleSaveConvocatoria} disabled={loading || saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+              Guardar
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
