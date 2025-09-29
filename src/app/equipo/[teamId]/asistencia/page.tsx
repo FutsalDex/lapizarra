@@ -100,16 +100,15 @@ export default function TeamAttendancePage() {
 
         const dateString = format(date, 'yyyy-MM-dd');
         const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
-        setAttendance({});
         
+        // Always reset state when date changes
+        setAttendance({});
+        setRecordExists(false);
+
         const unsubscribe = onSnapshot(attendanceDocRef, (doc) => {
             if (doc.exists()) {
                 setAttendance(doc.data().statuses);
                 setRecordExists(true);
-            } else {
-                // If no record exists, reset to empty state
-                setAttendance({});
-                setRecordExists(false);
             }
         });
 
@@ -251,6 +250,7 @@ export default function TeamAttendancePage() {
                                 className="flex justify-end gap-4"
                                 value={attendance[player.id]}
                                 onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
+                                disabled={isSaving}
                                 >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="presente" id={`presente-${player.id}`} />
