@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -91,7 +90,8 @@ export default function TeamAttendancePage() {
 
         const dateString = format(date, 'yyyy-MM-dd');
         const attendanceDocRef = doc(db, 'teams', teamId, 'attendance', dateString);
-
+        setAttendance({});
+        
         const unsubscribe = onSnapshot(attendanceDocRef, (doc) => {
             if (doc.exists()) {
                 setAttendance(doc.data().statuses);
@@ -293,4 +293,5 @@ export default function TeamAttendancePage() {
     
 
     
+
 
