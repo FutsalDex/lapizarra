@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
 
 
 const mainNav = [
@@ -41,6 +42,7 @@ const adminNav = [
 export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const isAdmin = user?.email === "futsaldex@gmail.com";
   let finalNav = [...mainNav];
@@ -118,10 +120,26 @@ export default function Header() {
             </DropdownMenu>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
-              <Button variant="ghost" asChild className="hover:bg-white/20 hover:text-white">
+              <Button 
+                variant={pathname === '/login' ? 'secondary' : 'ghost'} 
+                asChild 
+                className={cn(
+                    pathname === '/login' 
+                        ? 'bg-white text-primary hover:bg-white/90' 
+                        : 'hover:bg-white/20 hover:text-white'
+                )}
+              >
                 <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</Link>
               </Button>
-              <Button asChild variant="secondary" className="bg-white text-primary hover:bg-white/90">
+              <Button 
+                asChild 
+                variant={pathname === '/register' ? 'secondary' : 'secondary'}
+                className={cn(
+                    pathname === '/register'
+                        ? 'bg-white text-primary hover:bg-white/90'
+                        : 'bg-white text-primary hover:bg-white/90'
+                )}
+              >
                 <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
               </Button>
             </div>
