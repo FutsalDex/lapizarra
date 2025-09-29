@@ -461,14 +461,31 @@ const reopenMatch = async () => {
         const currentStatValue = prev[period][stat];
         let newValue = currentStatValue + delta;
 
+        let newTimeLeft = prev.timeLeft;
+        let newEndTime = prev.endTime;
+
         if (stat === 'timeouts') {
             if (newValue > 1) newValue = 1;
             if (newValue < 0) newValue = 0;
+            
+            const actualDelta = newValue - currentStatValue;
+            if (actualDelta !== 0) {
+              newTimeLeft += actualDelta * 60;
+              if (prev.isActive && newEndTime) {
+                newEndTime += actualDelta * 60 * 1000;
+              }
+            }
+
         } else {
             if (newValue < 0) return prev;
         }
 
-        return { ...prev, [period]: { ...prev[period], [stat]: newValue } };
+        return { 
+          ...prev, 
+          timeLeft: newTimeLeft,
+          endTime: newEndTime,
+          [period]: { ...prev[period], [stat]: newValue } 
+        };
     });
   };
 
@@ -479,10 +496,20 @@ const reopenMatch = async () => {
 
         const currentStatValue = prev[period][stat] || 0;
         let newValue = currentStatValue + delta;
+        let newTimeLeft = prev.timeLeft;
+        let newEndTime = prev.endTime;
         
         if (stat === 'timeouts') {
             if (newValue > 1) newValue = 1;
             if (newValue < 0) newValue = 0;
+
+            const actualDelta = newValue - currentStatValue;
+            if (actualDelta !== 0) {
+              newTimeLeft += actualDelta * 60;
+              if (prev.isActive && newEndTime) {
+                newEndTime += actualDelta * 60 * 1000;
+              }
+            }
         } else {
             if (newValue < 0) return prev;
         }
@@ -529,6 +556,8 @@ const reopenMatch = async () => {
 
         return {
             ...prev,
+            timeLeft: newTimeLeft,
+            endTime: newEndTime,
             [period]: { ...prev[period], [stat]: newValue },
             [foulsKey]: newFoulsCount,
             [scoreKey]: newScore,
@@ -1067,3 +1096,4 @@ const renderTeamStats = () => {
     </div>
   );
 }
+
