@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Heart, Search, Eye, Filter } from 'lucide-react';
+import { Heart, Search, Eye, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { collection, onSnapshot, query, where, doc, updateDoc, arrayUnion, arrayRemove, limit } from 'firebase/firestore';
@@ -56,6 +56,8 @@ const ageCategoryLabels: { [key: string]: string } = {
     'senior': 'Senior (+18 años)',
 };
 
+const EXERCISES_PER_PAGE = 12;
+
 export default function EjerciciosPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -66,11 +68,14 @@ export default function EjerciciosPage() {
   const [selectedPhase, setSelectedPhase] = useState('Todas');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [selectedAge, setSelectedAge] = useState('Todas');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (authLoading) return;
     
     let q;
+    // For non-registered users, we still fetch a limited number, but we will paginate on the client side.
+    // We could implement server-side pagination with query cursors if the dataset grows very large.
     if (user) {
         q = query(collection(db, "exercises"), where("Visible", "==", true));
     } else {
@@ -131,6 +136,7 @@ export default function EjerciciosPage() {
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 
   const filteredExercises = useMemo(() => {
+      setCurrentPage(1); // Reset to first page on filter change
       return exercises.filter((exercise) => {
         const termMatch = (exercise.Ejercicio || '')
           .toLowerCase()
@@ -145,6 +151,20 @@ export default function EjerciciosPage() {
         return termMatch && phaseMatch && categoryMatch && ageMatch;
       });
   }, [exercises, searchTerm, selectedPhase, selectedCategory, selectedAge]);
+
+  const paginatedExercises = useMemo(() => {
+      const startIndex = (currentPage - 1) * EXERCISES_PER_PAGE;
+      const endIndex = startIndex + EXERCISES_PER_PAGE;
+      return filteredExercises.slice(startIndex, endIndex);
+  }, [filteredExercises, currentPage]);
+
+  const totalPages = Math.ceil(filteredExercises.length / EXERCISES_PER_PAGE);
+
+  const handlePageChange = (newPage: number) => {
+      if (newPage >= 1 && newPage <= totalPages) {
+          setCurrentPage(newPage);
+      }
+  }
 
 
   return (
@@ -238,58 +258,77 @@ export default function EjerciciosPage() {
             ))}
         </div>
       ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredExercises.map((exercise) => (
-          <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
-             <div className="relative h-60 bg-muted">
-                <Image
-                    src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/400/300`}
-                    alt={exercise.Ejercicio || 'Imagen del ejercicio'}
-                    data-ai-hint={exercise.aiHint || 'futsal drill court'}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-             </div>
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {paginatedExercises.map((exercise) => (
+            <Card key={exercise.id} className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="relative h-60 bg-muted">
+                    <Image
+                        src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/400/300`}
+                        alt={exercise.Ejercicio || 'Imagen del ejercicio'}
+                        data-ai-hint={exercise.aiHint || 'futsal drill court'}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                </div>
 
-            <CardHeader className="pb-3">
-              <CardTitle className="font-bold text-xl">
-                 {exercise.Número ? `${exercise.Número} - ` : ''}{exercise.Ejercicio}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-3 text-sm">
-                <div className="text-muted-foreground space-y-1">
-                    <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase}</p>
-                    <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
-                    <p><span className="font-semibold text-foreground">Duración:</span> {exercise['Duración (min)']} min</p>
-                </div>
-                {exercise['Descripción de la tarea'] && (
-                    <p className="text-muted-foreground pt-2">
-                        {`${exercise['Descripción de la tarea'].substring(0, 100)}${exercise['Descripción de la tarea'].length > 100 ? '...' : ''}`}
-                    </p>
-                )}
-            </CardContent>
-            <CardFooter className="bg-card border-t p-3">
-                <div className="w-full flex justify-between items-center">
-                    <Button asChild variant="outline">
-                        <Link href={`/ejercicios/${exercise.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Ficha
-                        </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)} disabled={!user}>
-                        <Heart className={`h-5 w-5 ${favorites.includes(exercise.id) ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
-                    </Button>
-                </div>
-            </CardFooter>
-          </Card>
-        ))}
-         {filteredExercises.length === 0 && (
-          <div className="col-span-full text-center py-16">
-            <p className="text-muted-foreground">No se encontraron ejercicios con los filtros actuales.</p>
-          </div>
+                <CardHeader className="pb-3">
+                <CardTitle className="font-bold text-xl">
+                    {exercise.Número ? `${exercise.Número} - ` : ''}{exercise.Ejercicio}
+                </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-3 text-sm">
+                    <div className="text-muted-foreground space-y-1">
+                        <p><span className="font-semibold text-foreground">Fase:</span> {exercise.Fase}</p>
+                        <p><span className="font-semibold text-foreground">Edad:</span> {exercise.Edad?.map(age => ageCategoryLabels[age] || age).join(', ')}</p>
+                        <p><span className="font-semibold text-foreground">Duración:</span> {exercise['Duración (min)']} min</p>
+                    </div>
+                    {exercise['Descripción de la tarea'] && (
+                        <p className="text-muted-foreground pt-2">
+                            {`${exercise['Descripción de la tarea'].substring(0, 100)}${exercise['Descripción de la tarea'].length > 100 ? '...' : ''}`}
+                        </p>
+                    )}
+                </CardContent>
+                <CardFooter className="bg-card border-t p-3">
+                    <div className="w-full flex justify-between items-center">
+                        <Button asChild variant="outline">
+                            <Link href={`/ejercicios/${exercise.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Ficha
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => toggleFavorite(exercise.id)} disabled={!user}>
+                            <Heart className={`h-5 w-5 ${favorites.includes(exercise.id) ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
+                        </Button>
+                    </div>
+                </CardFooter>
+            </Card>
+            ))}
+        </div>
+
+        {filteredExercises.length === 0 && (
+            <div className="col-span-full text-center py-16">
+                <p className="text-muted-foreground">No se encontraron ejercicios con los filtros actuales.</p>
+            </div>
         )}
-      </div>
+
+        {totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-4 mt-12">
+                <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Anterior
+                </Button>
+                <span className="text-sm font-medium">
+                    Página {currentPage} de {totalPages}
+                </span>
+                <Button variant="outline" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+            </div>
+        )}
+      </>
       )}
     </div>
   );
