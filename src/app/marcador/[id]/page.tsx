@@ -66,13 +66,6 @@ interface OpponentTeamStats {
 }
 
 
-interface GeneralTeamStats {
-    goals: number;
-    fouls: number;
-    yellowCards: number;
-    redCards: number;
-}
-
 interface MatchDetails {
     id: string;
     teamId: string;
@@ -92,8 +85,6 @@ interface MatchDetails {
     teamStats2: TeamMatchStats; // 2nd half for user's team
     opponentStats1: OpponentTeamStats; // 1st half for opponent
     opponentStats2: OpponentTeamStats; // 2nd half for opponent
-    localGeneralStats?: GeneralTeamStats;
-    visitorGeneralStats?: GeneralTeamStats;
     localFouls: number;
     visitorFouls: number;
     endTime?: number | null; // Timestamp for when the timer should end
@@ -102,7 +93,6 @@ interface MatchDetails {
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
 type TeamStatKeys = keyof TeamMatchStats;
 type OpponentStatKeys = keyof OpponentTeamStats;
-type GeneralStatKeys = keyof GeneralTeamStats;
 
 
 export default function MarcadorEnVivoPage() {
@@ -135,10 +125,6 @@ export default function MarcadorEnVivoPage() {
     const defaultOpponentStats: OpponentTeamStats = {
       goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0,
     };
-    const defaultGeneralStats: GeneralTeamStats = {
-      goals: 0, fouls: 0, yellowCards: 0, redCards: 0,
-    };
-
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -195,8 +181,6 @@ export default function MarcadorEnVivoPage() {
                 teamStats2: { ...defaultTeamStats, ...data.teamStats2 },
                 opponentStats1: { ...defaultOpponentStats, ...data.opponentStats1 },
                 opponentStats2: { ...defaultOpponentStats, ...data.opponentStats2 },
-                localGeneralStats: { ...defaultGeneralStats, ...data.localGeneralStats },
-                visitorGeneralStats: { ...defaultGeneralStats, ...data.visitorGeneralStats },
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
@@ -638,38 +622,6 @@ const reopenMatch = async () => {
         });
     };
 
-    const handleGeneralStatChange = (team: 'local' | 'visitor', stat: GeneralStatKeys, delta: 1 | -1) => {
-        if (match?.isFinished && !isAdmin) return;
-        setMatch(prev => {
-            if (!prev) return null;
-            const statsKey = team === 'local' ? 'localGeneralStats' : 'visitorGeneralStats';
-            const currentStats = prev[statsKey];
-            if (!currentStats) return prev;
-            
-            const newValue = (currentStats[stat] || 0) + delta;
-            if (newValue < 0) return prev;
-
-            const newStats = { ...currentStats, [stat]: newValue };
-            return { ...prev, [statsKey]: newStats };
-        });
-    };
-
-    const resetGeneralStats = () => {
-        if (match?.isFinished && !isAdmin) return;
-        setMatch(prev => {
-            if (!prev) return null;
-            const defaultGeneralStats: GeneralTeamStats = {
-                goals: 0, fouls: 0, yellowCards: 0, redCards: 0,
-            };
-            return {
-                ...prev,
-                localGeneralStats: { ...defaultGeneralStats },
-                visitorGeneralStats: { ...defaultGeneralStats },
-            }
-        });
-        toast({ title: "Estadísticas generales reiniciadas" });
-    }
-
   const StatButtonCell = ({ playerIndex, stat }: { playerIndex: number, stat: PlayerStatKeys }) => {
     const players = match?.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
     const player = players?.[playerIndex];
@@ -1002,13 +954,6 @@ const renderTeamStats = () => {
   const visitorTimeoutUsed = (match.userTeam === 'visitor' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'local' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
 
 
-  const YellowCardIcon = () => (
-    <div className="w-3 h-4 bg-yellow-400 border border-yellow-600 rounded-sm" />
-  );
-  const RedCardIcon = () => (
-    <div className="w-3 h-4 bg-red-600 border border-red-800 rounded-sm" />
-  );
-
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -1109,106 +1054,24 @@ const renderTeamStats = () => {
         </Card>
 
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between p-3 bg-muted">
-                <CardTitle>Estadísticas Generales</CardTitle>
-                <Button variant="destructive" size="sm" onClick={resetGeneralStats} disabled={match?.isFinished && !isAdmin}>
-                    <RefreshCw className="mr-2 h-4 w-4"/>
-                    Reiniciar Todo
-                </Button>
-            </CardHeader>
-            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                {/* Local Team General Stats */}
-                <div className="space-y-2">
-                    <h3 className="font-semibold text-center">{match.localTeam}</h3>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><GoalIcon className="h-4 w-4 text-muted-foreground"/>Goles</span>
-                        <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'goals', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.localGeneralStats?.goals ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'goals', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><ShieldIcon className="h-4 w-4 text-muted-foreground"/>Faltas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'fouls', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.localGeneralStats?.fouls ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'fouls', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><YellowCardIcon />T. Amarillas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'yellowCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.localGeneralStats?.yellowCards ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'yellowCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                         <span className="flex items-center gap-2"><RedCardIcon />T. Rojas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'redCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.localGeneralStats?.redCards ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'redCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                </div>
-                 {/* Visitor Team General Stats */}
-                <div className="space-y-2">
-                    <h3 className="font-semibold text-center">{match.visitorTeam}</h3>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><GoalIcon className="h-4 w-4 text-muted-foreground"/>Goles</span>
-                        <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'goals', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.visitorGeneralStats?.goals ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'goals', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><ShieldIcon className="h-4 w-4 text-muted-foreground"/>Faltas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'fouls', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.visitorGeneralStats?.fouls ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'fouls', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <span className="flex items-center gap-2"><YellowCardIcon />T. Amarillas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'yellowCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.visitorGeneralStats?.yellowCards ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'yellowCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                         <span className="flex items-center gap-2"><RedCardIcon />T. Rojas</span>
-                         <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'redCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                            <span className="w-4 text-center">{match.visitorGeneralStats?.redCards ?? 0}</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'redCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                </div>
+            <CardContent className="p-0">
+               <Tabs defaultValue={match.userTeam}>
+                <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none">
+                    <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
+                    <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="local" className="m-0 p-4">
+                    {renderTeamTable(match.userTeam === 'local')}
+                </TabsContent>
+                <TabsContent value="visitor" className="p-4 m-0">
+                    {renderTeamTable(match.userTeam === 'visitor')}
+                </TabsContent>
+               </Tabs>
             </CardContent>
         </Card>
-
-      <Card>
-        <CardContent className="p-0">
-           <Tabs defaultValue={match.userTeam}>
-            <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none">
-                <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
-                <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="local" className="m-0 p-4">
-                {renderTeamTable(match.userTeam === 'local')}
-            </TabsContent>
-            <TabsContent value="visitor" className="p-4 m-0">
-                {renderTeamTable(match.userTeam === 'visitor')}
-            </TabsContent>
-           </Tabs>
-        </CardContent>
-      </Card>
       
     </div>
   );
 }
+
+    
