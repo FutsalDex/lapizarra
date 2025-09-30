@@ -17,9 +17,11 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 
 interface Event {
+    id: string;
     type: 'training' | 'match';
     title: string;
     date: Date;
@@ -59,6 +61,7 @@ export default function MisEventosPage() {
                 const data = doc.data();
                 const date = (data.date as Timestamp).toDate();
                 allEvents.push({
+                    id: doc.id,
                     type: 'training',
                     title: `Sesión #${data.sessionNumber || doc.id.substring(0,4)}`,
                     date: date
@@ -72,6 +75,7 @@ export default function MisEventosPage() {
                  matchesSnapshot.forEach(doc => {
                      const data = doc.data();
                      allEvents.push({
+                         id: doc.id,
                          type: 'match',
                          title: `${data.localTeam} vs ${data.visitorTeam}`,
                          date: new Date(data.date)
@@ -158,11 +162,16 @@ export default function MisEventosPage() {
                                     {format(day, 'd')}
                                 </time>
                                 <div className="mt-1 space-y-1 overflow-y-auto">
-                                    {dayEvents.map((event, i) => (
-                                        <Badge key={i} variant={event.type === 'match' ? 'default' : 'secondary'} className="w-full block truncate text-xs">
-                                            {event.title}
-                                        </Badge>
-                                    ))}
+                                    {dayEvents.map((event, i) => {
+                                        const href = event.type === 'match' ? `/partido/${event.id}` : `/crear-sesion?sessionId=${event.id}`;
+                                        return (
+                                            <Link href={href} key={i} className="block cursor-pointer">
+                                                <Badge variant={event.type === 'match' ? 'default' : 'secondary'} className="w-full block truncate text-xs">
+                                                    {event.title}
+                                                </Badge>
+                                            </Link>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )
