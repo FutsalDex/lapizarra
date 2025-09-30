@@ -27,8 +27,6 @@ interface GeneralStats {
 export default function MarcadorPage() {
   const [localTeam, setLocalTeam] = useState('Local');
   const [visitorTeam, setVisitorTeam] = useState('Visitante');
-  const [localScore, setLocalScore] = useState(0);
-  const [visitorScore, setVisitorScore] = useState(0);
   const [initialTime, setInitialTime] = useState(25);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [isActive, setIsActive] = useState(false);
@@ -149,20 +147,9 @@ export default function MarcadorPage() {
                 <div className="flex justify-between items-center w-full max-w-2xl mb-6">
                     <h2 className="text-2xl font-bold text-center w-1/3 truncate">{localTeam}</h2>
                     <div className="text-5xl font-bold text-primary tabular-nums">
-                        {localScore} - {visitorScore}
+                        {localGeneralStats.goals} - {visitorGeneralStats.goals}
                     </div>
                     <h2 className="text-2xl font-bold text-center w-1/3 truncate">{visitorTeam}</h2>
-                </div>
-
-                <div className="flex justify-between items-center w-full max-w-xs mb-6">
-                    <Button onClick={() => setLocalScore(s => Math.max(0, s-1))}>-</Button>
-                    <span className="text-lg font-semibold">Goles Local</span>
-                    <Button onClick={() => setLocalScore(s => s+1)}>+</Button>
-                </div>
-                 <div className="flex justify-between items-center w-full max-w-xs mb-8">
-                    <Button onClick={() => setVisitorScore(s => Math.max(0, s-1))}>-</Button>
-                     <span className="text-lg font-semibold">Goles Visitante</span>
-                    <Button onClick={() => setVisitorScore(s => s+1)}>+</Button>
                 </div>
 
                 <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-4 px-6 rounded-lg">
