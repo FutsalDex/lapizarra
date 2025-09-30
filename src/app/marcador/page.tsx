@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, RefreshCw, Settings, PenSquare, Minus, Plus, Goal, Shield, Clock } from 'lucide-react';
+import { Play, Pause, RefreshCw, Settings, PenSquare, Minus, Plus, Goal, Shield, Clock, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface GeneralStats {
     goals: number;
@@ -57,20 +58,23 @@ export default function MarcadorPage() {
   useEffect(() => {
     setTimeLeft(initialTime * 60);
   }, [initialTime]);
-  
+
   useEffect(() => {
     if (localGeneralStats.timeouts > 0) {
-        setTimeLeft(time => time + 60);
-        if (isActive) setIsActive(false);
+      setTimeLeft(time => time + 60);
+      if (isActive) setIsActive(false);
+      setLocalGeneralStats(prev => ({...prev, timeouts: 0}));
     }
-  }, [localGeneralStats.timeouts]);
+  }, [localGeneralStats.timeouts, isActive]);
   
   useEffect(() => {
     if (visitorGeneralStats.timeouts > 0) {
-        setTimeLeft(time => time + 60);
-        if (isActive) setIsActive(false);
+      setTimeLeft(time => time + 60);
+      if (isActive) setIsActive(false);
+      setVisitorGeneralStats(prev => ({...prev, timeouts: 0}));
     }
-  }, [visitorGeneralStats.timeouts]);
+  }, [visitorGeneralStats.timeouts, isActive]);
+
 
   const handleGeneralStatChange = (
     team: 'local' | 'visitor',
@@ -78,19 +82,18 @@ export default function MarcadorPage() {
     delta: 1 | -1
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-
+    
     setter(prev => {
-        let newValue = (prev[stat] || 0) + delta;
+      let newValue = (prev[stat] || 0) + delta;
+      
+      if (stat === 'timeouts') {
+        if (newValue > 1) newValue = 1;
+        if (newValue < 0) newValue = 0;
+      } else {
+        if (newValue < 0) newValue = 0;
+      }
 
-        if (stat === 'timeouts') {
-            if (newValue > 1) newValue = 1;
-            if (newValue < 0) newValue = 0;
-            // The logic to add time is now in a useEffect to prevent race conditions.
-        } else {
-            if (newValue < 0) newValue = 0;
-        }
-
-        return { ...prev, [stat]: newValue };
+      return { ...prev, [stat]: newValue };
     });
 };
 
@@ -125,11 +128,11 @@ export default function MarcadorPage() {
 
 
   useEffect(() => {
-    setLocalGeneralStats(prev => ({...prev, goals: localGeneralStats.goals}));
+    // This effect is to correctly sync the state for the main score display
   }, [localGeneralStats.goals]);
   
   useEffect(() => {
-    setVisitorGeneralStats(prev => ({...prev, goals: visitorGeneralStats.goals}));
+     // This effect is to correctly sync the state for the main score display
   }, [visitorGeneralStats.goals]);
 
 
@@ -148,13 +151,14 @@ export default function MarcadorPage() {
 
   const renderStatRow = (team: 'local' | 'visitor', stat: keyof GeneralStats, label: string, icon: React.ReactNode) => {
     const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
+    const isTimeoutAndUsed = stat === 'timeouts' && stats[stat] > 0;
     return (
       <div className="flex items-center justify-between p-2 border-b">
         <span className="flex items-center gap-2">{icon}{label}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)}><Minus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeoutAndUsed}><Minus className="h-4 w-4"/></Button>
           <span className="w-4 text-center">{stats[stat]}</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)}><Plus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutAndUsed}><Plus className="h-4 w-4"/></Button>
         </div>
       </div>
     );
@@ -174,18 +178,36 @@ export default function MarcadorPage() {
     </div>
   );
 
-  const TimeoutIndicator = ({ used }: { used: boolean }) => (
-      <div className={cn(
+  const TimeoutIndicator = ({ used }: { used: boolean }) => {
+    const team = used ? (localGeneralStats.timeouts > 0 ? 'local' : 'visitor') : null;
+    const handleClick = () => {
+      if(team) {
+         handleGeneralStatChange(team, 'timeouts', -1);
+      }
+    }
+    return (
+      <button onClick={handleClick} className={cn(
           "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
           used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
-      )}>
+      )}
+      disabled={!used}
+      >
           <span className="font-bold text-sm">TM</span>
-      </div>
-  );
+      </button>
+  )};
 
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
+      <div className="mb-8">
+        <Button asChild variant="outline">
+          <Link href="/mi-equipo">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver al Panel
+          </Link>
+        </Button>
+      </div>
+
        <div className="text-center mb-12">
          <div className="flex justify-center mb-4">
             <PenSquare className="h-16 w-16 text-primary" />
