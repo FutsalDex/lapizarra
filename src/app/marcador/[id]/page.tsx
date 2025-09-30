@@ -829,15 +829,6 @@ const reopenMatch = async () => {
                             {tableHeaders}
                         </TableFooter>
                     </Table>
-                    
-                    {(!match.isFinished || isAdmin) && (
-                        <div className="p-2 text-right">
-                            <Button variant="outline" size="sm" onClick={addPlayer}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Añadir Jugador
-                            </Button>
-                        </div>
-                    )}
                 </div>
             </div>
             {renderTeamStats()}
@@ -1061,7 +1052,7 @@ const renderTeamStats = () => {
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
                     <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || (match.isFinished && !isAdmin)}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                        {match.isActive ? 'Pausar' : 'Iniciar'}
+                        {match.isActive ? 'Pausar' : 'Pausar'}
                     </Button>
                      <Button onClick={resetTimer} variant="outline" disabled={match.isFinished && !isAdmin}>
                         <RefreshCw className="mr-2"/>
@@ -1096,4 +1087,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
