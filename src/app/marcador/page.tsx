@@ -2,8 +2,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Play, Pause, RefreshCw, Settings, PenSquare } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Play, Pause, RefreshCw, Settings, PenSquare, Minus, Plus, Goal, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -17,6 +17,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
+interface GeneralStats {
+    goals: number;
+    fouls: number;
+    yellowCards: number;
+    redCards: number;
+}
+
 export default function MarcadorPage() {
   const [localTeam, setLocalTeam] = useState('Local');
   const [visitorTeam, setVisitorTeam] = useState('Visitante');
@@ -26,6 +33,11 @@ export default function MarcadorPage() {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [isActive, setIsActive] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const defaultGeneralStats: GeneralStats = { goals: 0, fouls: 0, yellowCards: 0, redCards: 0 };
+  const [localGeneralStats, setLocalGeneralStats] = useState<GeneralStats>({...defaultGeneralStats});
+  const [visitorGeneralStats, setVisitorGeneralStats] = useState<GeneralStats>({...defaultGeneralStats});
+
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -75,6 +87,46 @@ export default function MarcadorPage() {
     setIsActive(false);
     setIsSettingsOpen(false);
   }
+
+  const handleGeneralStatChange = (
+    team: 'local' | 'visitor', 
+    stat: keyof GeneralStats, 
+    delta: 1 | -1
+  ) => {
+    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
+    setter(prev => {
+        const newValue = prev[stat] + delta;
+        if (newValue < 0) return prev;
+        return { ...prev, [stat]: newValue };
+    });
+  }
+
+  const resetGeneralStats = () => {
+    setLocalGeneralStats({...defaultGeneralStats});
+    setVisitorGeneralStats({...defaultGeneralStats});
+  }
+
+  const YellowCardIcon = () => (
+    <div className="w-3 h-4 bg-yellow-400 border border-yellow-600 rounded-sm" />
+  );
+  const RedCardIcon = () => (
+    <div className="w-3 h-4 bg-red-600 border border-red-800 rounded-sm" />
+  );
+
+
+  const renderStatRow = (team: 'local' | 'visitor', stat: keyof GeneralStats, label: string, icon: React.ReactNode) => {
+    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
+    return (
+      <div className="flex items-center justify-between p-2 border-b">
+        <span className="flex items-center gap-2">{icon}{label}</span>
+        <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)}><Minus className="h-4 w-4"/></Button>
+          <span className="w-4 text-center">{stats[stat]}</span>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)}><Plus className="h-4 w-4"/></Button>
+        </div>
+      </div>
+    );
+  };
 
 
   return (
@@ -162,7 +214,32 @@ export default function MarcadorPage() {
             </div>
         </CardContent>
       </Card>
+
+       <Card className="mt-8">
+            <CardHeader className="flex flex-row items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-lg">
+                <CardTitle className="text-lg">Estadísticas Generales</CardTitle>
+                <Button variant="destructive" size="sm" onClick={resetGeneralStats}>
+                    <RefreshCw className="mr-2 h-4 w-4"/>
+                    Reiniciar Todo
+                </Button>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-center">{localTeam}</h3>
+                    {renderStatRow('local', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('local', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('local', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
+                    {renderStatRow('local', 'redCards', 'T. Rojas', <RedCardIcon />)}
+                </div>
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-center">{visitorTeam}</h3>
+                    {renderStatRow('visitor', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('visitor', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('visitor', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
+                    {renderStatRow('visitor', 'redCards', 'T. Rojas', <RedCardIcon />)}
+                </div>
+            </CardContent>
+        </Card>
     </div>
   );
 }
-
