@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -61,19 +62,17 @@ export default function MarcadorPage() {
 
   useEffect(() => {
     if (localGeneralStats.timeouts > 0) {
-      setTimeLeft(time => time + 60);
       if (isActive) setIsActive(false);
-      setLocalGeneralStats(prev => ({...prev, timeouts: 0}));
+      setTimeLeft(time => time + 60 * localGeneralStats.timeouts);
     }
-  }, [localGeneralStats.timeouts, isActive]);
+  }, [localGeneralStats.timeouts]);
   
   useEffect(() => {
     if (visitorGeneralStats.timeouts > 0) {
-      setTimeLeft(time => time + 60);
-      if (isActive) setIsActive(false);
-      setVisitorGeneralStats(prev => ({...prev, timeouts: 0}));
+       if (isActive) setIsActive(false);
+       setTimeLeft(time => time + 60 * visitorGeneralStats.timeouts);
     }
-  }, [visitorGeneralStats.timeouts, isActive]);
+  }, [visitorGeneralStats.timeouts]);
 
 
   const handleGeneralStatChange = (
@@ -156,9 +155,9 @@ export default function MarcadorPage() {
       <div className="flex items-center justify-between p-2 border-b">
         <span className="flex items-center gap-2">{icon}{label}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeoutAndUsed}><Minus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeoutAndUsed && stat === 'timeouts'}><Minus className="h-4 w-4"/></Button>
           <span className="w-4 text-center">{stats[stat]}</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutAndUsed}><Plus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutAndUsed && stat === 'timeouts'}><Plus className="h-4 w-4"/></Button>
         </div>
       </div>
     );
@@ -178,13 +177,16 @@ export default function MarcadorPage() {
     </div>
   );
 
-  const TimeoutIndicator = ({ used }: { used: boolean }) => {
-    const team = used ? (localGeneralStats.timeouts > 0 ? 'local' : 'visitor') : null;
+  const TimeoutIndicator = ({ team }: { team: 'local' | 'visitor' }) => {
+    const used = team === 'local' ? localGeneralStats.timeouts > 0 : visitorGeneralStats.timeouts > 0;
+    
     const handleClick = () => {
-      if(team) {
-         handleGeneralStatChange(team, 'timeouts', -1);
+      if (used) {
+        handleGeneralStatChange(team, 'timeouts', -1);
+        setTimeLeft(time => time - 60);
       }
     }
+
     return (
       <button onClick={handleClick} className={cn(
           "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
@@ -238,11 +240,11 @@ export default function MarcadorPage() {
                 </div>
 
                  <div className="flex items-center justify-center">
-                    <TimeoutIndicator used={localGeneralStats.timeouts > 0} />
+                    <TimeoutIndicator team="local" />
                     <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-4 px-6 rounded-lg mx-4">
                         {formatTime(timeLeft)}
                     </div>
-                    <TimeoutIndicator used={visitorGeneralStats.timeouts > 0} />
+                    <TimeoutIndicator team="visitor" />
                 </div>
                 <div className="flex items-center gap-4 mt-4">
                     <Button onClick={() => setIsActive(!isActive)} size="lg" disabled={timeLeft === 0}>
