@@ -95,14 +95,14 @@ export default function MarcadorPage() {
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
     setter(prev => {
-        let newValue = prev[stat] + delta;
+        let newValue = (prev[stat] || 0) + delta;
         if (newValue < 0) return prev;
         
         // Specific logic for timeouts
         if (stat === 'timeouts') {
             if (newValue > 1) newValue = 1; // Max 1 timeout
             
-            const actualDelta = newValue - prev.timeouts; // Check if it really changed
+            const actualDelta = newValue - (prev.timeouts || 0);
             if (actualDelta !== 0) {
                 setTimeLeft(time => time + actualDelta * 60);
                 if (isActive) { // Pause timer when timeout is called
@@ -281,5 +281,7 @@ export default function MarcadorPage() {
     </div>
   );
 }
+
+    
 
     
