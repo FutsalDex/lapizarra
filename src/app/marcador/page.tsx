@@ -89,31 +89,67 @@ export default function MarcadorPage() {
   }
 
   const handleGeneralStatChange = (
-    team: 'local' | 'visitor', 
-    stat: keyof GeneralStats, 
+    team: 'local' | 'visitor',
+    stat: keyof GeneralStats,
     delta: 1 | -1
   ) => {
-    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-    setter(prev => {
+    if (stat === 'timeouts') {
+      if (team === 'local') {
+        setLocalGeneralStats(prev => {
+          let newValue = (prev.timeouts || 0) + delta;
+          if (newValue < 0) newValue = 0;
+          if (newValue > 1) newValue = 1;
+          
+          const actualDelta = newValue - (prev.timeouts || 0);
+          if (actualDelta !== 0) {
+            setTimeLeft(time => time + actualDelta * 60);
+            if (isActive) setIsActive(false);
+          }
+          return { ...prev, timeouts: newValue };
+        });
+      } else { // visitor
+        setVisitorGeneralStats(prev => {
+          let newValue = (prev.timeouts || 0) + delta;
+          if (newValue < 0) newValue = 0;
+          if (newValue > 1) newValue = 1;
+
+          const actualDelta = newValue - (prev.timeouts || 0);
+          if (actualDelta !== 0) {
+            setTimeLeft(time => time + actualDelta * 60);
+            if (isActive) setIsActive(false);
+          }
+          return { ...prev, timeouts: newValue };
+        });
+      }
+    } else {
+      const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
+      setter(prev => {
         let newValue = (prev[stat] || 0) + delta;
-        if (newValue < 0) return prev;
+        if (newValue < 0) newValue = 0;
         
-        // Specific logic for timeouts
-        if (stat === 'timeouts') {
-            if (newValue > 1) newValue = 1; // Max 1 timeout
-            
-            const actualDelta = newValue - (prev.timeouts || 0);
-            if (actualDelta !== 0) {
-                setTimeLeft(time => time + actualDelta * 60);
-                if (isActive) { // Pause timer when timeout is called
-                    setIsActive(false);
-                }
-            }
+        const newStats = { ...prev, [stat]: newValue };
+
+        if (stat === 'goals') {
+          if (team === 'local') {
+            setLocalGeneralStats(newStats);
+          } else {
+            setVisitorGeneralStats(newStats);
+          }
         }
         
-        return { ...prev, [stat]: newValue };
-    });
-  }
+        return newStats;
+      });
+    }
+  };
+
+  useEffect(() => {
+    setLocalGeneralStats(prev => ({...prev, goals: localGeneralStats.goals}));
+  }, [localGeneralStats.goals]);
+  
+  useEffect(() => {
+    setVisitorGeneralStats(prev => ({...prev, goals: visitorGeneralStats.goals}));
+  }, [visitorGeneralStats.goals]);
+
 
   const resetGeneralStats = () => {
     setLocalGeneralStats({...defaultGeneralStats});
@@ -281,7 +317,3 @@ export default function MarcadorPage() {
     </div>
   );
 }
-
-    
-
-    
