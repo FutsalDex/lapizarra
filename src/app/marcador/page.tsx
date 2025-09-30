@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -93,53 +92,27 @@ export default function MarcadorPage() {
     stat: keyof GeneralStats,
     delta: 1 | -1
   ) => {
-    if (stat === 'timeouts') {
-      if (team === 'local') {
-        setLocalGeneralStats(prev => {
-          let newValue = (prev.timeouts || 0) + delta;
-          if (newValue < 0) newValue = 0;
-          if (newValue > 1) newValue = 1;
-          
-          const actualDelta = newValue - (prev.timeouts || 0);
-          if (actualDelta !== 0) {
-            setTimeLeft(time => time + actualDelta * 60);
-            if (isActive) setIsActive(false);
-          }
-          return { ...prev, timeouts: newValue };
-        });
-      } else { // visitor
-        setVisitorGeneralStats(prev => {
-          let newValue = (prev.timeouts || 0) + delta;
-          if (newValue < 0) newValue = 0;
-          if (newValue > 1) newValue = 1;
+    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
 
-          const actualDelta = newValue - (prev.timeouts || 0);
-          if (actualDelta !== 0) {
-            setTimeLeft(time => time + actualDelta * 60);
-            if (isActive) setIsActive(false);
-          }
-          return { ...prev, timeouts: newValue };
-        });
-      }
-    } else {
-      const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-      setter(prev => {
-        let newValue = (prev[stat] || 0) + delta;
+    setter(prev => {
+      let newValue = (prev[stat] || 0) + delta;
+      
+      if (stat === 'timeouts') {
         if (newValue < 0) newValue = 0;
-        
-        const newStats = { ...prev, [stat]: newValue };
+        if (newValue > 1) newValue = 1;
+        const actualDelta = newValue - (prev.timeouts || 0);
 
-        if (stat === 'goals') {
-          if (team === 'local') {
-            setLocalGeneralStats(newStats);
-          } else {
-            setVisitorGeneralStats(newStats);
-          }
+        if (actualDelta !== 0) {
+          setTimeLeft(time => time + actualDelta * 60);
+          if (isActive) setIsActive(false);
         }
-        
-        return newStats;
-      });
-    }
+
+      } else {
+        if (newValue < 0) newValue = 0;
+      }
+      
+      return { ...prev, [stat]: newValue };
+    });
   };
 
   useEffect(() => {
