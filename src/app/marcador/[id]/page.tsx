@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock, Goal as GoalIcon, Shield as ShieldIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -66,6 +66,13 @@ interface OpponentTeamStats {
 }
 
 
+interface GeneralTeamStats {
+    goals: number;
+    fouls: number;
+    yellowCards: number;
+    redCards: number;
+}
+
 interface MatchDetails {
     id: string;
     teamId: string;
@@ -85,6 +92,8 @@ interface MatchDetails {
     teamStats2: TeamMatchStats; // 2nd half for user's team
     opponentStats1: OpponentTeamStats; // 1st half for opponent
     opponentStats2: OpponentTeamStats; // 2nd half for opponent
+    localGeneralStats?: GeneralTeamStats;
+    visitorGeneralStats?: GeneralTeamStats;
     localFouls: number;
     visitorFouls: number;
     endTime?: number | null; // Timestamp for when the timer should end
@@ -93,6 +102,7 @@ interface MatchDetails {
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
 type TeamStatKeys = keyof TeamMatchStats;
 type OpponentStatKeys = keyof OpponentTeamStats;
+type GeneralStatKeys = keyof GeneralTeamStats;
 
 
 export default function MarcadorEnVivoPage() {
@@ -125,6 +135,10 @@ export default function MarcadorEnVivoPage() {
     const defaultOpponentStats: OpponentTeamStats = {
       goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0,
     };
+    const defaultGeneralStats: GeneralTeamStats = {
+      goals: 0, fouls: 0, yellowCards: 0, redCards: 0,
+    };
+
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -181,6 +195,8 @@ export default function MarcadorEnVivoPage() {
                 teamStats2: { ...defaultTeamStats, ...data.teamStats2 },
                 opponentStats1: { ...defaultOpponentStats, ...data.opponentStats1 },
                 opponentStats2: { ...defaultOpponentStats, ...data.opponentStats2 },
+                localGeneralStats: { ...defaultGeneralStats, ...data.localGeneralStats },
+                visitorGeneralStats: { ...defaultGeneralStats, ...data.visitorGeneralStats },
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
@@ -245,49 +261,30 @@ export default function MarcadorEnVivoPage() {
     }, []);
 
 
-    const updateAllPlayingTimes = (matchState: MatchDetails): MatchDetails => {
-        const playersKey = matchState.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-        const players = matchState[playersKey];
-        if (!players) return matchState;
-
-        const updatedPlayers = players.map(p => {
-            if (p.isPlaying && p.lastEntryTime > 0) {
-                const timePlayed = Math.max(0, p.lastEntryTime - matchState.timeLeft);
-                return {
-                    ...p,
-                    timeOnCourt: p.timeOnCourt + timePlayed,
-                    lastEntryTime: matchState.timeLeft, // Reset for next play interval
-                };
+    const handleSaveMatchData = useCallback(async () => {
+        let currentMatch = matchRef.current;
+        if (currentMatch && !currentMatch.isFinished && !isSaving) {
+            try {
+                // Update times before saving
+                if (currentMatch.isActive) {
+                    currentMatch = updateAllPlayingTimes(currentMatch);
+                }
+                const matchDocRef = doc(db, 'matches', currentMatch.id);
+                const { id: matchId, ...dataToSave } = currentMatch;
+                await updateDoc(matchDocRef, dataToSave);
+                setShowSavedIndicator(true);
+                setTimeout(() => setShowSavedIndicator(false), 2000);
+            } catch (error) {
+                console.error("Autosave failed: ", error);
             }
-            return p;
-        });
-
-        return { ...matchState, [playersKey]: updatedPlayers };
-    };
+        }
+    }, [isSaving]);
 
     // Autosave timer
     useEffect(() => {
-        const saveInterval = setInterval(async () => {
-            let currentMatch = matchRef.current;
-            if (currentMatch && !currentMatch.isFinished && !isSaving) {
-                try {
-                    // Update times before saving
-                    if (currentMatch.isActive) {
-                        currentMatch = updateAllPlayingTimes(currentMatch);
-                    }
-                    const matchDocRef = doc(db, 'matches', currentMatch.id);
-                    const { id: matchId, ...dataToSave } = currentMatch;
-                    await updateDoc(matchDocRef, dataToSave);
-                    setShowSavedIndicator(true);
-                    setTimeout(() => setShowSavedIndicator(false), 2000);
-                } catch (error) {
-                    console.error("Autosave failed: ", error);
-                }
-            }
-        }, 5000);
-
+        const saveInterval = setInterval(handleSaveMatchData, 5000);
         return () => clearInterval(saveInterval);
-    }, [isSaving]);
+    }, [handleSaveMatchData]);
 
 
  const finalizeMatch = async () => {
@@ -579,23 +576,6 @@ const reopenMatch = async () => {
         });
     };
 
-    const addPlayer = () => {
-        if (match?.isFinished && !isAdmin) return;
-        setMatch(prev => {
-            if (!prev) return prev;
-            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-            const newPlayer: Player = {
-                id: `${prev.userTeam}-${Date.now()}`,
-                name: 'Nuevo Jugador',
-                number: 0,
-                goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
-            };
-            const players = [...(prev[playersKey] || []), newPlayer];
-            return { ...prev, [playersKey]: players };
-        });
-    };
-
     const handleTogglePlay = (playerIndex: number) => {
         if (match?.isFinished && !isAdmin) return;
         
@@ -635,6 +615,38 @@ const reopenMatch = async () => {
             return { ...prev, [playersKey]: players };
         });
     };
+
+    const handleGeneralStatChange = (team: 'local' | 'visitor', stat: GeneralStatKeys, delta: 1 | -1) => {
+        if (match?.isFinished && !isAdmin) return;
+        setMatch(prev => {
+            if (!prev) return null;
+            const statsKey = team === 'local' ? 'localGeneralStats' : 'visitorGeneralStats';
+            const currentStats = prev[statsKey];
+            if (!currentStats) return prev;
+            
+            const newValue = (currentStats[stat] || 0) + delta;
+            if (newValue < 0) return prev;
+
+            const newStats = { ...currentStats, [stat]: newValue };
+            return { ...prev, [statsKey]: newStats };
+        });
+    };
+
+    const resetGeneralStats = () => {
+        if (match?.isFinished && !isAdmin) return;
+        setMatch(prev => {
+            if (!prev) return null;
+            const defaultGeneralStats: GeneralTeamStats = {
+                goals: 0, fouls: 0, yellowCards: 0, redCards: 0,
+            };
+            return {
+                ...prev,
+                localGeneralStats: { ...defaultGeneralStats },
+                visitorGeneralStats: { ...defaultGeneralStats },
+            }
+        });
+        toast({ title: "Estadísticas generales reiniciadas" });
+    }
 
   const StatButtonCell = ({ playerIndex, stat }: { playerIndex: number, stat: PlayerStatKeys }) => {
     const players = match?.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
@@ -968,6 +980,13 @@ const renderTeamStats = () => {
   const visitorTimeoutUsed = (match.userTeam === 'visitor' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'local' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
 
 
+  const YellowCardIcon = () => (
+    <div className="w-3 h-4 bg-yellow-400 border border-yellow-600 rounded-sm" />
+  );
+  const RedCardIcon = () => (
+    <div className="w-3 h-4 bg-red-600 border border-red-800 rounded-sm" />
+  );
+
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -976,7 +995,7 @@ const renderTeamStats = () => {
                     <BarChartHorizontal className="text-primary"/>
                     Marcador y Estadísticas en Vivo
                 </h1>
-                <p className="text-muted-foreground">Gestiona el partido en tiempo real. Los cambios se guardan automáticamente.</p>
+                <p className="text-muted-foreground">Gestiona el partido en tiempo real. Los cambios se guardan automáticamente cada 5 segundos.</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                  {showSavedIndicator && (
@@ -1052,7 +1071,7 @@ const renderTeamStats = () => {
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
                     <Button onClick={handleTimerToggle} disabled={match.timeLeft === 0 || (match.isFinished && !isAdmin)}>
                         {match.isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                        {match.isActive ? 'Pausar' : 'Pausar'}
+                        {match.isActive ? 'Pausa' : 'Iniciar'}
                     </Button>
                      <Button onClick={resetTimer} variant="outline" disabled={match.isFinished && !isAdmin}>
                         <RefreshCw className="mr-2"/>
@@ -1064,6 +1083,90 @@ const renderTeamStats = () => {
                     </div>
                 </div>
                 
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-3 bg-muted">
+                <CardTitle>Estadísticas Generales</CardTitle>
+                <Button variant="destructive" size="sm" onClick={resetGeneralStats} disabled={match?.isFinished && !isAdmin}>
+                    <RefreshCw className="mr-2 h-4 w-4"/>
+                    Reiniciar Todo
+                </Button>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {/* Local Team General Stats */}
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-center">{match.localTeam}</h3>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><GoalIcon className="h-4 w-4 text-muted-foreground"/>Goles</span>
+                        <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'goals', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.localGeneralStats?.goals ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'goals', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><ShieldIcon className="h-4 w-4 text-muted-foreground"/>Faltas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'fouls', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.localGeneralStats?.fouls ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'fouls', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><YellowCardIcon />T. Amarillas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'yellowCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.localGeneralStats?.yellowCards ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'yellowCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                         <span className="flex items-center gap-2"><RedCardIcon />T. Rojas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'redCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.localGeneralStats?.redCards ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('local', 'redCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                </div>
+                 {/* Visitor Team General Stats */}
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-center">{match.visitorTeam}</h3>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><GoalIcon className="h-4 w-4 text-muted-foreground"/>Goles</span>
+                        <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'goals', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.visitorGeneralStats?.goals ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'goals', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><ShieldIcon className="h-4 w-4 text-muted-foreground"/>Faltas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'fouls', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.visitorGeneralStats?.fouls ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'fouls', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                        <span className="flex items-center gap-2"><YellowCardIcon />T. Amarillas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'yellowCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.visitorGeneralStats?.yellowCards ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'yellowCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                         <span className="flex items-center gap-2"><RedCardIcon />T. Rojas</span>
+                         <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'redCards', -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
+                            <span className="w-4 text-center">{match.visitorGeneralStats?.redCards ?? 0}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange('visitor', 'redCards', 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                </div>
             </CardContent>
         </Card>
 
