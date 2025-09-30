@@ -191,7 +191,10 @@ export default function TeamPlayerStatsPage() {
     const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
     const mostYellows = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.ta > max.ta ? p : max, players[0]) : null, [players]);
     const mostReds = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.tr > max.tr ? p : max, players[0]) : null, [players]);
-    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0 || p.vs1 > 0), [players]);
+    
+    const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero'), [players]);
+    const fieldPlayers = useMemo(() => players.filter(p => p.position !== 'Portero'), [players]);
+
     const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
     const top1v1Saver = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.vs1 > max.vs1 ? p : max, goalkeepers[0]) : null, [goalkeepers]);
     const topGoalkeeperCleanest = useMemo(() => {
@@ -204,16 +207,29 @@ export default function TeamPlayerStatsPage() {
         if (gksWithGames.length === 0) return null;
         return gksWithGames.reduce((max, p) => (p.gRec > max.gRec) ? p : max, gksWithGames[0]);
     }, [goalkeepers]);
-    const mostMinutesPlayed = useMemo(() => {
-        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+
+    const mostMinutesPlayer = useMemo(() => {
+        const playersWithMinutes = fieldPlayers.filter(p => (p.minutosJugados || 0) > 0);
         if (playersWithMinutes.length === 0) return null;
         return playersWithMinutes.reduce((max, p) => (p.minutosJugados || 0) > (max.minutosJugados || 0) ? p : max, playersWithMinutes[0]);
-    }, [players]);
-    const leastMinutesPlayed = useMemo(() => {
-        const playersWithMinutes = players.filter(p => (p.minutosJugados || 0) > 0);
+    }, [fieldPlayers]);
+    const leastMinutesPlayer = useMemo(() => {
+        const playersWithMinutes = fieldPlayers.filter(p => (p.minutosJugados || 0) > 0);
         if (playersWithMinutes.length === 0) return null;
         return playersWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, playersWithMinutes[0]);
-    }, [players]);
+    }, [fieldPlayers]);
+
+    const mostMinutesGoalkeeper = useMemo(() => {
+        const gksWithMinutes = goalkeepers.filter(p => (p.minutosJugados || 0) > 0);
+        if (gksWithMinutes.length === 0) return null;
+        return gksWithMinutes.reduce((max, p) => (p.minutosJugados || 0) > (max.minutosJugados || 0) ? p : max, gksWithMinutes[0]);
+    }, [goalkeepers]);
+
+    const leastMinutesGoalkeeper = useMemo(() => {
+        const gksWithMinutes = goalkeepers.filter(p => (p.minutosJugados || 0) > 0);
+        if (gksWithMinutes.length === 0) return null;
+        return gksWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, gksWithMinutes[0]);
+    }, [goalkeepers]);
 
     const formatTime = (totalSeconds: number) => {
         if (!totalSeconds || totalSeconds < 0) return '00:00';
@@ -284,8 +300,10 @@ export default function TeamPlayerStatsPage() {
                 {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
                 {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldOff} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
-                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
-                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
+                {mostMinutesGoalkeeper && <StatCard title="Portero con más minutos" icon={Hourglass} playerName={mostMinutesGoalkeeper.name} value={formatTime(mostMinutesGoalkeeper.minutosJugados || 0)} />}
+                {leastMinutesGoalkeeper && <StatCard title="Portero con menos minutos" icon={Timer} playerName={leastMinutesGoalkeeper.name} value={formatTime(leastMinutesGoalkeeper.minutosJugados || 0)} />}
+                {mostMinutesPlayer && <StatCard title="Jugador con más minutos" icon={Hourglass} playerName={mostMinutesPlayer.name} value={formatTime(mostMinutesPlayer.minutosJugados || 0)} />}
+                {leastMinutesPlayer && <StatCard title="Jugador con menos minutos" icon={Timer} playerName={leastMinutesPlayer.name} value={formatTime(leastMinutesPlayer.minutosJugados || 0)} />}
             </div>
         )}
 
