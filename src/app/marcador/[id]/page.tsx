@@ -91,8 +91,6 @@ interface MatchDetails {
 }
 
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
-type TeamStatKeys = keyof TeamMatchStats;
-type OpponentStatKeys = keyof OpponentTeamStats;
 
 
 export default function MarcadorEnVivoPage() {
@@ -457,118 +455,6 @@ const reopenMatch = async () => {
     });
 }
 
-  const handleTeamStatChange = (period: 'teamStats1' | 'teamStats2', stat: TeamStatKeys, delta: 1 | -1) => {
-    if (match?.isFinished && !isAdmin) return;
-    setMatch(prev => {
-        if (!prev) return null;
-        const currentStatValue = prev[period][stat];
-        let newValue = currentStatValue + delta;
-
-        let newTimeLeft = prev.timeLeft;
-        let newEndTime = prev.endTime;
-
-        if (stat === 'timeouts') {
-            if (newValue > 1) newValue = 1;
-            if (newValue < 0) newValue = 0;
-            
-            const actualDelta = newValue - currentStatValue;
-            if (actualDelta !== 0) {
-              newTimeLeft += actualDelta * 60;
-              if (prev.isActive && newEndTime) {
-                newEndTime += actualDelta * 60 * 1000;
-              }
-            }
-
-        } else {
-            if (newValue < 0) return prev;
-        }
-
-        return { 
-          ...prev, 
-          timeLeft: newTimeLeft,
-          endTime: newEndTime,
-          [period]: { ...prev[period], [stat]: newValue } 
-        };
-    });
-  };
-
-  const handleOpponentStatChange = (period: 'opponentStats1' | 'opponentStats2', stat: OpponentStatKeys, delta: 1 | -1) => {
-    if (match?.isFinished && !isAdmin) return;
-    setMatch(prev => {
-        if (!prev) return null;
-
-        const currentStatValue = prev[period][stat] || 0;
-        let newValue = currentStatValue + delta;
-        let newTimeLeft = prev.timeLeft;
-        let newEndTime = prev.endTime;
-        
-        if (stat === 'timeouts') {
-            if (newValue > 1) newValue = 1;
-            if (newValue < 0) newValue = 0;
-
-            const actualDelta = newValue - currentStatValue;
-            if (actualDelta !== 0) {
-              newTimeLeft += actualDelta * 60;
-              if (prev.isActive && newEndTime) {
-                newEndTime += actualDelta * 60 * 1000;
-              }
-            }
-        } else {
-            if (newValue < 0) return prev;
-        }
-        
-        const opponentTeam = prev.userTeam === 'local' ? 'visitor' : 'local';
-        const foulsKey = opponentTeam === 'local' ? 'localFouls' : 'visitorFouls';
-        let newFoulsCount = prev[foulsKey];
-
-        if (stat === 'fouls') {
-            newFoulsCount = Math.max(0, newFoulsCount + delta);
-        }
-        
-        const scoreKey = opponentTeam === 'local' ? 'localScore' : 'visitorScore';
-        let newScore = prev[scoreKey];
-        let newEvents = prev.events ? [...prev.events] : [];
-        if (stat === 'goals') {
-            newScore = Math.max(0, newScore + delta);
-             if (delta === 1 && prev.period !== 'Descanso') {
-                const totalTime = 25 * 60;
-                const timeElapsedInPeriod = totalTime - prev.timeLeft;
-                let minute = Math.floor(timeElapsedInPeriod / 60);
-                if (prev.period === '2ª Parte') minute += 25;
-                
-                const goalEvent: GoalEvent = {
-                    id: `goal-opponent-${Date.now()}`,
-                    type: 'goal',
-                    playerId: 'opponent',
-                    playerName: 'Rival',
-                    team: opponentTeam,
-                    minute: minute,
-                    period: prev.period,
-                    teamId: prev.teamId,
-                };
-                newEvents.push(goalEvent);
-            } else if (delta === -1) {
-                const lastOpponentGoalIndex = newEvents.findLastIndex(
-                    (event) => event.type === 'goal' && event.team === opponentTeam
-                );
-                if (lastOpponentGoalIndex > -1) {
-                    newEvents.splice(lastOpponentGoalIndex, 1);
-                }
-            }
-        }
-
-        return {
-            ...prev,
-            timeLeft: newTimeLeft,
-            endTime: newEndTime,
-            [period]: { ...prev[period], [stat]: newValue },
-            [foulsKey]: newFoulsCount,
-            [scoreKey]: newScore,
-            events: newEvents,
-        };
-    });
-  };
-
    const handlePlayerInfoChange = (playerIndex: number, field: 'name' | 'number', value: string | number) => {
         if (match?.isFinished && !isAdmin) return;
         setMatch(prev => {
@@ -729,8 +615,6 @@ const reopenMatch = async () => {
   const localScore = match.userTeam === 'local' ? userTeamScore : opponentScore;
   const visitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
 
-  const opponentPeriodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
-
   const StatColumnHeader = ({ full, abbr, isIcon=false, iconContent }: { full: string, abbr: string, isIcon?: boolean, iconContent?: React.ReactNode }) => (
     <TableHead className="text-center px-1">
         {isIcon ? (
@@ -761,7 +645,7 @@ const reopenMatch = async () => {
   
   const renderTeamTable = (isUserTeam: boolean) => {
     if (!isUserTeam) {
-        return renderOpponentStats();
+        return <div className="text-center p-8 text-muted-foreground">Las estadísticas del rival se gestionan desde la pestaña de su equipo.</div>;
     }
 
     const players = userPlayers || [];
@@ -817,111 +701,6 @@ const reopenMatch = async () => {
                     </Table>
                 </div>
             </div>
-            {renderTeamStats()}
-        </div>
-    );
-};
-
-const renderOpponentStats = () => {
-    const opponentStatsConfig: { key: OpponentStatKeys, label: string }[] = [
-        { key: 'goals', label: 'Goles' },
-        { key: 'fouls', label: 'Faltas' },
-        { key: 'shotsOnTarget', label: 'Tiros a Puerta' },
-        { key: 'shotsOffTarget', label: 'Tiros Fuera' },
-        { key: 'shotsBlocked', label: 'Tiros Bloqueados' },
-        { key: 'timeouts', label: 'Tiempos Muertos' },
-    ];
-    
-    return (
-        <Card>
-            <CardHeader className="bg-muted p-3">
-                <CardTitle className="text-base text-center">ESTADÍSTICAS DEL RIVAL - {opponentTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-                <Table>
-                    <TableBody>
-                         {opponentStatsConfig.map((config) => (
-                            <TableRow key={config.key}>
-                                <TableCell className="font-medium">{config.label}</TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                                        <span className="w-4 text-center">{match[opponentPeriodKey][config.key] ?? 0}</span>
-                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleOpponentStatChange(opponentPeriodKey, config.key, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    )
-}
-
-const renderTeamStats = () => {
-    const teamStatsConfig: { key: TeamStatKeys, label: string }[] = [
-        { key: 'shotsOnTarget', label: 'Portería' },
-        { key: 'shotsOffTarget', label: 'Fuera' },
-        { key: 'shotsBlocked', label: 'Bloqueados' },
-    ];
-     const eventsConfig: { key: TeamStatKeys, label: string }[] = [
-        { key: 'timeouts', label: 'Tiempos Muertos' },
-        { key: 'turnovers', label: 'Pérdidas' },
-        { key: 'recoveries', label: 'Robos' },
-    ];
-
-    const StatRow = ({ statKey, label, periodKey }: { statKey: TeamStatKeys, label: string, periodKey: 'teamStats1' | 'teamStats2' }) => (
-        <TableRow>
-            <TableCell className="font-medium">{label}</TableCell>
-            <TableCell>
-                <div className="flex items-center justify-center gap-1">
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, -1)} disabled={match?.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
-                    <span className="w-4 text-center">{match[periodKey][statKey]}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleTeamStatChange(periodKey, statKey, 1)} disabled={match?.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
-                </div>
-            </TableCell>
-        </TableRow>
-    );
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Card>
-                <CardHeader className="bg-primary text-primary-foreground p-3">
-                    <CardTitle className="text-base text-center">TIROS A PUERTA - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[150px]">Tipo</TableHead>
-                                <TableHead className="text-center">{match.period}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {teamStatsConfig.map((config) => <StatRow key={config.key} statKey={config.key} label={config.label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="bg-primary text-primary-foreground p-3">
-                    <CardTitle className="text-base text-center">EVENTOS DEL PARTIDO - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[150px]">Tipo</TableHead>
-                                <TableHead className="text-center">{match.period}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {eventsConfig.map((config) => <StatRow key={config.key} statKey={config.key} label={config.label} periodKey={match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2'} />)}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
         </div>
     );
 };
@@ -1073,5 +852,3 @@ const renderTeamStats = () => {
     </div>
   );
 }
-
-    
