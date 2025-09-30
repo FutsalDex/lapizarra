@@ -80,6 +80,18 @@ const StatCard = ({ title, icon: Icon, playerName, value }: StatCardProps) => (
   </Card>
 );
 
+const YellowCardIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 4H18C18.5523 4 19 4.44772 19 5V16C19 16.5523 18.5523 17 18 17H6C5.44772 17 5 16.5523 5 16V5C5 4.44772 4.55228 4 4 4Z" fill="#FBBF24" stroke="#D97706" strokeWidth="2"/>
+    </svg>
+);
+
+const RedCardIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 4H18C18.5523 4 19 4.44772 19 5V16C19 16.5523 18.5523 17 18 17H6C5.44772 17 5 16.5523 5 16V5C5 4.44772 4.55228 4 4 4Z" fill="#F87171" stroke="#B91C1C" strokeWidth="2"/>
+    </svg>
+);
+
 type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
 const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
 
@@ -177,6 +189,8 @@ export default function TeamPlayerStatsPage() {
     const topScorer = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.goals > max.goals ? p : max, players[0]) : null, [players]);
     const topAssistant = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.assists > max.assists ? p : max, players[0]) : null, [players]);
     const mostFouls = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.faltas > max.faltas ? p : max, players[0]) : null, [players]);
+    const mostYellows = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.ta > max.ta ? p : max, players[0]) : null, [players]);
+    const mostReds = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.tr > max.tr ? p : max, players[0]) : null, [players]);
     const goalkeepers = useMemo(() => players.filter(p => p.position === 'Portero' || p.paradas > 0 || p.vs1 > 0), [players]);
     const topGoalkeeperSaves = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.paradas > max.paradas ? p : max, goalkeepers[0]) : null, [goalkeepers]);
     const top1v1Saver = useMemo(() => goalkeepers.length > 0 ? goalkeepers.reduce((max, p) => p.vs1 > max.vs1 ? p : max, goalkeepers[0]) : null, [goalkeepers]);
@@ -238,6 +252,8 @@ export default function TeamPlayerStatsPage() {
                 {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
                 {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
+                {mostYellows && mostYellows.ta > 0 && <StatCard title="Más T. Amarillas" icon={YellowCardIcon} playerName={mostYellows.name} value={mostYellows.ta} />}
+                {mostReds && mostReds.tr > 0 && <StatCard title="Más T. Rojas" icon={RedCardIcon} playerName={mostReds.name} value={mostReds.tr} />}
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
