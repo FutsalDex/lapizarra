@@ -247,22 +247,6 @@ export default function TeamPlayerStatsPage() {
             </Button>
         </div>
         
-        {players.length > 0 && !loading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
-                {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
-                {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
-                {mostYellows && mostYellows.ta > 0 && <StatCard title="Más T. Amarillas" icon={YellowCardIcon} playerName={mostYellows.name} value={mostYellows.ta} />}
-                {mostReds && mostReds.tr > 0 && <StatCard title="Más T. Rojas" icon={RedCardIcon} playerName={mostReds.name} value={mostReds.tr} />}
-                {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
-                {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
-                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
-                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldOff} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
-                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
-                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
-            </div>
-        )}
-
         <Card>
             <CardHeader>
                 <CardTitle>Controles</CardTitle>
@@ -286,6 +270,28 @@ export default function TeamPlayerStatsPage() {
                         ))}
                     </div>
                 </div>
+            </CardHeader>
+        </Card>
+
+        {players.length > 0 && !loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
+                {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
+                {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
+                {mostYellows && mostYellows.ta > 0 && <StatCard title="Más T. Amarillas" icon={YellowCardIcon} playerName={mostYellows.name} value={mostYellows.ta} />}
+                {mostReds && mostReds.tr > 0 && <StatCard title="Más T. Rojas" icon={RedCardIcon} playerName={mostReds.name} value={mostReds.tr} />}
+                {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
+                {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
+                {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
+                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldOff} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
+                {mostMinutesPlayed && <StatCard title="Más Minutos Jugados" icon={Hourglass} playerName={mostMinutesPlayed.name} value={formatTime(mostMinutesPlayed.minutosJugados || 0)} />}
+                {leastMinutesPlayed && <StatCard title="Menos Minutos Jugados" icon={Timer} playerName={leastMinutesPlayed.name} value={formatTime(leastMinutesPlayed.minutosJugados || 0)} />}
+            </div>
+        )}
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Tabla General de Jugadores</CardTitle>
             </CardHeader>
             <CardContent>
                 {loading ? (
