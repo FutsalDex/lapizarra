@@ -67,30 +67,22 @@ export default function MarcadorPage() {
     delta: 1 | -1
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-    
-    setter(prev => {
-      let newValue = (prev[stat] || 0) + delta;
-      
-      if (stat === 'timeouts') {
-        if (newValue > 1) newValue = 1;
-        if (newValue < 0) newValue = 0;
+    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
 
-        const wasUsed = prev.timeouts > 0;
-        const isNowUsed = newValue > 0;
-
-        if (isNowUsed && !wasUsed) { // Timeout is being used
+    if (stat === 'timeouts') {
+        const currentVal = stats.timeouts;
+        const newVal = currentVal + delta;
+        if (newVal >= 0 && newVal <=1) {
              if (isActive) setIsActive(false);
-             setTimeLeft(time => time + 60);
-        } else if (!isNowUsed && wasUsed) { // Timeout is being cancelled
-            setTimeLeft(time => Math.max(0, time - 60));
+             setTimeLeft(time => time + (delta * 60));
+             setter(prev => ({...prev, timeouts: newVal }));
         }
-
-      } else {
-        if (newValue < 0) newValue = 0;
-      }
-
-      return { ...prev, [stat]: newValue };
-    });
+    } else {
+        setter(prev => {
+            const newValue = (prev[stat] || 0) + delta;
+            return { ...prev, [stat]: Math.max(0, newValue) };
+        });
+    }
 };
 
   const handlePeriodChange = (newPeriod: '1ª Parte' | '2ª Parte') => {
