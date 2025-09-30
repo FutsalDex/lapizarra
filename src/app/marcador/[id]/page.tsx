@@ -260,6 +260,28 @@ export default function MarcadorEnVivoPage() {
         };
     }, []);
 
+    const updateAllPlayingTimes = (currentMatch: MatchDetails): MatchDetails => {
+        const now = Date.now();
+        const newTimeLeft = currentMatch.endTime ? Math.max(0, Math.round((currentMatch.endTime - now) / 1000)) : currentMatch.timeLeft;
+
+        const playersKey = currentMatch.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const players = currentMatch[playersKey] ? [...currentMatch[playersKey]!] : [];
+
+        const updatedPlayers = players.map(player => {
+            if (player.isPlaying && player.lastEntryTime) {
+                const timePlayedInStint = Math.max(0, player.lastEntryTime - newTimeLeft);
+                return {
+                    ...player,
+                    timeOnCourt: (player.timeOnCourt || 0) + timePlayedInStint,
+                    lastEntryTime: newTimeLeft, // Reset for the next calculation
+                };
+            }
+            return player;
+        });
+
+        return { ...currentMatch, [playersKey]: updatedPlayers };
+    };
+
 
     const handleSaveMatchData = useCallback(async () => {
         let currentMatch = matchRef.current;
