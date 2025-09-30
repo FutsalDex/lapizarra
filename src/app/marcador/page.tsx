@@ -34,6 +34,7 @@ export default function MarcadorPage() {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [isActive, setIsActive] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [periodo, setPeriodo] = useState<'1ª Parte' | '2ª Parte'>('1ª Parte');
 
   const defaultGeneralStats: GeneralStats = { goals: 0, fouls: 0, yellowCards: 0, redCards: 0, timeouts: 0 };
   const [localGeneralStats, setLocalGeneralStats] = useState<GeneralStats>({...defaultGeneralStats});
@@ -60,34 +61,31 @@ export default function MarcadorPage() {
     setTimeLeft(initialTime * 60);
   }, [initialTime]);
 
-  useEffect(() => {
-    if (localGeneralStats.timeouts > 0) {
-      if (isActive) setIsActive(false);
-      setTimeLeft(time => time + 60 * localGeneralStats.timeouts);
-    }
-  }, [localGeneralStats.timeouts]);
-  
-  useEffect(() => {
-    if (visitorGeneralStats.timeouts > 0) {
-       if (isActive) setIsActive(false);
-       setTimeLeft(time => time + 60 * visitorGeneralStats.timeouts);
-    }
-  }, [visitorGeneralStats.timeouts]);
-
-
   const handleGeneralStatChange = (
     team: 'local' | 'visitor',
     stat: keyof GeneralStats,
     delta: 1 | -1
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
+    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
     
     setter(prev => {
       let newValue = (prev[stat] || 0) + delta;
       
       if (stat === 'timeouts') {
-        if (newValue > 1) newValue = 1;
+        if (newValue > 1) newValue = 1; // Cap at 1 per half
         if (newValue < 0) newValue = 0;
+
+        // Add time only when timeout is USED (goes from 0 to 1)
+        if (delta === 1 && prev.timeouts === 0) {
+             if (isActive) setIsActive(false);
+             setTimeLeft(time => time + 60);
+        }
+        // Remove time only if timeout is CANCELLED (goes from 1 to 0)
+        if (delta === -1 && prev.timeouts === 1) {
+            setTimeLeft(time => Math.max(0, time - 60));
+        }
+
       } else {
         if (newValue < 0) newValue = 0;
       }
@@ -95,6 +93,17 @@ export default function MarcadorPage() {
       return { ...prev, [stat]: newValue };
     });
 };
+
+  const handlePeriodChange = (newPeriod: '1ª Parte' | '2ª Parte') => {
+      if (periodo === newPeriod) return;
+      
+      setIsActive(false);
+      setPeriodo(newPeriod);
+      setTimeLeft(initialTime * 60);
+      // Reset fouls and timeouts for the new half
+      setLocalGeneralStats(prev => ({...prev, fouls: 0, timeouts: 0}));
+      setVisitorGeneralStats(prev => ({...prev, fouls: 0, timeouts: 0}));
+  }
 
 
   const formatTime = (seconds: number) => {
@@ -151,11 +160,12 @@ export default function MarcadorPage() {
   const renderStatRow = (team: 'local' | 'visitor', stat: keyof GeneralStats, label: string, icon: React.ReactNode) => {
     const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
     const isTimeoutAndUsed = stat === 'timeouts' && stats[stat] > 0;
+    
     return (
       <div className="flex items-center justify-between p-2 border-b">
         <span className="flex items-center gap-2">{icon}{label}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeoutAndUsed && stat === 'timeouts'}><Minus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={stat === 'timeouts'}><Minus className="h-4 w-4"/></Button>
           <span className="w-4 text-center">{stats[stat]}</span>
           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutAndUsed && stat === 'timeouts'}><Plus className="h-4 w-4"/></Button>
         </div>
@@ -181,9 +191,9 @@ export default function MarcadorPage() {
     const used = team === 'local' ? localGeneralStats.timeouts > 0 : visitorGeneralStats.timeouts > 0;
     
     const handleClick = () => {
+      // Allow canceling timeout only if it's already used
       if (used) {
         handleGeneralStatChange(team, 'timeouts', -1);
-        setTimeLeft(time => time - 60);
       }
     }
 
@@ -288,6 +298,10 @@ export default function MarcadorPage() {
                             </form>
                         </DialogContent>
                     </Dialog>
+                </div>
+                 <div className="flex items-center rounded-md border p-1 mt-4">
+                    <Button onClick={() => handlePeriodChange('1ª Parte')} variant={periodo === '1ª Parte' ? 'secondary': 'ghost'} size="sm">1ª Parte</Button>
+                    <Button onClick={() => handlePeriodChange('2ª Parte')} variant={periodo === '2ª Parte' ? 'secondary': 'ghost'} size="sm">2ª Parte</Button>
                 </div>
             </div>
         </CardContent>
