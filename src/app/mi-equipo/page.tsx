@@ -46,6 +46,12 @@ const modules = [
     href: '/mis-eventos',
   },
    {
+    title: 'Marcador Rápido',
+    description: 'Usa un marcador con crono para un partido rápido o una sesión de entrenamiento.',
+    icon: PenSquare,
+    href: '/marcador',
+  },
+   {
     title: 'Soporte Técnico',
     description: 'Chatea con nuestro entrenador por IA configurado para darte respuestas sobre dudas, órdenes, etc.',
     icon: LifeBuoy,
