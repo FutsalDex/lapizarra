@@ -57,6 +57,42 @@ export default function MarcadorPage() {
   useEffect(() => {
     setTimeLeft(initialTime * 60);
   }, [initialTime]);
+  
+  useEffect(() => {
+    if (localGeneralStats.timeouts > 0) {
+        setTimeLeft(time => time + 60);
+        if (isActive) setIsActive(false);
+    }
+  }, [localGeneralStats.timeouts]);
+  
+  useEffect(() => {
+    if (visitorGeneralStats.timeouts > 0) {
+        setTimeLeft(time => time + 60);
+        if (isActive) setIsActive(false);
+    }
+  }, [visitorGeneralStats.timeouts]);
+
+  const handleGeneralStatChange = (
+    team: 'local' | 'visitor',
+    stat: keyof GeneralStats,
+    delta: 1 | -1
+  ) => {
+    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
+
+    setter(prev => {
+        let newValue = (prev[stat] || 0) + delta;
+
+        if (stat === 'timeouts') {
+            if (newValue > 1) newValue = 1;
+            if (newValue < 0) newValue = 0;
+            // The logic to add time is now in a useEffect to prevent race conditions.
+        } else {
+            if (newValue < 0) newValue = 0;
+        }
+
+        return { ...prev, [stat]: newValue };
+    });
+};
 
 
   const formatTime = (seconds: number) => {
@@ -87,33 +123,6 @@ export default function MarcadorPage() {
     setIsSettingsOpen(false);
   }
 
-  const handleGeneralStatChange = (
-    team: 'local' | 'visitor',
-    stat: keyof GeneralStats,
-    delta: 1 | -1
-  ) => {
-    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-
-    setter(prev => {
-      let newValue = (prev[stat] || 0) + delta;
-      
-      if (stat === 'timeouts') {
-        if (newValue < 0) newValue = 0;
-        if (newValue > 1) newValue = 1;
-        const actualDelta = newValue - (prev.timeouts || 0);
-
-        if (actualDelta !== 0) {
-          setTimeLeft(time => time + actualDelta * 60);
-          if (isActive) setIsActive(false);
-        }
-
-      } else {
-        if (newValue < 0) newValue = 0;
-      }
-      
-      return { ...prev, [stat]: newValue };
-    });
-  };
 
   useEffect(() => {
     setLocalGeneralStats(prev => ({...prev, goals: localGeneralStats.goals}));
