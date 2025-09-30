@@ -234,23 +234,31 @@ export default function AddMatchDialog({ children, teamId, matchData }: AddMatch
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                          <FormLabel>Fecha</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}
-                                >
-                                {field.value ? (format(field.value, "dd/MM/yyyy")) : (<span>Elige fecha</span>)}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                         <Popover>
+                            <div className="relative">
+                                <FormControl>
+                                    <Input
+                                        value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
+                                        onChange={(e) => {
+                                            const date = parse(e.target.value, 'dd/MM/yyyy', new Date());
+                                            if (!isNaN(date.getTime())) {
+                                                field.onChange(date);
+                                            }
+                                        }}
+                                        placeholder="DD/MM/AAAA"
+                                    />
+                                </FormControl>
+                                <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                    <CalendarIcon className="h-4 w-4 opacity-50" />
                                 </Button>
-                            </FormControl>
-                            </PopoverTrigger>
+                                </PopoverTrigger>
+                            </div>
                             <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
+                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es}/>
                             </PopoverContent>
                         </Popover>
-                            <FormMessage />
+                        <FormMessage />
                         </FormItem>
                     )}
                 />
