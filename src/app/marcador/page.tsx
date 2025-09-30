@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, RefreshCw, Settings, PenSquare, Minus, Plus, Goal, Shield } from 'lucide-react';
+import { Play, Pause, RefreshCw, Settings, PenSquare, Minus, Plus, Goal, Shield, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -16,12 +16,14 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface GeneralStats {
     goals: number;
     fouls: number;
     yellowCards: number;
     redCards: number;
+    timeouts: number;
 }
 
 export default function MarcadorPage() {
@@ -32,7 +34,7 @@ export default function MarcadorPage() {
   const [isActive, setIsActive] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const defaultGeneralStats: GeneralStats = { goals: 0, fouls: 0, yellowCards: 0, redCards: 0 };
+  const defaultGeneralStats: GeneralStats = { goals: 0, fouls: 0, yellowCards: 0, redCards: 0, timeouts: 0 };
   const [localGeneralStats, setLocalGeneralStats] = useState<GeneralStats>({...defaultGeneralStats});
   const [visitorGeneralStats, setVisitorGeneralStats] = useState<GeneralStats>({...defaultGeneralStats});
 
@@ -93,8 +95,22 @@ export default function MarcadorPage() {
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
     setter(prev => {
-        const newValue = prev[stat] + delta;
+        let newValue = prev[stat] + delta;
         if (newValue < 0) return prev;
+        
+        // Specific logic for timeouts
+        if (stat === 'timeouts') {
+            if (newValue > 1) newValue = 1; // Max 1 timeout
+            
+            const actualDelta = newValue - prev.timeouts; // Check if it really changed
+            if (actualDelta !== 0) {
+                setTimeLeft(time => time + actualDelta * 60);
+                if (isActive) { // Pause timer when timeout is called
+                    setIsActive(false);
+                }
+            }
+        }
+        
         return { ...prev, [stat]: newValue };
     });
   }
@@ -125,6 +141,29 @@ export default function MarcadorPage() {
       </div>
     );
   };
+  
+    const FoulsIndicator = ({ count }: { count: number }) => (
+    <div className="flex items-center justify-center gap-1.5 mt-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={i}
+          className={cn(
+            'h-3 w-3 rounded-full border-2 border-red-500',
+            i < count ? 'bg-red-500' : 'bg-transparent'
+          )}
+        />
+      ))}
+    </div>
+  );
+
+  const TimeoutIndicator = ({ used }: { used: boolean }) => (
+      <div className={cn(
+          "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
+          used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
+      )}>
+          <span className="font-bold text-sm">TM</span>
+      </div>
+  );
 
 
   return (
@@ -144,18 +183,28 @@ export default function MarcadorPage() {
       <Card>
         <CardContent className="p-6">
             <div className="bg-card border rounded-lg p-6 flex flex-col items-center justify-center">
-                <div className="flex justify-between items-center w-full max-w-2xl mb-6">
-                    <h2 className="text-2xl font-bold text-center w-1/3 truncate">{localTeam}</h2>
-                    <div className="text-5xl font-bold text-primary tabular-nums">
+                <div className="grid grid-cols-3 items-center w-full max-w-2xl mb-6">
+                    <div className="flex flex-col items-center">
+                         <h2 className="text-xl font-bold text-center truncate">{localTeam}</h2>
+                         <FoulsIndicator count={localGeneralStats.fouls} />
+                    </div>
+                    <div className="text-5xl font-bold text-primary tabular-nums text-center">
                         {localGeneralStats.goals} - {visitorGeneralStats.goals}
                     </div>
-                    <h2 className="text-2xl font-bold text-center w-1/3 truncate">{visitorTeam}</h2>
+                    <div className="flex flex-col items-center">
+                        <h2 className="text-xl font-bold text-center truncate">{visitorTeam}</h2>
+                        <FoulsIndicator count={visitorGeneralStats.fouls} />
+                    </div>
                 </div>
 
-                <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-4 px-6 rounded-lg">
-                    {formatTime(timeLeft)}
+                 <div className="flex items-center justify-center">
+                    <TimeoutIndicator used={localGeneralStats.timeouts > 0} />
+                    <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-4 px-6 rounded-lg mx-4">
+                        {formatTime(timeLeft)}
+                    </div>
+                    <TimeoutIndicator used={visitorGeneralStats.timeouts > 0} />
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mt-4">
                     <Button onClick={() => setIsActive(!isActive)} size="lg" disabled={timeLeft === 0}>
                         {isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {isActive ? 'Pausar' : 'Iniciar'}
@@ -215,6 +264,7 @@ export default function MarcadorPage() {
                     <h3 className="font-semibold text-center">{localTeam}</h3>
                     {renderStatRow('local', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('local', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('local', 'timeouts', 'Tiempos Muertos', <Clock className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('local', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
                     {renderStatRow('local', 'redCards', 'T. Rojas', <RedCardIcon />)}
                 </div>
@@ -222,6 +272,7 @@ export default function MarcadorPage() {
                     <h3 className="font-semibold text-center">{visitorTeam}</h3>
                     {renderStatRow('visitor', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('visitor', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
+                    {renderStatRow('visitor', 'timeouts', 'Tiempos Muertos', <Clock className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('visitor', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
                     {renderStatRow('visitor', 'redCards', 'T. Rojas', <RedCardIcon />)}
                 </div>
@@ -230,3 +281,5 @@ export default function MarcadorPage() {
     </div>
   );
 }
+
+    
