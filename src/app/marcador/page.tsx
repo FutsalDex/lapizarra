@@ -67,22 +67,21 @@ export default function MarcadorPage() {
     delta: 1 | -1
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
     
     setter(prev => {
       let newValue = (prev[stat] || 0) + delta;
       
       if (stat === 'timeouts') {
-        if (newValue > 1) newValue = 1; // Cap at 1 per half
+        if (newValue > 1) newValue = 1;
         if (newValue < 0) newValue = 0;
 
-        // Add time only when timeout is USED (goes from 0 to 1)
-        if (delta === 1 && prev.timeouts === 0) {
+        const wasUsed = prev.timeouts > 0;
+        const isNowUsed = newValue > 0;
+
+        if (isNowUsed && !wasUsed) { // Timeout is being used
              if (isActive) setIsActive(false);
              setTimeLeft(time => time + 60);
-        }
-        // Remove time only if timeout is CANCELLED (goes from 1 to 0)
-        if (delta === -1 && prev.timeouts === 1) {
+        } else if (!isNowUsed && wasUsed) { // Timeout is being cancelled
             setTimeLeft(time => Math.max(0, time - 60));
         }
 
@@ -159,15 +158,16 @@ export default function MarcadorPage() {
 
   const renderStatRow = (team: 'local' | 'visitor', stat: keyof GeneralStats, label: string, icon: React.ReactNode) => {
     const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
-    const isTimeoutAndUsed = stat === 'timeouts' && stats[stat] > 0;
+    const isTimeout = stat === 'timeouts';
+    const isTimeoutUsed = isTimeout && stats.timeouts > 0;
     
     return (
       <div className="flex items-center justify-between p-2 border-b">
         <span className="flex items-center gap-2">{icon}{label}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={stat === 'timeouts'}><Minus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeout}><Minus className="h-4 w-4"/></Button>
           <span className="w-4 text-center">{stats[stat]}</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutAndUsed && stat === 'timeouts'}><Plus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutUsed}><Plus className="h-4 w-4"/></Button>
         </div>
       </div>
     );
@@ -191,18 +191,20 @@ export default function MarcadorPage() {
     const used = team === 'local' ? localGeneralStats.timeouts > 0 : visitorGeneralStats.timeouts > 0;
     
     const handleClick = () => {
-      // Allow canceling timeout only if it's already used
       if (used) {
         handleGeneralStatChange(team, 'timeouts', -1);
       }
     }
 
     return (
-      <button onClick={handleClick} className={cn(
-          "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
-          used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
-      )}
-      disabled={!used}
+      <button 
+        onClick={handleClick} 
+        className={cn(
+          "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md transition-colors",
+          used ? "bg-primary text-primary-foreground cursor-pointer" : "bg-transparent text-primary cursor-default"
+        )}
+        disabled={!used}
+        aria-label={used ? `Cancelar tiempo muerto ${team}` : `Tiempo muerto ${team} no usado`}
       >
           <span className="font-bold text-sm">TM</span>
       </button>
@@ -224,44 +226,44 @@ export default function MarcadorPage() {
          <div className="flex justify-center mb-4">
             <PenSquare className="h-16 w-16 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
+        <h1 className="text-3xl sm:text-4xl font-bold font-headline tracking-tight text-primary">
           Marcador Rápido
         </h1>
-        <p className="text-xl text-muted-foreground mt-2">
+        <p className="text-lg sm:text-xl text-muted-foreground mt-2">
           Usa el marcador para un partido rápido o un entrenamiento.
         </p>
       </div>
 
       <Card>
-        <CardContent className="p-6">
-            <div className="bg-card border rounded-lg p-6 flex flex-col items-center justify-center">
-                <div className="grid grid-cols-3 items-center w-full max-w-2xl mb-6">
+        <CardContent className="p-4 sm:p-6">
+            <div className="bg-card border rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center">
+                <div className="grid grid-cols-3 items-center w-full max-w-2xl mb-4 sm:mb-6">
                     <div className="flex flex-col items-center">
-                         <h2 className="text-xl font-bold text-center truncate">{localTeam}</h2>
+                         <h2 className="text-lg md:text-xl font-bold text-center truncate">{localTeam}</h2>
                          <FoulsIndicator count={localGeneralStats.fouls} />
                     </div>
-                    <div className="text-5xl font-bold text-primary tabular-nums text-center">
+                    <div className="text-4xl sm:text-5xl font-bold text-primary tabular-nums text-center">
                         {localGeneralStats.goals} - {visitorGeneralStats.goals}
                     </div>
                     <div className="flex flex-col items-center">
-                        <h2 className="text-xl font-bold text-center truncate">{visitorTeam}</h2>
+                        <h2 className="text-lg md:text-xl font-bold text-center truncate">{visitorTeam}</h2>
                         <FoulsIndicator count={visitorGeneralStats.fouls} />
                     </div>
                 </div>
 
                  <div className="flex items-center justify-center">
                     <TimeoutIndicator team="local" />
-                    <div className="text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-4 px-6 rounded-lg mx-4">
+                    <div className="text-5xl sm:text-6xl md:text-7xl font-mono font-bold my-4 text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 sm:py-4 px-3 sm:px-6 rounded-lg mx-2 sm:mx-4">
                         {formatTime(timeLeft)}
                     </div>
                     <TimeoutIndicator team="visitor" />
                 </div>
-                <div className="flex items-center gap-4 mt-4">
-                    <Button onClick={() => setIsActive(!isActive)} size="lg" disabled={timeLeft === 0}>
+                <div className="flex items-center gap-2 sm:gap-4 mt-4">
+                    <Button onClick={() => setIsActive(!isActive)} size="lg" className="px-4 sm:px-8" disabled={timeLeft === 0}>
                         {isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                         {isActive ? 'Pausar' : 'Iniciar'}
                     </Button>
-                     <Button onClick={resetTimer} variant="outline" size="lg">
+                     <Button onClick={resetTimer} variant="outline" size="lg" className="px-4 sm:px-8">
                         <RefreshCw className="mr-2"/>
                         Reiniciar
                     </Button>
@@ -309,7 +311,7 @@ export default function MarcadorPage() {
 
        <Card className="mt-8">
             <CardHeader className="flex flex-row items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-lg">
-                <CardTitle className="text-lg">Estadísticas Generales</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Estadísticas Generales</CardTitle>
                 <Button variant="destructive" size="sm" onClick={resetGeneralStats}>
                     <RefreshCw className="mr-2 h-4 w-4"/>
                     Reiniciar Todo
