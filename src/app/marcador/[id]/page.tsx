@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock, Goal as GoalIcon, Shield as ShieldIcon } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock, Goal as GoalIcon, Shield as ShieldIcon, Shuffle, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,8 @@ interface OpponentTeamStats {
   shotsOffTarget: number;
   shotsBlocked: number;
   timeouts: number;
+  turnovers: number;
+  recoveries: number;
 }
 
 
@@ -91,6 +93,7 @@ interface MatchDetails {
 }
 
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
+type OpponentStatKeys = keyof OpponentTeamStats;
 
 
 export default function MarcadorEnVivoPage() {
@@ -121,7 +124,7 @@ export default function MarcadorEnVivoPage() {
       shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0, turnovers: 0, recoveries: 0,
     };
     const defaultOpponentStats: OpponentTeamStats = {
-      goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0,
+      goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0, turnovers: 0, recoveries: 0
     };
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
@@ -182,8 +185,8 @@ export default function MarcadorEnVivoPage() {
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
-                localPlayers: userTeam === 'local' ? teamPlayers : [],
-                visitorPlayers: userTeam === 'visitor' ? teamPlayers : [],
+                localPlayers: userTeam === 'local' ? teamPlayers : data.localPlayers,
+                visitorPlayers: userTeam === 'visitor' ? teamPlayers : data.visitorPlayers,
             }
             
             setMatch(updatedMatch);
@@ -302,8 +305,10 @@ export default function MarcadorEnVivoPage() {
     
     if (finalMatchState.userTeam === 'local') {
       finalMatchState.localScore = userTeamScore;
+      finalMatchState.visitorScore = finalMatchState.opponentStats1.goals + finalMatchState.opponentStats2.goals;
     } else {
       finalMatchState.visitorScore = userTeamScore;
+      finalMatchState.localScore = finalMatchState.opponentStats1.goals + finalMatchState.opponentStats2.goals;
     }
     
     const dataToUpdate: Partial<MatchDetails> = {
@@ -471,10 +476,10 @@ const reopenMatch = async () => {
     const handleTogglePlay = (playerIndex: number) => {
         if (match?.isFinished && !isAdmin) return;
         
-        const playerIsPlaying = match?.localPlayers?.[playerIndex]?.isPlaying || match?.visitorPlayers?.[playerIndex]?.isPlaying;
+        const playersKey = match!.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
+        const playerIsPlaying = match![playersKey]?.[playerIndex]?.isPlaying;
 
         if (!playerIsPlaying) {
-            const playersKey = match!.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
             const playingCount = match![playersKey]?.filter(p => p.isPlaying).length || 0;
             if (playingCount >= 5) {
                 toast({
@@ -488,7 +493,6 @@ const reopenMatch = async () => {
         
         setMatch(prev => {
             if (!prev) return null;
-            const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
             const players = prev[playersKey] ? [...prev[playersKey]!] : [];
             const player = { ...players[playerIndex] };
 
@@ -505,6 +509,39 @@ const reopenMatch = async () => {
             }
             players[playerIndex] = player;
             return { ...prev, [playersKey]: players };
+        });
+    };
+
+    const handleOpponentStatChange = (stat: OpponentStatKeys, delta: 1 | -1) => {
+        if (match?.isFinished && !isAdmin) return;
+        setMatch(prev => {
+            if (!prev) return null;
+
+            const periodKey = prev.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+            const stats = { ...prev[periodKey] };
+            const newValue = (stats[stat] || 0) + delta;
+
+            if (newValue < 0) return prev;
+            // Timeout can only be 0 or 1
+            if (stat === 'timeouts' && (newValue > 1)) return prev;
+
+            stats[stat] = newValue;
+            
+            const opponentTeamKey = prev.userTeam === 'local' ? 'visitor' : 'local';
+            const scoreKey = `${opponentTeamKey}Score` as 'localScore' | 'visitorScore';
+            const foulsKey = `${opponentTeamKey}Fouls` as 'localFouls' | 'visitorFouls';
+            
+            let updatedFields: Partial<MatchDetails> = { [periodKey]: stats };
+
+            if (stat === 'goals') {
+                const otherPeriodKey = prev.period === '1ª Parte' ? 'opponentStats2' : 'opponentStats1';
+                updatedFields[scoreKey] = newValue + prev[otherPeriodKey].goals;
+            }
+            if (stat === 'fouls') {
+                 updatedFields[foulsKey] = newValue;
+            }
+
+            return { ...prev, ...updatedFields };
         });
     };
 
@@ -576,10 +613,6 @@ const reopenMatch = async () => {
             isActive: false,
             localFouls: 0,
             visitorFouls: 0,
-            teamStats1: { ...updatedState.teamStats1, timeouts: 0},
-            teamStats2: { ...updatedState.teamStats2, timeouts: 0},
-            opponentStats1: { ...updatedState.opponentStats1, timeouts: 0},
-            opponentStats2: { ...updatedState.opponentStats2, timeouts: 0},
             endTime: null,
         };
       });
@@ -643,9 +676,42 @@ const reopenMatch = async () => {
     </TableRow>
   )
   
+  const OpponentStatCounter = ({ stat, label, icon: Icon }: { stat: OpponentStatKeys, label: string, icon: React.ElementType }) => {
+    if (!match) return null;
+    const periodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+    const value = match[periodKey]?.[stat] || 0;
+    const isTimeout = stat === 'timeouts';
+    const timeoutUsed = isTimeout && value > 0;
+
+    return (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-secondary/50">
+            <div className="flex items-center gap-2">
+                <Icon className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">{label}</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, -1)} disabled={match.isFinished || (isTimeout && value === 0)}><Minus className="h-4 w-4"/></Button>
+                <span className="w-5 text-center text-lg font-bold">{value}</span>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, 1)} disabled={match.isFinished || timeoutUsed}><Plus className="h-4 w-4"/></Button>
+            </div>
+        </div>
+    );
+};
+
   const renderTeamTable = (isUserTeam: boolean) => {
     if (!isUserTeam) {
-        return <div className="text-center p-8 text-muted-foreground">Las estadísticas del rival se gestionan desde la pestaña de su equipo.</div>;
+        return (
+            <div className="space-y-4 p-4">
+                 <h3 className="font-semibold text-lg text-center">Estadísticas del Rival</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    <OpponentStatCounter stat="goals" label="Goles" icon={GoalIcon} />
+                    <OpponentStatCounter stat="fouls" label="Faltas" icon={ShieldIcon} />
+                    <OpponentStatCounter stat="timeouts" label="Tiempos Muertos" icon={Clock} />
+                    <OpponentStatCounter stat="recoveries" label="Recuperaciones" icon={Shuffle} />
+                    <OpponentStatCounter stat="turnovers" label="Pérdidas" icon={RotateCcw} />
+                </div>
+            </div>
+        );
     }
 
     const players = userPlayers || [];
@@ -839,10 +905,10 @@ const reopenMatch = async () => {
                     <TabsTrigger value="local">{match.localTeam}</TabsTrigger>
                     <TabsTrigger value="visitor">{match.visitorTeam}</TabsTrigger>
                 </TabsList>
-                <TabsContent value="local" className="m-0 p-4">
+                <TabsContent value="local" className="m-0">
                     {renderTeamTable(match.userTeam === 'local')}
                 </TabsContent>
-                <TabsContent value="visitor" className="p-4 m-0">
+                <TabsContent value="visitor" className="m-0">
                     {renderTeamTable(match.userTeam === 'visitor')}
                 </TabsContent>
                </Tabs>
