@@ -52,7 +52,7 @@ interface Player {
     tr: number;
     faltas: number;
     paradas: number;
-    gRec: number;
+gRec: number;
     vs1: number;
     position?: string;
     minutosJugados?: number;
@@ -61,6 +61,17 @@ interface Player {
     recuperaciones: number;
     perdidas: number;
 }
+
+const demoTeamName = "Equipo Demo";
+
+const demoPlayers: Player[] = [
+    { name: 'Portero Demo', number: 1, teamName: demoTeamName, pj: 10, goals: 0, assists: 1, ta: 0, tr: 0, faltas: 2, paradas: 45, gRec: 15, vs1: 10, position: 'Portero', minutosJugados: 900*60, tirosPuerta: 0, tirosFuera: 0, recuperaciones: 5, perdidas: 3 },
+    { name: 'Cierre Demo', number: 5, teamName: demoTeamName, pj: 10, goals: 5, assists: 3, ta: 2, tr: 0, faltas: 15, paradas: 0, gRec: 0, vs1: 0, position: 'Cierre', minutosJugados: 850*60, tirosPuerta: 10, tirosFuera: 5, recuperaciones: 40, perdidas: 20 },
+    { name: 'Ala Izquierdo', number: 7, teamName: demoTeamName, pj: 10, goals: 12, assists: 8, ta: 1, tr: 0, faltas: 10, paradas: 0, gRec: 0, vs1: 0, position: 'Ala', minutosJugados: 800*60, tirosPuerta: 25, tirosFuera: 15, recuperaciones: 30, perdidas: 25 },
+    { name: 'Ala Derecho', number: 10, teamName: demoTeamName, pj: 10, goals: 8, assists: 15, ta: 3, tr: 1, faltas: 12, paradas: 0, gRec: 0, vs1: 0, position: 'Ala', minutosJugados: 820*60, tirosPuerta: 20, tirosFuera: 10, recuperaciones: 35, perdidas: 22 },
+    { name: 'Pívot Demo', number: 9, teamName: demoTeamName, pj: 10, goals: 15, assists: 5, ta: 4, tr: 0, faltas: 20, paradas: 0, gRec: 0, vs1: 0, position: 'Pívot', minutosJugados: 750*60, tirosPuerta: 30, tirosFuera: 20, recuperaciones: 15, perdidas: 30 },
+];
+
 
 interface StatCardProps {
     title: string;
@@ -105,6 +116,8 @@ export default function TeamPlayerStatsPage() {
     const { user } = useAuth();
     const params = useParams();
     const teamId = params.teamId as string;
+    const isDemoMode = teamId === 'demo-team-guest';
+
     const [players, setPlayers] = useState<Player[]>([]);
     const [teamName, setTeamName] = useState<string>('');
     const [loading, setLoading] = useState(true);
@@ -112,6 +125,13 @@ export default function TeamPlayerStatsPage() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
      useEffect(() => {
+        if (isDemoMode) {
+            setPlayers(demoPlayers);
+            setTeamName(demoTeamName);
+            setLoading(false);
+            return;
+        }
+
         if (!user || !teamId) {
             setLoading(false);
             return;
@@ -191,7 +211,7 @@ export default function TeamPlayerStatsPage() {
         };
 
         fetchPlayerStats();
-    }, [user, teamId, activeFilter]);
+    }, [user, teamId, activeFilter, isDemoMode]);
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));

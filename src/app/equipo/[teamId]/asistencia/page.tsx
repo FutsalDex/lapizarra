@@ -39,6 +39,25 @@ import { useToast } from '@/hooks/use-toast';
 
 type AttendanceStatus = 'presente' | 'ausente' | 'justificado' | 'lesionado';
 
+const demoPlayers = [
+    { id: 'demo1', number: 1, name: 'Portero Demo', active: true },
+    { id: 'demo2', number: 5, name: 'Cierre Demo', active: true },
+    { id: 'demo3', number: 7, name: 'Ala Izquierdo', active: true },
+    { id: 'demo4', number: 10, name: 'Ala Derecho', active: true },
+    { id: 'demo5', number: 9, name: 'Pívot Demo', active: true },
+];
+
+const demoTeamData = { name: 'Equipo Demo' };
+const demoRecordedDates = [new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)];
+const demoAttendance = {
+    'demo1': 'presente',
+    'demo2': 'presente',
+    'demo3': 'ausente',
+    'demo4': 'presente',
+    'demo5': 'lesionado',
+};
+
+
 interface Team {
   name: string;
 }
@@ -53,6 +72,8 @@ interface Player {
 export default function TeamAttendancePage() {
   const params = useParams();
   const teamId = params.teamId as string;
+  const isDemoMode = teamId === 'demo-team-guest';
+
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus | undefined>>({});
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [team, setTeam] = useState<Team | null>(null);
@@ -64,7 +85,19 @@ export default function TeamAttendancePage() {
   const { toast } = useToast();
 
    useEffect(() => {
+        if (isDemoMode) {
+            setTeam(demoTeamData);
+            setPlayers(demoPlayers);
+            setRecordedDates(demoRecordedDates);
+            if (date && format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) {
+                setAttendance(demoAttendance);
+                setRecordExists(true);
+            }
+            setLoading(false);
+            return;
+        }
         if (!teamId) return;
+
         setLoading(true);
         const teamDocRef = doc(db, 'teams', teamId);
         const unsubscribeTeam = onSnapshot(teamDocRef, (doc) => {
@@ -92,10 +125,22 @@ export default function TeamAttendancePage() {
             unsubscribePlayers();
             unsubscribeAttendanceDates();
         };
-    }, [teamId]);
+    }, [teamId, isDemoMode]);
     
     // Fetch attendance for the selected date
     useEffect(() => {
+        if (isDemoMode) {
+             const dateString = date ? format(date, 'yyyy-MM-dd') : '';
+             if (demoRecordedDates.some(d => format(d, 'yyyy-MM-dd') === dateString)) {
+                setAttendance(demoAttendance);
+                setRecordExists(true);
+             } else {
+                setAttendance({});
+                setRecordExists(false);
+             }
+            return;
+        }
+
         if (!date || !teamId) return;
 
         const dateString = format(date, 'yyyy-MM-dd');
@@ -117,7 +162,7 @@ export default function TeamAttendancePage() {
         });
 
         return () => unsubscribe();
-    }, [date, teamId, players]);
+    }, [date, teamId, players, isDemoMode]);
 
 
   const handleAttendanceChange = (playerId: string, status: AttendanceStatus) => {
@@ -133,9 +178,13 @@ export default function TeamAttendancePage() {
   }
 
   const handleSaveAttendance = async () => {
+      if (isDemoMode) {
+        toast({ title: 'Modo Demostración', description: 'No se puede guardar la asistencia en el modo demostración.' });
+        return;
+      }
       if (!date || !teamId) return;
        // Check if all players have a status
-      if (Object.values(attendance).some(status => status === undefined)) {
+      if (Object.values(attendance).some(status => status === undefined || status === null)) {
         toast({
             title: "Faltan datos",
             description: "Por favor, marca la asistencia para todos los jugadores.",
@@ -163,6 +212,10 @@ export default function TeamAttendancePage() {
   }
 
   const handleDeleteAttendance = async () => {
+        if (isDemoMode) {
+            toast({ title: 'Modo Demostración', description: 'No se puede eliminar la asistencia en el modo demostración.' });
+            return;
+        }
         if (!date || !teamId) return;
         setIsSaving(true);
         const dateString = format(date, 'yyyy-MM-dd');
@@ -262,7 +315,7 @@ export default function TeamAttendancePage() {
                                 className="flex justify-end gap-4"
                                 value={attendance[player.id]}
                                 onValueChange={(value: string) => handleAttendanceChange(player.id, value as AttendanceStatus)}
-                                disabled={isSaving}
+                                disabled={isSaving || isDemoMode}
                                 >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="presente" id={`presente-${player.id}`} />
@@ -288,15 +341,15 @@ export default function TeamAttendancePage() {
                 </Table>
                 </div>
                 <div className="flex justify-end mt-6 gap-4">
-                    <Button size="lg" variant="outline" onClick={handleClearAttendance} disabled={isSaving}>
+                    <Button size="lg" variant="outline" onClick={handleClearAttendance} disabled={isSaving || isDemoMode}>
                         <Eraser className="mr-2 h-4 w-4" />
                         Limpiar Registros
                     </Button>
-                    <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving || !recordExists}>
+                    <Button size="lg" variant="destructive" onClick={handleDeleteAttendance} disabled={isSaving || !recordExists || isDemoMode}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                         Eliminar Registro
                     </Button>
-                    <Button size="lg" onClick={handleSaveAttendance} disabled={isSaving}>
+                    <Button size="lg" onClick={handleSaveAttendance} disabled={isSaving || isDemoMode}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
                         {recordExists ? 'Actualizar Asistencia' : 'Guardar Asistencia'}
                     </Button>

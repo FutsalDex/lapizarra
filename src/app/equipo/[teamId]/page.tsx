@@ -153,7 +153,7 @@ export default function TeamDashboardPage() {
               <CardDescription>{item.description}</CardDescription>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full" variant="outline" disabled={teamId === 'demo-team-guest' && item.href(teamId).includes('plantilla')}>
+              <Button asChild className="w-full" variant="outline">
                 <Link href={item.href(teamId)}>
                   Ir a {item.title}
                 </Link>

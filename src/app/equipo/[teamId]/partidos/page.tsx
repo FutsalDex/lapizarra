@@ -26,6 +26,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import ConvocatoriaDialog from './_components/ConvocatoriaDialog';
 
+const demoMatches = [
+    { id: 'demomatch1', localTeam: 'Equipo Demo', visitorTeam: 'Rival A', localScore: 3, visitorScore: 1, date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), matchType: 'Liga', isFinished: true, localPlayers: [], visitorPlayers: [] },
+    { id: 'demomatch2', localTeam: 'Rival B', visitorTeam: 'Equipo Demo', localScore: 2, visitorScore: 2, date: new Date().toISOString(), matchType: 'Amistoso', isFinished: false, localPlayers: [], visitorPlayers: [] },
+];
+
+const demoTeam = { name: 'Equipo Demo' };
+
+
 interface Match {
   id: string;
   localTeam: string;
@@ -51,12 +59,21 @@ export default function TeamMatchesPage() {
   const params = useParams();
   const { toast } = useToast();
   const teamId = params.teamId as string;
+  const isDemoMode = teamId === 'demo-team-guest';
+
   const [matches, setMatches] = useState<Match[]>([]);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
   useEffect(() => {
+    if (isDemoMode) {
+        setMatches(demoMatches);
+        setTeam(demoTeam);
+        setLoading(false);
+        return;
+    }
+
     if (!user || !teamId) {
       setLoading(false);
       return;
@@ -82,7 +99,7 @@ export default function TeamMatchesPage() {
         unsubscribeMatches();
         unsubscribeTeam();
     }
-  }, [user, teamId]);
+  }, [user, teamId, isDemoMode]);
   
   const filteredMatches = useMemo(() => {
     if (activeFilter === 'Todos') {
@@ -92,6 +109,10 @@ export default function TeamMatchesPage() {
   }, [matches, activeFilter]);
   
   const handleDeleteMatch = async (matchId: string) => {
+    if (isDemoMode) {
+        toast({ title: 'Modo Demostración', description: 'No se pueden eliminar partidos en el modo demostración.' });
+        return;
+    }
       try {
           await deleteDoc(doc(db, 'matches', matchId));
           toast({ title: "Partido Eliminado", description: "El partido ha sido eliminado con éxito." });
@@ -126,7 +147,7 @@ export default function TeamMatchesPage() {
           </div>
         </div>
         <AddMatchDialog teamId={teamId}>
-          <Button size="lg" className="shrink-0">
+          <Button size="lg" className="shrink-0" disabled={isDemoMode}>
             <PlusCircle className="mr-2 h-5 w-5" />
             Añadir Partido
           </Button>
@@ -163,7 +184,7 @@ export default function TeamMatchesPage() {
             }
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            {activeFilter === 'Todos' ? 'Haz clic en "Añadir Partido" para empezar.' : 'Prueba a seleccionar otro filtro.'}
+            {activeFilter === 'Todos' && !isDemoMode ? 'Haz clic en "Añadir Partido" para empezar.' : 'Prueba a seleccionar otro filtro.'}
           </p>
         </div>
       ) : (
@@ -178,7 +199,7 @@ export default function TeamMatchesPage() {
               </CardContent>
               <CardFooter className="flex justify-center gap-2 border-t pt-4">
                 <ConvocatoriaDialog teamId={teamId} match={match}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" disabled={isDemoMode}>
                     <ClipboardList className="mr-2 h-4 w-4" />
                     Convocar
                   </Button>
@@ -190,13 +211,13 @@ export default function TeamMatchesPage() {
                   <Link href={`/partido/${match.id}`}><Eye className="h-5 w-5" /></Link>
                 </Button>
                 <AddMatchDialog matchData={match} teamId={teamId}>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" disabled={isDemoMode}>
                         <Edit className="h-5 w-5" />
                     </Button>
                 </AddMatchDialog>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" disabled={isDemoMode}>
                             <Trash2 className="h-5 w-5" />
                         </Button>
                     </AlertDialogTrigger>

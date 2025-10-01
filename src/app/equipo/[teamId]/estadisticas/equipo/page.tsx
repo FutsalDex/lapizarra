@@ -83,6 +83,17 @@ interface Stats {
     yellowCards: number;
 }
 
+const demoStats: Stats = {
+    played: 10, won: 6, drawn: 2, lost: 2, fouls: 87, faltasRecibidas: 95,
+    goalsFor: 35, goalsFor1stHalf: 15, goalsFor2ndHalf: 20,
+    goalsAgainst: 20, goalsAgainst1stHalf: 8, goalsAgainst2ndHalf: 12,
+    totalShots: 150, shotsOnTarget: 70, shotsOffTarget: 50, shotsBlocked: 30,
+    turnovers: 120, recoveries: 145, yellowCards: 18,
+};
+
+const demoTeamName = 'Equipo Demo';
+
+
 type FilterType = 'Todos' | 'Liga' | 'Copa' | 'Torneo' | 'Amistoso';
 const filters: FilterType[] = ['Todos', 'Liga', 'Copa', 'Torneo', 'Amistoso'];
 
@@ -90,12 +101,21 @@ export default function TeamSpecificStatsPage() {
     const { user } = useAuth();
     const params = useParams();
     const teamId = params.teamId as string;
+    const isDemoMode = teamId === 'demo-team-guest';
+
     const [stats, setStats] = useState<Stats | null>(null);
     const [teamName, setTeamName] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
 
      useEffect(() => {
+        if (isDemoMode) {
+            setStats(demoStats);
+            setTeamName(demoTeamName);
+            setLoading(false);
+            return;
+        }
+
         if (!user || !teamId) {
             setLoading(false);
             return;
@@ -197,7 +217,7 @@ export default function TeamSpecificStatsPage() {
         };
 
         fetchStats();
-    }, [user, teamId, activeFilter]);
+    }, [user, teamId, activeFilter, isDemoMode]);
 
     
 
@@ -327,5 +347,3 @@ export default function TeamSpecificStatsPage() {
     </div>
   );
 }
-
-    

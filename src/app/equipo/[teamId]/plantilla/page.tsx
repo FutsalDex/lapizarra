@@ -30,6 +30,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
+const demoPlayers = [
+    { id: 'demo1', number: 1, name: 'Portero Demo', position: 'Portero', active: true },
+    { id: 'demo2', number: 5, name: 'Cierre Demo', position: 'Cierre', active: true },
+    { id: 'demo3', number: 7, name: 'Ala Izquierdo', position: 'Ala', active: true },
+    { id: 'demo4', number: 10, name: 'Ala Derecho', position: 'Ala', active: true },
+    { id: 'demo5', number: 9, name: 'Pívot Demo', position: 'Pívot', active: true },
+];
+
+const demoTeamData = {
+    id: 'demo-team-guest',
+    name: 'Equipo Demo',
+    club: 'Club de Demostración',
+    competition: 'Liga Demo',
+    ownerId: 'guest',
+    ownerRole: 'Propietario (Demo)'
+}
+
+const demoMembers = [
+    { id: 'demomember1', name: '2º Entrenador (Demo)', role: '2º Entrenador' }
+]
+
 
 interface Team {
   id: string;
@@ -60,6 +81,8 @@ export default function TeamRosterPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const teamId = params.teamId as string;
+    const isDemoMode = teamId === 'demo-team-guest';
+
     const [players, setPlayers] = useState<Player[]>([]);
     const [team, setTeam] = useState<Team | null>(null);
     const [members, setMembers] = useState<Member[]>([]);
@@ -67,6 +90,14 @@ export default function TeamRosterPage() {
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
+        if (isDemoMode) {
+            setTeam(demoTeamData);
+            setPlayers(demoPlayers);
+            setMembers(demoMembers);
+            setLoading(false);
+            return;
+        }
+
         if (!teamId) return;
 
         const teamDocRef = doc(db, 'teams', teamId);
@@ -94,13 +125,17 @@ export default function TeamRosterPage() {
             unsubscribeMembers();
             unsubscribePlayers();
         };
-    }, [teamId]);
+    }, [teamId, isDemoMode]);
 
     const handlePlayerChange = (playerId: string, field: keyof Omit<Player, 'id' | 'active'>, value: any) => {
         setPlayers(prevPlayers => prevPlayers.map(p => p.id === playerId ? {...p, [field]: value} : p));
     }
     
     const handleSave = async () => {
+        if (isDemoMode) {
+            toast({ title: "Modo Demostración", description: "No se pueden guardar cambios en el modo de demostración." });
+            return;
+        }
         setIsSaving(true);
         const batch = writeBatch(db);
         
@@ -128,6 +163,10 @@ export default function TeamRosterPage() {
     }
     
     const handleAddPlayer = async () => {
+        if (isDemoMode) {
+            toast({ title: "Modo Demostración", description: "No se pueden añadir jugadores en el modo de demostración." });
+            return;
+        }
         setIsSaving(true);
         try {
             await addDoc(collection(db, 'teams', teamId, 'players'), {
@@ -155,6 +194,10 @@ export default function TeamRosterPage() {
     }
 
     const handleDeletePlayer = async (playerId: string) => {
+        if (isDemoMode) {
+            toast({ title: "Modo Demostración", description: "No se pueden eliminar jugadores en el modo de demostración." });
+            return;
+        }
          setIsSaving(true);
          try {
              await deleteDoc(doc(db, 'teams', teamId, 'players', playerId));
@@ -231,7 +274,7 @@ export default function TeamRosterPage() {
                          <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4 text-muted-foreground" />
                             <div>
-                                <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
+                                <p className="font-medium">{ isDemoMode ? 'Propietario (Demo)' : (user?.displayName || user?.email?.split('@')[0])}</p>
                                 <p className="text-xs text-muted-foreground">{team.ownerRole || 'Propietario'}</p>
                             </div>
                         </div>
@@ -268,10 +311,10 @@ export default function TeamRosterPage() {
                 <TableBody>
                     {players.map((player) => (
                         <TableRow key={player.id}>
-                            <TableCell><Input value={player.number} onChange={(e) => handlePlayerChange(player.id, 'number', parseInt(e.target.value) || 0)} className="h-8 w-14 text-center" /></TableCell>
-                            <TableCell><Input value={player.name} onChange={(e) => handlePlayerChange(player.id, 'name', e.target.value)} className="h-8" /></TableCell>
+                            <TableCell><Input value={player.number} onChange={(e) => handlePlayerChange(player.id, 'number', parseInt(e.target.value) || 0)} className="h-8 w-14 text-center" disabled={isDemoMode} /></TableCell>
+                            <TableCell><Input value={player.name} onChange={(e) => handlePlayerChange(player.id, 'name', e.target.value)} className="h-8" disabled={isDemoMode} /></TableCell>
                             <TableCell>
-                                <Select value={player.position} onValueChange={(value) => handlePlayerChange(player.id, 'position', value)}>
+                                <Select value={player.position} onValueChange={(value) => handlePlayerChange(player.id, 'position', value)} disabled={isDemoMode}>
                                     <SelectTrigger className="h-8">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -286,7 +329,7 @@ export default function TeamRosterPage() {
                                 </Select>
                             </TableCell>
                             <TableCell className="text-right">
-                                 <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving}>
+                                 <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving || isDemoMode}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </TableCell>
@@ -296,8 +339,8 @@ export default function TeamRosterPage() {
             </Table>
             </div>
             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
-                 <Button variant="outline" onClick={handleAddPlayer} disabled={isSaving || players.length >= 20}><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
-                 <Button onClick={handleSave} disabled={isSaving}>
+                 <Button variant="outline" onClick={handleAddPlayer} disabled={isSaving || players.length >= 20 || isDemoMode}><PlusCircle className="mr-2 h-4 w-4" />Añadir Jugador</Button>
+                 <Button onClick={handleSave} disabled={isSaving || isDemoMode}>
                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                      Guardar Plantilla
                 </Button>
