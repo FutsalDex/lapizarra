@@ -262,6 +262,11 @@ export default function TeamPlayerStatsPage() {
         return gksWithMinutes.reduce((min, p) => (p.minutosJugados || 0) < (min.minutosJugados || 0) ? p : min, gksWithMinutes[0]);
     }, [goalkeepers]);
 
+    const topShotsOnTarget = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.tirosPuerta > max.tirosPuerta ? p : max, players[0]) : null, [players]);
+    const topShotsOffTarget = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.tirosFuera > max.tirosFuera ? p : max, players[0]) : null, [players]);
+    const topRecoveries = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.recuperaciones > max.recuperaciones ? p : max, players[0]) : null, [players]);
+    const topLosses = useMemo(() => players.length > 0 ? players.reduce((max, p) => p.perdidas > max.perdidas ? p : max, players[0]) : null, [players]);
+
     const formatTime = (totalSeconds: number) => {
         if (!totalSeconds || totalSeconds < 0) return '00:00';
         const minutes = Math.floor(totalSeconds / 60);
@@ -324,6 +329,10 @@ export default function TeamPlayerStatsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {topScorer && topScorer.goals > 0 && <StatCard title="Máximo Goleador" icon={Goal} playerName={topScorer.name} value={topScorer.goals} />}
                 {topAssistant && topAssistant.assists > 0 && <StatCard title="Máximo Asistente" icon={Hand} playerName={topAssistant.name} value={topAssistant.assists} />}
+                {topShotsOnTarget && topShotsOnTarget.tirosPuerta > 0 && <StatCard title="Más Tiros a Puerta" icon={Crosshair} playerName={topShotsOnTarget.name} value={topShotsOnTarget.tirosPuerta} />}
+                {topShotsOffTarget && topShotsOffTarget.tirosFuera > 0 && <StatCard title="Más Tiros Fuera" icon={ShieldOff} playerName={topShotsOffTarget.name} value={topShotsOffTarget.tirosFuera} />}
+                {topRecoveries && topRecoveries.recuperaciones > 0 && <StatCard title="Más Recuperaciones" icon={Shuffle} playerName={topRecoveries.name} value={topRecoveries.recuperaciones} />}
+                {topLosses && topLosses.perdidas > 0 && <StatCard title="Más Pérdidas" icon={RotateCcw} playerName={topLosses.name} value={topLosses.perdidas} />}
                 {mostFouls && mostFouls.faltas > 0 && <StatCard title="Más Faltas" icon={AlertTriangle} playerName={mostFouls.name} value={mostFouls.faltas} />}
                 {mostYellows && mostYellows.ta > 0 && <StatCard title="Más T. Amarillas" icon={YellowCardIcon} playerName={mostYellows.name} value={mostYellows.ta} />}
                 {mostReds && mostReds.tr > 0 && <StatCard title="Más T. Rojas" icon={RedCardIcon} playerName={mostReds.name} value={mostReds.tr} />}
