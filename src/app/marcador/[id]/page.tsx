@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -64,7 +65,7 @@ interface OpponentTeamStats {
   fouls: number;
   shotsOnTarget: number;
   shotsOffTarget: number;
-  shotsBlocked: number;
+  // shotsBlocked is removed as per user request
   timeouts: number;
   turnovers: number;
   recoveries: number;
@@ -127,7 +128,7 @@ export default function MarcadorEnVivoPage() {
       shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0, turnovers: 0, recoveries: 0,
     };
     const defaultOpponentStats: OpponentTeamStats = {
-      goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0, timeouts: 0, turnovers: 0, recoveries: 0
+      goals: 0, fouls: 0, shotsOnTarget: 0, shotsOffTarget: 0, timeouts: 0, turnovers: 0, recoveries: 0
     };
 
     const unsubscribe = onSnapshot(matchDocRef, async (docSnap) => {
@@ -739,7 +740,6 @@ const StatsLegend = () => (
                     <OpponentStatCounter stat="goals" label="Goles" icon={GoalIcon} />
                     <OpponentStatCounter stat="shotsOnTarget" label="Tiros a Puerta" icon={Crosshair} />
                     <OpponentStatCounter stat="shotsOffTarget" label="Tiros Fuera" icon={ShieldOff} />
-                    <OpponentStatCounter stat="shotsBlocked" label="Tiros Bloqueados" icon={Hand} />
                     <OpponentStatCounter stat="fouls" label="Faltas" icon={AlertOctagon} />
                     <OpponentStatCounter stat="recoveries" label="Recuperaciones" icon={Shuffle} />
                     <OpponentStatCounter stat="turnovers" label="Pérdidas" icon={RotateCcw} />

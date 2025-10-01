@@ -72,7 +72,6 @@ interface Stats {
     totalShots: number;
     shotsOnTarget: number;
     shotsOffTarget: number;
-    shotsBlocked: number;
     turnovers: number;
     recoveries: number;
     yellowCards: number;
@@ -110,7 +109,7 @@ export default function TeamStatsPage() {
                 played: matches.length, won: 0, drawn: 0, lost: 0, fouls: 0, faltasRecibidas: 0,
                 goalsFor: 0, goalsFor1stHalf: 0, goalsFor2ndHalf: 0,
                 goalsAgainst: 0, goalsAgainst1stHalf: 0, goalsAgainst2ndHalf: 0,
-                totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0, shotsBlocked: 0,
+                totalShots: 0, shotsOnTarget: 0, shotsOffTarget: 0,
                 turnovers: 0, recoveries: 0, yellowCards: 0
             };
 
@@ -137,11 +136,9 @@ export default function TeamStatsPage() {
                 }
                  if(match.opponentStats1) {
                     newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
-                    newStats.shotsBlocked += match.opponentStats1.shotsBlocked || 0;
                 }
                 if(match.opponentStats2) {
                     newStats.faltasRecibidas += match.opponentStats2.fouls || 0;
-                    newStats.shotsBlocked += match.opponentStats2.shotsBlocked || 0;
                 }
                 
                 const goals = match.events?.filter((e: any) => e.type === 'goal') || [];
@@ -157,7 +154,7 @@ export default function TeamStatsPage() {
                 })
             });
 
-            newStats.totalShots = newStats.shotsOnTarget + newStats.shotsOffTarget + newStats.shotsBlocked;
+            newStats.totalShots = newStats.shotsOnTarget + newStats.shotsOffTarget;
 
             setStats(newStats);
             setLoading(false);
@@ -234,7 +231,6 @@ export default function TeamStatsPage() {
                     <StatCard title="Tiros Totales" value={stats.totalShots} icon={Crosshair} />
                     <StatCard title="Tiros a Puerta" value={stats.shotsOnTarget} icon={Goal} />
                     <StatCard title="Tiros Fuera" value={stats.shotsOffTarget} icon={ShieldOff} />
-                    <StatCard title="Tiros Bloqueados" value={stats.shotsBlocked} icon={Hand} />
                     <StatCard title="Faltas Cometidas" value={stats.fouls} icon={AlertOctagon} />
                     <StatCard title="Faltas Recibidas" value={stats.faltasRecibidas} icon={ShieldCheck} />
                     <StatCard title="Pérdidas de Balón" value={stats.turnovers} icon={RotateCcw} />
@@ -270,5 +266,3 @@ export default function TeamStatsPage() {
     </div>
   );
 }
-
-    

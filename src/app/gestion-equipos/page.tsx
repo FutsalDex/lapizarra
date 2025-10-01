@@ -244,7 +244,7 @@ export default function GestionEquiposPage() {
                             <Skeleton className="h-20 w-full" />
                             <Skeleton className="h-20 w-full" />
                         </div>
-                    ) : (user && myTeams.length === 0) ? (
+                    ) : (user && myTeams.length === 0 && !canCreateTeam()) ? (
                         <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
                            <p>No has creado ningún equipo todavía.</p>
                            <p className="text-sm">Usa el formulario para añadir tu primer equipo.</p>
