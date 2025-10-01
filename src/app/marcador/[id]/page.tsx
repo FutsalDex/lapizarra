@@ -97,7 +97,7 @@ interface MatchDetails {
 }
 
 type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' | 'timeOnCourt' | 'lastEntryTime'>;
-type OpponentStatKeys = keyof OpponentTeamStats;
+type OpponentStatKeys = keyof Omit<OpponentTeamStats, 'goals'>;
 
 
 export default function MarcadorEnVivoPage() {
@@ -510,7 +510,7 @@ const reopenMatch = async () => {
         });
     };
 
-    const handleOpponentStatChange = (stat: OpponentStatKeys, delta: 1 | -1) => {
+    const handleOpponentStatChange = (stat: OpponentStatKeys | 'goals', delta: 1 | -1) => {
         if (match?.isFinished && !isAdmin) return;
         setMatch(prev => {
             if (!prev) return null;
@@ -616,7 +616,25 @@ const reopenMatch = async () => {
   
   const resetTimer = () => {
     if (match?.isFinished && !isAdmin) return;
-    setMatch(prev => prev ? {...prev, isActive: false, timeLeft: 25*60, endTime: null } : null);
+    setMatch(prev => {
+        if (!prev) return null;
+
+        const newState: Partial<MatchDetails> = {
+            isActive: false,
+            timeLeft: 25*60,
+            endTime: null,
+        };
+
+        if (prev.period === '1ª Parte') {
+            newState.teamStats1 = { ...prev.teamStats1, timeouts: 0 };
+            newState.opponentStats1 = { ...prev.opponentStats1, timeouts: 0 };
+        } else if (prev.period === '2ª Parte') {
+            newState.teamStats2 = { ...prev.teamStats2, timeouts: 0 };
+            newState.opponentStats2 = { ...prev.opponentStats2, timeouts: 0 };
+        }
+
+        return {...prev, ...newState };
+    });
   }
 
   if (loading) {
@@ -674,7 +692,7 @@ const reopenMatch = async () => {
     </TableRow>
   )
   
-  const OpponentStatCounter = ({ stat, label, icon: Icon }: { stat: OpponentStatKeys, label: string, icon: React.ElementType }) => {
+  const OpponentStatCounter = ({ stat, label, icon: Icon }: { stat: OpponentStatKeys | 'goals', label: string, icon: React.ElementType }) => {
     if (!match) return null;
     const periodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
     const value = match[periodKey]?.[stat] || 0;
