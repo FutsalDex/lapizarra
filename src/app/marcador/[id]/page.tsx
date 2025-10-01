@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock, Goal as GoalIcon, Shield as ShieldIcon, Shuffle, RotateCcw } from 'lucide-react';
+import { Play, Pause, RefreshCw, Unlock, Minus, Plus, ArrowLeft, BarChartHorizontal, CheckCircle, Loader2, PlusCircle, Save, Lock, AlertOctagon, Crosshair, Clock, Goal as GoalIcon, Shield as ShieldIcon, Shuffle, RotateCcw, Hand, ShieldOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -703,8 +703,11 @@ const reopenMatch = async () => {
         return (
             <div className="space-y-4 p-4">
                  <h3 className="font-semibold text-lg text-center">Estadísticas del Rival</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
                     <OpponentStatCounter stat="goals" label="Goles" icon={GoalIcon} />
+                    <OpponentStatCounter stat="shotsOnTarget" label="Tiros a Puerta" icon={Crosshair} />
+                    <OpponentStatCounter stat="shotsOffTarget" label="Tiros Fuera" icon={ShieldOff} />
+                    <OpponentStatCounter stat="shotsBlocked" label="Tiros Bloqueados" icon={Hand} />
                     <OpponentStatCounter stat="fouls" label="Faltas" icon={ShieldIcon} />
                     <OpponentStatCounter stat="timeouts" label="Tiempos Muertos" icon={Clock} />
                     <OpponentStatCounter stat="recoveries" label="Recuperaciones" icon={Shuffle} />
