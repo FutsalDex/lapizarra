@@ -130,12 +130,18 @@ export default function TeamStatsPage() {
                 if (userPlayers) {
                     newStats.fouls += userPlayers.reduce((acc: number, p: any) => acc + (p.faltas || 0), 0);
                     newStats.yellowCards += userPlayers.reduce((acc: number, p: any) => acc + (p.amarillas || 0), 0);
+                    newStats.shotsOnTarget += userPlayers.reduce((acc: number, p: any) => acc + (p.tirosPuerta || 0), 0);
+                    newStats.shotsOffTarget += userPlayers.reduce((acc: number, p: any) => acc + (p.tirosFuera || 0), 0);
+                    newStats.recoveries += userPlayers.reduce((acc: number, p: any) => acc + (p.recuperaciones || 0), 0);
+                    newStats.turnovers += userPlayers.reduce((acc: number, p: any) => acc + (p.perdidas || 0), 0);
                 }
                  if(match.opponentStats1) {
                     newStats.faltasRecibidas += match.opponentStats1.fouls || 0;
+                    newStats.shotsBlocked += match.opponentStats1.shotsBlocked || 0;
                 }
                 if(match.opponentStats2) {
                     newStats.faltasRecibidas += match.opponentStats2.fouls || 0;
+                    newStats.shotsBlocked += match.opponentStats2.shotsBlocked || 0;
                 }
                 
                 const goals = match.events?.filter((e: any) => e.type === 'goal') || [];
@@ -149,21 +155,6 @@ export default function TeamStatsPage() {
                          if(goal.period === '2ª Parte') newStats.goalsAgainst2ndHalf++;
                     }
                 })
-
-                if (match.teamStats1) {
-                  newStats.shotsOnTarget += match.teamStats1.shotsOnTarget || 0;
-                  newStats.shotsOffTarget += match.teamStats1.shotsOffTarget || 0;
-                  newStats.shotsBlocked += match.teamStats1.shotsBlocked || 0;
-                  newStats.turnovers += match.teamStats1.turnovers || 0;
-                  newStats.recoveries += match.teamStats1.recoveries || 0;
-                }
-                if (match.teamStats2) {
-                  newStats.shotsOnTarget += match.teamStats2.shotsOnTarget || 0;
-                  newStats.shotsOffTarget += match.teamStats2.shotsOffTarget || 0;
-                  newStats.shotsBlocked += match.teamStats2.shotsBlocked || 0;
-                  newStats.turnovers += match.teamStats2.turnovers || 0;
-                  newStats.recoveries += match.teamStats2.recoveries || 0;
-                }
             });
 
             newStats.totalShots = newStats.shotsOnTarget + newStats.shotsOffTarget + newStats.shotsBlocked;
