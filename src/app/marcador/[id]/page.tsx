@@ -150,7 +150,7 @@ export default function MarcadorEnVivoPage() {
                 }
             }
 
-            const ensurePlayersArray = (players: Player[] | undefined) => {
+            const ensurePlayersArray = (players: Player[] | undefined): Player[] => {
                 if (!players) return [];
                 const defaultPlayerStats = {
                     goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
@@ -168,10 +168,10 @@ export default function MarcadorEnVivoPage() {
                 isActive: data.isActive ?? false,
                 isFinished: data.isFinished ?? false,
                 events: data.events || [],
-                teamStats1: { ...defaultTeamStats, ...data.teamStats1 },
-                teamStats2: { ...defaultTeamStats, ...data.teamStats2 },
-                opponentStats1: { ...defaultOpponentStats, ...data.opponentStats1 },
-                opponentStats2: { ...defaultOpponentStats, ...data.opponentStats2 },
+                teamStats1: { ...defaultTeamStats, ...(data.teamStats1 || {}) },
+                teamStats2: { ...defaultTeamStats, ...(data.teamStats2 || {}) },
+                opponentStats1: { ...defaultOpponentStats, ...(data.opponentStats1 || {}) },
+                opponentStats2: { ...defaultOpponentStats, ...(data.opponentStats2 || {}) },
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
@@ -520,7 +520,6 @@ const reopenMatch = async () => {
             const newValue = (stats[stat] || 0) + delta;
 
             if (newValue < 0) return prev;
-            if (stat === 'timeouts' && (newValue > 1 || newValue < 0)) return prev;
 
             stats[stat] = newValue;
             
@@ -537,15 +536,7 @@ const reopenMatch = async () => {
             if (stat === 'fouls') {
                  updatedFields[foulsKey] = newValue;
             }
-            if (stat === 'timeouts') {
-                if (prev.isActive) {
-                    updatedFields.isActive = false;
-                }
-                const newTime = (prev.timeLeft || 0) + (delta * 60);
-                updatedFields.timeLeft = newTime;
-                updatedFields.endTime = prev.endTime ? prev.endTime + (delta * 60 * 1000) : null;
-            }
-
+            
             return { ...prev, ...updatedFields };
         });
     };
@@ -687,8 +678,6 @@ const reopenMatch = async () => {
     if (!match) return null;
     const periodKey = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
     const value = match[periodKey]?.[stat] || 0;
-    const isTimeout = stat === 'timeouts';
-    const timeoutUsed = isTimeout && value > 0;
 
     return (
         <div className="flex items-center justify-between p-3 border rounded-lg bg-secondary/50">
@@ -697,9 +686,9 @@ const reopenMatch = async () => {
                 <span className="font-medium">{label}</span>
             </div>
             <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, -1)} disabled={match.isFinished || (isTimeout && value === 0)}><Minus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, -1)} disabled={match.isFinished}><Minus className="h-4 w-4"/></Button>
                 <span className="w-5 text-center text-lg font-bold">{value}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, 1)} disabled={match.isFinished || timeoutUsed}><Plus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, 1)} disabled={match.isFinished}><Plus className="h-4 w-4"/></Button>
             </div>
         </div>
     );
@@ -735,7 +724,6 @@ const StatsLegend = () => (
                     <OpponentStatCounter stat="shotsOffTarget" label="Tiros Fuera" icon={ShieldOff} />
                     <OpponentStatCounter stat="shotsBlocked" label="Tiros Bloqueados" icon={Hand} />
                     <OpponentStatCounter stat="fouls" label="Faltas" icon={AlertOctagon} />
-                    <OpponentStatCounter stat="timeouts" label="Tiempos Muertos" icon={Clock} />
                     <OpponentStatCounter stat="recoveries" label="Recuperaciones" icon={Shuffle} />
                     <OpponentStatCounter stat="turnovers" label="Pérdidas" icon={RotateCcw} />
                 </div>
@@ -819,24 +807,72 @@ const StatsLegend = () => (
     </div>
   );
 
-  const TimeoutIndicator = ({ used, onCancel }: { used: boolean, onCancel: () => void }) => (
+  const handleTimeoutToggle = (team: 'local' | 'visitor') => {
+      if (match?.isFinished && !isAdmin) return;
+
+      setMatch(prev => {
+          if (!prev) return null;
+
+          const isUserTeam = (prev.userTeam === 'local' && team === 'local') || (prev.userTeam === 'visitor' && team === 'visitor');
+          const periodKey = prev.period === '1ª Parte' ? (isUserTeam ? 'teamStats1' : 'opponentStats1') : (isUserTeam ? 'teamStats2' : 'opponentStats2');
+          
+          const stats = { ...prev[periodKey] };
+          const currentTimeoutValue = stats.timeouts || 0;
+          let delta: 1 | -1;
+
+          if (currentTimeoutValue === 0) {
+              delta = 1; // Use timeout
+          } else {
+              delta = -1; // Cancel timeout
+          }
+          
+          const newTimeoutValue = currentTimeoutValue + delta;
+          if (newTimeoutValue > 1 || newTimeoutValue < 0) return prev; // Should not happen with this logic
+
+          stats.timeouts = newTimeoutValue;
+
+          let newIsActive = prev.isActive;
+          if (delta === 1 && newIsActive) {
+            newIsActive = false; // Pause timer when timeout is called
+          }
+
+          const newTime = (prev.timeLeft || 0) + (delta * 60);
+          const newEndTime = prev.endTime ? prev.endTime + (delta * 60 * 1000) : null;
+          
+          return {
+              ...prev,
+              [periodKey]: stats,
+              timeLeft: newTime,
+              endTime: newEndTime,
+              isActive: newIsActive,
+          };
+      });
+  };
+
+  const TimeoutIndicator = ({ team, used }: { team: 'local' | 'visitor', used: boolean }) => (
       <Button 
         variant="outline"
         className={cn(
           "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
           used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
         )}
-        onClick={onCancel}
-        disabled={!used || (match.isFinished && !isAdmin)}
+        onClick={() => handleTimeoutToggle(team)}
+        disabled={(match?.isFinished && !isAdmin)}
       >
           <span className="font-bold text-sm">TM</span>
       </Button>
   );
 
-  const currentPeriodKey = match.period === '1ª Parte' ? '1' : '2';
-  const localTimeoutUsed = (match.userTeam === 'local' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'visitor' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
-  const visitorTimeoutUsed = (match.userTeam === 'visitor' && match[`teamStats${currentPeriodKey}` as 'teamStats1' | 'teamStats2'].timeouts > 0) || (match.userTeam === 'local' && match[`opponentStats${currentPeriodKey}` as 'opponentStats1' | 'opponentStats2'].timeouts > 0);
+  const currentPeriodKeyUser = match.period === '1ª Parte' ? 'teamStats1' : 'teamStats2';
+  const currentPeriodKeyOpponent = match.period === '1ª Parte' ? 'opponentStats1' : 'opponentStats2';
+  
+  const localTimeoutUsed = match.userTeam === 'local' 
+    ? match[currentPeriodKeyUser].timeouts > 0
+    : match[currentPeriodKeyOpponent].timeouts > 0;
 
+  const visitorTimeoutUsed = match.userTeam === 'visitor' 
+    ? match[currentPeriodKeyUser].timeouts > 0
+    : match[currentPeriodKeyOpponent].timeouts > 0;
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4 space-y-6">
@@ -912,27 +948,15 @@ const StatsLegend = () => (
 
                 <div className="flex items-center justify-center">
                      <TimeoutIndicator 
-                        used={localTimeoutUsed} 
-                        onCancel={() => {
-                            if (match.userTeam === 'local') {
-                                // This should not happen as the button is in opponent stats
-                            } else {
-                                handleOpponentStatChange('timeouts', -1)
-                            }
-                        }}
+                        team="local"
+                        used={localTimeoutUsed}
                     />
                     <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-4">
                         {formatTime(match.timeLeft)}
                     </div>
                      <TimeoutIndicator 
-                        used={visitorTimeoutUsed} 
-                        onCancel={() => {
-                            if (match.userTeam === 'visitor') {
-                                 // This should not happen
-                            } else {
-                                handleOpponentStatChange('timeouts', -1)
-                            }
-                        }}
+                        team="visitor"
+                        used={visitorTimeoutUsed}
                     />
                 </div>
 
@@ -975,5 +999,3 @@ const StatsLegend = () => (
     </div>
   );
 }
-
-    
