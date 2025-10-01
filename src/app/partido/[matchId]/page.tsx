@@ -39,6 +39,10 @@ interface PlayerStats {
   gRec: number;
   vs1: number;
   timeOnCourt?: number;
+  tirosPuerta: number;
+  tirosFuera: number;
+  recuperaciones: number;
+  perdidas: number;
 }
 
 interface GoalEvent {
@@ -175,6 +179,10 @@ export default function MatchDetailsPage() {
                   <TableHead className="hidden sm:table-cell">TA</TableHead>
                   <TableHead className="hidden sm:table-cell">TR</TableHead>
                   <TableHead className="hidden sm:table-cell">F</TableHead>
+                  <TableHead className="hidden lg:table-cell">TP</TableHead>
+                  <TableHead className="hidden lg:table-cell">TF</TableHead>
+                  <TableHead className="hidden lg:table-cell">R</TableHead>
+                  <TableHead className="hidden lg:table-cell">P</TableHead>
                   <TableHead className="hidden lg:table-cell">Par.</TableHead>
                   <TableHead className="hidden lg:table-cell">GC</TableHead>
                   <TableHead className="hidden lg:table-cell">1vs1</TableHead>
@@ -191,6 +199,10 @@ export default function MatchDetailsPage() {
                     <TableCell className="hidden sm:table-cell">{player.amarillas ?? 0}</TableCell>
                     <TableCell className="hidden sm:table-cell">{player.rojas ?? 0}</TableCell>
                     <TableCell className="hidden sm:table-cell">{player.faltas ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.tirosPuerta ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.tirosFuera ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.recuperaciones ?? 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{player.perdidas ?? 0}</TableCell>
                     <TableCell className="hidden lg:table-cell">{player.paradas ?? 0}</TableCell>
                     <TableCell className="hidden lg:table-cell">{player.gRec ?? 0}</TableCell>
                     <TableCell className="hidden lg:table-cell">{player.vs1 ?? 0}</TableCell>

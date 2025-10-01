@@ -34,6 +34,10 @@ interface Player {
     timeOnCourt: number;  // New: Total seconds played
     lastEntryTime: number; // New: Timestamp of last entry
     minutosJugados: number;
+    tirosPuerta: number;
+    tirosFuera: number;
+    recuperaciones: number;
+    perdidas: number;
 }
 
 interface GoalEvent {
@@ -147,6 +151,12 @@ export default function MarcadorEnVivoPage() {
                         teamPlayers = data.localPlayers;
                     }
 
+                    const defaultPlayerStats = {
+                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                        isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
+                        tirosPuerta: 0, tirosFuera: 0, recuperaciones: 0, perdidas: 0,
+                    };
+
                     if (!teamPlayers || teamPlayers.length === 0) {
                         const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
                         const playersSnapshot = await getDocs(playerQuery);
@@ -154,17 +164,13 @@ export default function MarcadorEnVivoPage() {
                             id: d.id, 
                             name: d.data().name, 
                             number: d.data().number,
-                            goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                            isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
+                            ...defaultPlayerStats,
                         })).sort((a, b) => a.number - b.number);
                     } else {
                         // Ensure new fields exist
                         teamPlayers = teamPlayers.map(p => ({
+                            ...defaultPlayerStats,
                             ...p,
-                            isPlaying: p.isPlaying || false,
-                            timeOnCourt: p.timeOnCourt || 0,
-                            lastEntryTime: p.lastEntryTime || 0,
-                            minutosJugados: p.minutosJugados || 0,
                         }))
                     }
                 }
@@ -336,7 +342,11 @@ export default function MarcadorEnVivoPage() {
                         tr: increment(player.rojas || 0),
                         paradas: increment(player.paradas || 0),
                         gRec: increment(player.gRec || 0),
-                        minutosJugados: increment(player.timeOnCourt || 0)
+                        minutosJugados: increment(player.timeOnCourt || 0),
+                        tirosPuerta: increment(player.tirosPuerta || 0),
+                        tirosFuera: increment(player.tirosFuera || 0),
+                        recuperaciones: increment(player.recuperaciones || 0),
+                        perdidas: increment(player.perdidas || 0)
                     });
                 }
             });
@@ -378,7 +388,11 @@ const reopenMatch = async () => {
                        tr: increment(-(player.rojas || 0)),
                        paradas: increment(-(player.paradas || 0)),
                        gRec: increment(-(player.gRec || 0)),
-                       minutosJugados: increment(-(player.timeOnCourt || 0))
+                       minutosJugados: increment(-(player.timeOnCourt || 0)),
+                       tirosPuerta: increment(-(player.tirosPuerta || 0)),
+                       tirosFuera: increment(-(player.tirosFuera || 0)),
+                       recuperaciones: increment(-(player.recuperaciones || 0)),
+                       perdidas: increment(-(player.perdidas || 0))
                    });
                }
            });
@@ -465,7 +479,7 @@ const reopenMatch = async () => {
         setMatch(prev => {
             if (!prev) return null;
             const playersKey = prev.userTeam === 'local' ? 'localPlayers' : 'visitorPlayers';
-            if (!prev[playersKey]) return prev;
+            if (!prev[playersKey] || prev[playersKey].length === 0) return prev;
             
             const updatedPlayers = [...prev[playersKey]!];
             updatedPlayers[playerIndex] = { ...updatedPlayers[playerIndex], [field]: value };
@@ -543,7 +557,9 @@ const reopenMatch = async () => {
                 if (prev.isActive) {
                     updatedFields.isActive = false;
                 }
-                updatedFields.timeLeft = (prev.timeLeft || 0) + (delta * 60);
+                const newTime = (prev.timeLeft || 0) + (delta * 60);
+                updatedFields.timeLeft = newTime;
+                updatedFields.endTime = prev.endTime ? prev.endTime + (delta * 60 * 1000) : null;
             }
 
             return { ...prev, ...updatedFields };
@@ -675,6 +691,10 @@ const reopenMatch = async () => {
         <StatColumnHeader full="yellow" abbr="" isIcon />
         <StatColumnHeader full="red" abbr="" isIcon />
         <StatColumnHeader full="Faltas" abbr="F" />
+        <StatColumnHeader full="TP" abbr="TP" />
+        <StatColumnHeader full="TF" abbr="TF" />
+        <StatColumnHeader full="R" abbr="R" />
+        <StatColumnHeader full="P" abbr="P" />
         <StatColumnHeader full="Paradas" abbr="P" />
         <StatColumnHeader full="GC" abbr="GC" />
         <StatColumnHeader full="1vs1" abbr="1vs1" />
@@ -763,6 +783,10 @@ const reopenMatch = async () => {
                                     <StatButtonCell playerIndex={index} stat="amarillas" />
                                     <StatButtonCell playerIndex={index} stat="rojas" />
                                     <StatButtonCell playerIndex={index} stat="faltas" />
+                                    <StatButtonCell playerIndex={index} stat="tirosPuerta" />
+                                    <StatButtonCell playerIndex={index} stat="tirosFuera" />
+                                    <StatButtonCell playerIndex={index} stat="recuperaciones" />
+                                    <StatButtonCell playerIndex={index} stat="perdidas" />
                                     <StatButtonCell playerIndex={index} stat="paradas" />
                                     <StatButtonCell playerIndex={index} stat="gRec" />
                                     <StatButtonCell playerIndex={index} stat="vs1" />
@@ -793,13 +817,18 @@ const reopenMatch = async () => {
     </div>
   );
 
-  const TimeoutIndicator = ({ used }: { used: boolean }) => (
-      <div className={cn(
+  const TimeoutIndicator = ({ used, onCancel }: { used: boolean, onCancel: () => void }) => (
+      <Button 
+        variant="outline"
+        className={cn(
           "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md",
           used ? "bg-primary text-primary-foreground" : "bg-transparent text-primary"
-      )}>
+        )}
+        onClick={onCancel}
+        disabled={!used || (match.isFinished && !isAdmin)}
+      >
           <span className="font-bold text-sm">TM</span>
-      </div>
+      </Button>
   );
 
   const currentPeriodKey = match.period === '1ª Parte' ? '1' : '2';
@@ -880,11 +909,29 @@ const reopenMatch = async () => {
                 </div>
 
                 <div className="flex items-center justify-center">
-                    <TimeoutIndicator used={localTimeoutUsed} />
+                     <TimeoutIndicator 
+                        used={localTimeoutUsed} 
+                        onCancel={() => {
+                            if (match.userTeam === 'local') {
+                                // This should not happen as the button is in opponent stats
+                            } else {
+                                handleOpponentStatChange('timeouts', -1)
+                            }
+                        }}
+                    />
                     <div className="text-5xl md:text-6xl font-mono font-bold text-center tabular-nums bg-gray-900 dark:bg-gray-800 text-white py-2 px-4 rounded-lg mx-4">
                         {formatTime(match.timeLeft)}
                     </div>
-                    <TimeoutIndicator used={visitorTimeoutUsed} />
+                     <TimeoutIndicator 
+                        used={visitorTimeoutUsed} 
+                        onCancel={() => {
+                            if (match.userTeam === 'visitor') {
+                                 // This should not happen
+                            } else {
+                                handleOpponentStatChange('timeouts', -1)
+                            }
+                        }}
+                    />
                 </div>
 
 

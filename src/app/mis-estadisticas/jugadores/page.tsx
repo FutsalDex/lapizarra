@@ -28,7 +28,9 @@ import {
     Timer,
     ShieldAlert,
     Crosshair,
-    ShieldOff
+    ShieldOff,
+    Shuffle,
+    RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -53,6 +55,10 @@ interface Player {
     vs1: number;
     position?: string;
     minutosJugados?: number;
+    tirosPuerta: number;
+    tirosFuera: number;
+    recuperaciones: number;
+    perdidas: number;
 }
 
 interface StatCardProps {
@@ -150,6 +156,7 @@ export default function PlayerStatsPage() {
                 playerStats[p.id] = {
                     name: p.name, number: p.number, teamName: teamsMap.get(p.teamId) || 'N/A', position: p.position,
                     pj: 0, goals: 0, assists: 0, ta: 0, tr: 0, faltas: 0, paradas: 0, gRec: 0, vs1: 0, minutosJugados: 0,
+                    tirosPuerta: 0, tirosFuera: 0, recuperaciones: 0, perdidas: 0,
                 };
             });
 
@@ -173,6 +180,10 @@ export default function PlayerStatsPage() {
                             playerStats[p.id].gRec += p.gRec || 0;
                             playerStats[p.id].vs1 += p.vs1 || 0;
                             playerStats[p.id].minutosJugados += p.timeOnCourt || 0;
+                            playerStats[p.id].tirosPuerta += p.tirosPuerta || 0;
+                            playerStats[p.id].tirosFuera += p.tirosFuera || 0;
+                            playerStats[p.id].recuperaciones += p.recuperaciones || 0;
+                            playerStats[p.id].perdidas += p.perdidas || 0;
                         }
                     });
                 }
@@ -277,7 +288,7 @@ export default function PlayerStatsPage() {
                 {topGoalkeeperSaves && topGoalkeeperSaves.paradas > 0 && <StatCard title="Portero con más Paradas" icon={Shield} playerName={topGoalkeeperSaves.name} value={topGoalkeeperSaves.paradas} />}
                 {top1v1Saver && top1v1Saver.vs1 > 0 && <StatCard title="Portero mejor en 1vs1" icon={Crosshair} playerName={top1v1Saver.name} value={top1v1Saver.vs1} />}
                 {topGoalkeeperCleanest && <StatCard title="Portero Menos Goleado" icon={ShieldCheck} playerName={topGoalkeeperCleanest.name} value={topGoalkeeperCleanest.gRec} />}
-                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldOff} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
+                {topGoalkeeperMostGoals && topGoalkeeperMostGoals.gRec > 0 && <StatCard title="Portero Más Goleado" icon={ShieldAlert} playerName={topGoalkeeperMostGoals.name} value={topGoalkeeperMostGoals.gRec} />}
                 {mostMinutesGoalkeeper && <StatCard title="Portero con más minutos" icon={Hourglass} playerName={mostMinutesGoalkeeper.name} value={formatTime(mostMinutesGoalkeeper.minutosJugados || 0)} />}
                 {leastMinutesGoalkeeper && <StatCard title="Portero con menos minutos" icon={Timer} playerName={leastMinutesGoalkeeper.name} value={formatTime(leastMinutesGoalkeeper.minutosJugados || 0)} />}
                 {mostMinutesPlayer && <StatCard title="Jugador con más minutos" icon={Hourglass} playerName={mostMinutesPlayer.name} value={formatTime(mostMinutesPlayer.minutosJugados || 0)} />}
@@ -331,6 +342,10 @@ export default function PlayerStatsPage() {
                                 <TableHead className="text-center">TA</TableHead>
                                 <TableHead className="text-center">TR</TableHead>
                                 <TableHead className="text-center">Faltas</TableHead>
+                                <TableHead className="text-center">TP</TableHead>
+                                <TableHead className="text-center">TF</TableHead>
+                                <TableHead className="text-center">R</TableHead>
+                                <TableHead className="text-center">P</TableHead>
                                 <TableHead className="text-center">Paradas</TableHead>
                                 <TableHead className="text-center">G. Rec.</TableHead>
                             </TableRow>
@@ -347,6 +362,10 @@ export default function PlayerStatsPage() {
                                     <TableCell className="text-center">{player.ta || 0}</TableCell>
                                     <TableCell className="text-center">{player.tr || 0}</TableCell>
                                     <TableCell className="text-center">{player.faltas || 0}</TableCell>
+                                    <TableCell className="text-center">{player.tirosPuerta || 0}</TableCell>
+                                    <TableCell className="text-center">{player.tirosFuera || 0}</TableCell>
+                                    <TableCell className="text-center">{player.recuperaciones || 0}</TableCell>
+                                    <TableCell className="text-center">{player.perdidas || 0}</TableCell>
                                     <TableCell className="text-center">{player.paradas || 0}</TableCell>
                                     <TableCell className="text-center">{player.gRec || 0}</TableCell>
                                 </TableRow>
