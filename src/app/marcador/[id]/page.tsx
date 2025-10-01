@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -704,9 +703,9 @@ const reopenMatch = async () => {
                 <span className="font-medium">{label}</span>
             </div>
             <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, -1)} disabled={match.isFinished}><Minus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, -1)} disabled={match.isFinished && !isAdmin}><Minus className="h-4 w-4"/></Button>
                 <span className="w-5 text-center text-lg font-bold">{value}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, 1)} disabled={match.isFinished}><Plus className="h-4 w-4"/></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpponentStatChange(stat, 1)} disabled={match.isFinished && !isAdmin}><Plus className="h-4 w-4"/></Button>
             </div>
         </div>
     );
