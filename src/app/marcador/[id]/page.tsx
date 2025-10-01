@@ -80,8 +80,8 @@ interface MatchDetails {
     isActive: boolean;
     isFinished: boolean; 
     userTeam: 'local' | 'visitor';
-    localPlayers?: Player[];
-    visitorPlayers?: Player[];
+    localPlayers: Player[];
+    visitorPlayers: Player[];
     events: GoalEvent[];
     teamStats1: TeamMatchStats; // 1st half for user's team
     teamStats2: TeamMatchStats; // 2nd half for user's team
@@ -185,8 +185,8 @@ export default function MarcadorEnVivoPage() {
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
-                localPlayers: userTeam === 'local' ? teamPlayers : data.localPlayers,
-                visitorPlayers: userTeam === 'visitor' ? teamPlayers : data.visitorPlayers,
+                localPlayers: userTeam === 'local' ? (teamPlayers || []) : (data.localPlayers || []),
+                visitorPlayers: userTeam === 'visitor' ? (teamPlayers || []) : (data.visitorPlayers || []),
             }
             
             setMatch(updatedMatch);
@@ -522,8 +522,7 @@ const reopenMatch = async () => {
             const newValue = (stats[stat] || 0) + delta;
 
             if (newValue < 0) return prev;
-            // Timeout can only be 0 or 1
-            if (stat === 'timeouts' && (newValue > 1)) return prev;
+            if (stat === 'timeouts' && (newValue > 1 || newValue < 0)) return prev;
 
             stats[stat] = newValue;
             
@@ -539,6 +538,12 @@ const reopenMatch = async () => {
             }
             if (stat === 'fouls') {
                  updatedFields[foulsKey] = newValue;
+            }
+            if (stat === 'timeouts') {
+                if (prev.isActive) {
+                    updatedFields.isActive = false;
+                }
+                updatedFields.timeLeft = (prev.timeLeft || 0) + (delta * 60);
             }
 
             return { ...prev, ...updatedFields };
@@ -921,3 +926,5 @@ const reopenMatch = async () => {
     </div>
   );
 }
+
+    
