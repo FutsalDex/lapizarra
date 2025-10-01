@@ -57,6 +57,12 @@ export default function TeamDashboardPage() {
   const [isAllowed, setIsAllowed] = useState(false);
 
    useEffect(() => {
+    if (teamId === 'demo-team-guest') {
+        setTeam({ name: 'Equipo Demo', club: 'Club de Demostración', ownerId: 'guest' });
+        setIsAllowed(true);
+        setLoading(false);
+        return;
+    }
     if (!teamId || !user) return;
 
     const teamDocRef = doc(db, 'teams', teamId);
@@ -147,7 +153,7 @@ export default function TeamDashboardPage() {
               <CardDescription>{item.description}</CardDescription>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full" variant="outline">
+              <Button asChild className="w-full" variant="outline" disabled={teamId === 'demo-team-guest' && item.href(teamId).includes('plantilla')}>
                 <Link href={item.href(teamId)}>
                   Ir a {item.title}
                 </Link>

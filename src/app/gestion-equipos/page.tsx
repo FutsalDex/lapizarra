@@ -12,7 +12,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldPlus, Users, Edit, Trash2, Settings, UserCheck } from 'lucide-react';
+import { ShieldPlus, Users, Edit, Trash2, Settings, UserCheck, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, doc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -44,8 +44,17 @@ interface UserProfile {
     subscription: string;
 }
 
+const demoTeam = {
+  id: 'demo-team-guest',
+  name: 'Equipo Demo (Invitado)',
+  club: 'Club de Demostración',
+  competition: 'Liga Demo',
+  ownerId: 'guest-user',
+};
+
+
 export default function GestionEquiposPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const [myTeams, setMyTeams] = useState<Team[]>([]);
     const [sharedTeams, setSharedTeams] = useState<Team[]>([]);
@@ -142,7 +151,7 @@ export default function GestionEquiposPage() {
     }
 
     const canCreateTeam = () => {
-        if (!userProfile) return false;
+        if (!user || !userProfile) return false;
         if (userProfile.role === 'Admin') return true;
         if (userProfile.role === 'Subscribed' && myTeams.length < 5) return true;
         if (userProfile.role === 'Registered' && myTeams.length < 1) return true;
@@ -181,7 +190,7 @@ export default function GestionEquiposPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-8">
-            {canCreateTeam() ? (
+            {user && canCreateTeam() ? (
                 <Card>
                     <CardHeader>
                         <CardTitle>Crear Nuevo Equipo</CardTitle>
@@ -191,7 +200,7 @@ export default function GestionEquiposPage() {
                         <TeamForm />
                     </CardContent>
                 </Card>
-            ) : !loading && (
+            ) : !authLoading && user && (
                  <Card>
                     <CardHeader>
                         <CardTitle>Límite de Equipos Alcanzado</CardTitle>
@@ -209,6 +218,19 @@ export default function GestionEquiposPage() {
                     )}
                 </Card>
             )}
+            {!user && !authLoading && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Regístrate para crear equipos</CardTitle>
+                        <CardDescription>Como invitado, puedes explorar un equipo de demostración.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <Link href="/register">Crear una cuenta</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
         </div>
         <div className="lg:col-span-2 space-y-8">
              <Card>
@@ -217,16 +239,34 @@ export default function GestionEquiposPage() {
                     <CardDescription>Lista de equipos que administras como propietario.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {loading ? (
+                    {(loading || authLoading) ? (
                          <div className="space-y-4">
                             <Skeleton className="h-20 w-full" />
                             <Skeleton className="h-20 w-full" />
                         </div>
-                    ) : myTeams.length === 0 ? (
+                    ) : (user && myTeams.length === 0) ? (
                         <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
                            <p>No has creado ningún equipo todavía.</p>
                            <p className="text-sm">Usa el formulario para añadir tu primer equipo.</p>
                         </div>
+                    ) : (!user) ? (
+                         <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 bg-muted/50 border-dashed">
+                            <div className="flex-grow">
+                                <h3 className="font-bold text-lg">{demoTeam.name}</h3>
+                                <p className="text-sm text-muted-foreground">{demoTeam.club}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                                <Button asChild>
+                                    <Link href={`/equipo/${demoTeam.id}`}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Ver Demo
+                                    </Link>
+                                </Button>
+                                <Button variant="outline" size="sm" disabled><Users className="mr-2 h-4 w-4" />Miembros</Button>
+                                <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="text-destructive" disabled><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                        </Card>
                     ) : (
                         <div className="space-y-4">
                             {myTeams.map(team => (
@@ -289,7 +329,7 @@ export default function GestionEquiposPage() {
                     <CardDescription>Equipos a los que has sido invitado como miembro del cuerpo técnico.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {loading ? (
+                    {(loading || authLoading) ? (
                          <div className="space-y-4">
                             <Skeleton className="h-20 w-full" />
                         </div>
