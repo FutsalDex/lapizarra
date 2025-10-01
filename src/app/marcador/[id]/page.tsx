@@ -136,44 +136,28 @@ export default function MarcadorEnVivoPage() {
             const data = docSnap.data() as Omit<MatchDetails, 'id'>;
 
             let userTeam: 'local' | 'visitor' = 'local'; // default
-            let teamPlayers: Player[] | undefined = data.localPlayers;
-
+            
             if (data.teamId) {
                 const teamDoc = await getDoc(doc(db, 'teams', data.teamId));
                 if(teamDoc.exists()) {
                     const teamName = teamDoc.data().name;
                     if(teamName === data.visitorTeam) {
                         userTeam = 'visitor';
-                        teamPlayers = data.visitorPlayers;
                     }
                     if (teamName === data.localTeam) {
                         userTeam = 'local';
-                        teamPlayers = data.localPlayers;
-                    }
-
-                    const defaultPlayerStats = {
-                        goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
-                        isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
-                        tirosPuerta: 0, tirosFuera: 0, recuperaciones: 0, perdidas: 0,
-                    };
-
-                    if (!teamPlayers || teamPlayers.length === 0) {
-                        const playerQuery = query(collection(db, 'teams', data.teamId, 'players'), where('active', '==', true));
-                        const playersSnapshot = await getDocs(playerQuery);
-                        teamPlayers = playersSnapshot.docs.map(d => ({
-                            id: d.id, 
-                            name: d.data().name, 
-                            number: d.data().number,
-                            ...defaultPlayerStats,
-                        })).sort((a, b) => a.number - b.number);
-                    } else {
-                        // Ensure new fields exist
-                        teamPlayers = teamPlayers.map(p => ({
-                            ...defaultPlayerStats,
-                            ...p,
-                        }))
                     }
                 }
+            }
+
+            const ensurePlayersArray = (players: Player[] | undefined) => {
+                if (!players) return [];
+                const defaultPlayerStats = {
+                    goals: 0, assists: 0, faltas: 0, amarillas: 0, rojas: 0, paradas: 0, gRec: 0, vs1: 0,
+                    isPlaying: false, timeOnCourt: 0, lastEntryTime: 0, minutosJugados: 0,
+                    tirosPuerta: 0, tirosFuera: 0, recuperaciones: 0, perdidas: 0,
+                };
+                return players.map(p => ({ ...defaultPlayerStats, ...p }));
             }
 
             const updatedMatch: MatchDetails = {
@@ -191,8 +175,8 @@ export default function MarcadorEnVivoPage() {
                 localFouls: data.localFouls || 0,
                 visitorFouls: data.visitorFouls || 0,
                 userTeam: userTeam,
-                localPlayers: userTeam === 'local' ? (teamPlayers || []) : (data.localPlayers || []),
-                visitorPlayers: userTeam === 'visitor' ? (teamPlayers || []) : (data.visitorPlayers || []),
+                localPlayers: ensurePlayersArray(data.localPlayers),
+                visitorPlayers: ensurePlayersArray(data.visitorPlayers),
             }
             
             setMatch(updatedMatch);
@@ -663,11 +647,9 @@ const reopenMatch = async () => {
   
   const userPlayers = match.userTeam === 'local' ? match.localPlayers : match.visitorPlayers;
   const userTeamScore = userPlayers?.reduce((acc, p) => acc + (p.goals || 0), 0) || 0;
-  const opponentTeam = match.userTeam === 'local' ? 'visitor' : 'local';
-  const opponentScore = match[opponentTeam === 'local' ? 'localScore' : 'visitorScore'];
   
-  const localScore = match.userTeam === 'local' ? userTeamScore : opponentScore;
-  const visitorScore = match.userTeam === 'visitor' ? userTeamScore : opponentScore;
+  const localScore = match.userTeam === 'local' ? userTeamScore : (match.opponentStats1.goals + match.opponentStats2.goals);
+  const visitorScore = match.userTeam === 'visitor' ? userTeamScore : (match.opponentStats1.goals + match.opponentStats2.goals);
 
   const StatColumnHeader = ({ full, abbr, isIcon=false, iconContent }: { full: string, abbr: string, isIcon?: boolean, iconContent?: React.ReactNode }) => (
     <TableHead className="text-center px-1">
@@ -695,7 +677,7 @@ const reopenMatch = async () => {
         <StatColumnHeader full="TF" abbr="TF" />
         <StatColumnHeader full="R" abbr="R" />
         <StatColumnHeader full="P" abbr="P" />
-        <StatColumnHeader full="Paradas" abbr="P" />
+        <StatColumnHeader full="Paradas" abbr="Par" />
         <StatColumnHeader full="GC" abbr="GC" />
         <StatColumnHeader full="1vs1" abbr="1vs1" />
     </TableRow>
@@ -723,6 +705,25 @@ const reopenMatch = async () => {
     );
 };
 
+const StatsLegend = () => (
+    <div className="p-4 mt-4 border-t text-xs text-muted-foreground">
+        <h4 className="font-semibold text-sm mb-2 text-foreground">Leyenda de Estadísticas</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1">
+            <p><span className="font-bold">G:</span> Goles</p>
+            <p><span className="font-bold">Asist:</span> Asistencias</p>
+            <p><span className="font-bold">F:</span> Faltas</p>
+            <p><span className="font-bold">TP:</span> Tiros a Puerta</p>
+            <p><span className="font-bold">TF:</span> Tiros Fuera</p>
+            <p><span className="font-bold">R:</span> Recuperaciones</p>
+            <p><span className="font-bold">P:</span> Pérdidas</p>
+            <p><span className="font-bold">Par:</span> Paradas</p>
+            <p><span className="font-bold">GC:</span> Goles en Contra</p>
+            <p><span className="font-bold">1vs1:</span> Paradas 1vs1</p>
+        </div>
+    </div>
+);
+
+
   const renderTeamTable = (isUserTeam: boolean) => {
     if (!isUserTeam) {
         return (
@@ -733,7 +734,7 @@ const reopenMatch = async () => {
                     <OpponentStatCounter stat="shotsOnTarget" label="Tiros a Puerta" icon={Crosshair} />
                     <OpponentStatCounter stat="shotsOffTarget" label="Tiros Fuera" icon={ShieldOff} />
                     <OpponentStatCounter stat="shotsBlocked" label="Tiros Bloqueados" icon={Hand} />
-                    <OpponentStatCounter stat="fouls" label="Faltas" icon={ShieldIcon} />
+                    <OpponentStatCounter stat="fouls" label="Faltas" icon={AlertOctagon} />
                     <OpponentStatCounter stat="timeouts" label="Tiempos Muertos" icon={Clock} />
                     <OpponentStatCounter stat="recoveries" label="Recuperaciones" icon={Shuffle} />
                     <OpponentStatCounter stat="turnovers" label="Pérdidas" icon={RotateCcw} />
@@ -798,6 +799,7 @@ const reopenMatch = async () => {
                         </TableFooter>
                     </Table>
                 </div>
+                 <StatsLegend />
             </div>
         </div>
     );
