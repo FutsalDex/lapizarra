@@ -52,7 +52,7 @@ interface Player {
     tr: number;
     faltas: number;
     paradas: number;
-gRec: number;
+    gRec: number;
     vs1: number;
     position?: string;
     minutosJugados?: number;
