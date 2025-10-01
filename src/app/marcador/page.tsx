@@ -63,27 +63,29 @@ export default function MarcadorPage() {
 
   const handleGeneralStatChange = (
     team: 'local' | 'visitor',
-    stat: keyof GeneralStats,
+    stat: keyof Omit<GeneralStats, 'timeouts'>,
     delta: 1 | -1
   ) => {
     const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
-    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
-
-    if (stat === 'timeouts') {
-        const currentVal = stats.timeouts;
-        const newVal = currentVal + delta;
-        if (newVal >= 0 && newVal <=1) {
-             if (isActive) setIsActive(false);
-             setTimeLeft(time => time + (delta * 60));
-             setter(prev => ({...prev, timeouts: newVal }));
-        }
-    } else {
-        setter(prev => {
-            const newValue = (prev[stat] || 0) + delta;
-            return { ...prev, [stat]: Math.max(0, newValue) };
-        });
-    }
+    setter(prev => {
+        const newValue = (prev[stat] || 0) + delta;
+        return { ...prev, [stat]: Math.max(0, newValue) };
+    });
 };
+
+  const handleTimeoutToggle = (team: 'local' | 'visitor') => {
+    const setter = team === 'local' ? setLocalGeneralStats : setVisitorGeneralStats;
+    const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
+    
+    const isUsed = stats.timeouts > 0;
+    const delta = isUsed ? -1 : 1;
+
+    setter(prev => ({ ...prev, timeouts: isUsed ? 0 : 1 }));
+    setTimeLeft(time => Math.max(0, time + (delta * 60)));
+    if (delta === 1 && isActive) {
+      setIsActive(false);
+    }
+  }
 
   const handlePeriodChange = (newPeriod: '1ª Parte' | '2ª Parte') => {
       if (periodo === newPeriod) return;
@@ -106,6 +108,8 @@ export default function MarcadorPage() {
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(initialTime*60);
+    setLocalGeneralStats(prev => ({ ...prev, timeouts: 0 }));
+    setVisitorGeneralStats(prev => ({ ...prev, timeouts: 0 }));
   }
 
   const handleSettingsSave = (e: React.FormEvent<HTMLFormElement>) => {
@@ -148,18 +152,16 @@ export default function MarcadorPage() {
   );
 
 
-  const renderStatRow = (team: 'local' | 'visitor', stat: keyof GeneralStats, label: string, icon: React.ReactNode) => {
+  const renderStatRow = (team: 'local' | 'visitor', stat: keyof Omit<GeneralStats, 'timeouts'>, label: string, icon: React.ReactNode) => {
     const stats = team === 'local' ? localGeneralStats : visitorGeneralStats;
-    const isTimeout = stat === 'timeouts';
-    const isTimeoutUsed = isTimeout && stats.timeouts > 0;
     
     return (
       <div className="flex items-center justify-between p-2 border-b">
         <span className="flex items-center gap-2">{icon}{label}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)} disabled={isTimeout}><Minus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, -1)}><Minus className="h-4 w-4"/></Button>
           <span className="w-4 text-center">{stats[stat]}</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)} disabled={isTimeoutUsed}><Plus className="h-4 w-4"/></Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleGeneralStatChange(team, stat, 1)}><Plus className="h-4 w-4"/></Button>
         </div>
       </div>
     );
@@ -182,21 +184,14 @@ export default function MarcadorPage() {
   const TimeoutIndicator = ({ team }: { team: 'local' | 'visitor' }) => {
     const used = team === 'local' ? localGeneralStats.timeouts > 0 : visitorGeneralStats.timeouts > 0;
     
-    const handleClick = () => {
-      if (used) {
-        handleGeneralStatChange(team, 'timeouts', -1);
-      }
-    }
-
     return (
       <button 
-        onClick={handleClick} 
+        onClick={() => handleTimeoutToggle(team)} 
         className={cn(
           "flex items-center justify-center w-10 h-10 border-2 border-primary rounded-md transition-colors",
-          used ? "bg-primary text-primary-foreground cursor-pointer" : "bg-transparent text-primary cursor-default"
+          used ? "bg-primary text-primary-foreground cursor-pointer" : "bg-transparent text-primary cursor-pointer"
         )}
-        disabled={!used}
-        aria-label={used ? `Cancelar tiempo muerto ${team}` : `Tiempo muerto ${team} no usado`}
+        aria-label={`Tiempo muerto ${team}`}
       >
           <span className="font-bold text-sm">TM</span>
       </button>
@@ -314,7 +309,6 @@ export default function MarcadorPage() {
                     <h3 className="font-semibold text-center">{localTeam}</h3>
                     {renderStatRow('local', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('local', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
-                    {renderStatRow('local', 'timeouts', 'Tiempos Muertos', <Clock className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('local', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
                     {renderStatRow('local', 'redCards', 'T. Rojas', <RedCardIcon />)}
                 </div>
@@ -322,7 +316,6 @@ export default function MarcadorPage() {
                     <h3 className="font-semibold text-center">{visitorTeam}</h3>
                     {renderStatRow('visitor', 'goals', 'Goles', <Goal className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('visitor', 'fouls', 'Faltas', <Shield className="h-4 w-4 text-muted-foreground"/>)}
-                    {renderStatRow('visitor', 'timeouts', 'Tiempos Muertos', <Clock className="h-4 w-4 text-muted-foreground"/>)}
                     {renderStatRow('visitor', 'yellowCards', 'T. Amarillas', <YellowCardIcon />)}
                     {renderStatRow('visitor', 'redCards', 'T. Rojas', <RedCardIcon />)}
                 </div>
