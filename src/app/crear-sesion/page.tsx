@@ -32,6 +32,7 @@ import {
   Sparkles,
   Replace,
   BookOpen,
+  Loader2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -260,10 +261,20 @@ export default function CrearSesionPage() {
     }
 
     setIsSaving(true);
-    const sessionData = {
-        ...data,
-        userId: user.uid,
+    
+    // Sanitize data to prevent storing undefined values
+    const sanitizedData = {
         date: data.date,
+        microcycle: data.microcycle || null,
+        sessionNumber: data.sessionNumber,
+        players: data.players || null,
+        space: data.space || null,
+        objectives: data.objectives || null,
+    };
+
+    const sessionData = {
+        ...sanitizedData,
+        userId: user.uid,
         initialExercise: initialExercise?.id || null,
         mainExercises: mainExercises.map(ex => ex?.id).filter(Boolean),
         finalExercise: finalExercise?.id || null,
@@ -530,8 +541,7 @@ export default function CrearSesionPage() {
             Generar con IA
           </Button>
           <Button size="lg" type="submit" disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-            <Save className="mr-2 h-5 w-5" />
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-5 w-5" />}
             {sessionId ? 'Actualizar Sesión' : 'Guardar Sesión'}
           </Button>
         </div>
