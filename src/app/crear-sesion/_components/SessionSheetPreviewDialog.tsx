@@ -64,21 +64,22 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
 
   const handlePrint = () => {
     const printableContent = document.getElementById('printable-content');
-    if (printableContent) {
+    if (printableContent && session) {
         const printWindow = window.open('', '', 'height=800,width=800');
         if (printWindow) {
             const contentHTML = printableContent.innerHTML;
             const tailwindCssUrl = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+            const pageTitle = `Sesión ${session.sessionNumber || 'N-A'}`;
 
             printWindow.document.write(`
                 <html>
                 <head>
-                    <title>Ficha de Sesión</title>
+                    <title>${pageTitle}</title>
                     <link href="${tailwindCssUrl}" rel="stylesheet">
                     <style>
                         @media print {
                             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                            @page { size: A4; margin: 1cm; }
+                            @page { size: A4 portrait; margin: 1cm; }
                             .page-break { page-break-before: always; }
                             .break-inside-avoid { page-break-inside: avoid; }
                         }

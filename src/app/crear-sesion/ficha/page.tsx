@@ -45,7 +45,9 @@ export default function SessionSheetPage() {
   useEffect(() => {
     const data = localStorage.getItem('sessionSheetData');
     if (data) {
-      setSession(JSON.parse(data));
+      const parsedData = JSON.parse(data);
+      setSession(parsedData);
+      document.title = `Sesión ${parsedData.sessionNumber || 'N-A'}`;
     } else {
       router.push('/crear-sesion');
     }
