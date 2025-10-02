@@ -158,6 +158,10 @@ export default function CrearSesionPage() {
         defaultValues: {
             date: new Date(),
             sessionNumber: '1',
+            microcycle: '',
+            players: '',
+            space: '',
+            objectives: '',
         },
     });
     
@@ -197,11 +201,11 @@ export default function CrearSesionPage() {
                     
                     form.reset({
                         date: (sessionData.date as Timestamp).toDate(),
-                        microcycle: sessionData.microcycle,
+                        microcycle: sessionData.microcycle || '',
                         sessionNumber: sessionData.sessionNumber,
-                        players: sessionData.players,
-                        space: sessionData.space,
-                        objectives: sessionData.objectives,
+                        players: sessionData.players || '',
+                        space: sessionData.space || '',
+                        objectives: sessionData.objectives || '',
                     });
                 }
             };
@@ -265,11 +269,11 @@ export default function CrearSesionPage() {
     // Sanitize data to prevent storing undefined values
     const sanitizedData = {
         date: data.date,
-        microcycle: data.microcycle || null,
+        microcycle: data.microcycle || '',
         sessionNumber: data.sessionNumber,
-        players: data.players || null,
-        space: data.space || null,
-        objectives: data.objectives || null,
+        players: data.players || '',
+        space: data.space || '',
+        objectives: data.objectives || '',
     };
 
     const sessionData = {
@@ -331,12 +335,12 @@ export default function CrearSesionPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <Controller
+             <FormField
                   control={form.control}
                   name="date"
                   render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label>Día de entrenamiento</Label>
+                    <FormItem>
+                        <FormLabel>Día de entrenamiento</FormLabel>
                         <Popover>
                         <PopoverTrigger asChild>
                             <Button
@@ -360,7 +364,8 @@ export default function CrearSesionPage() {
                             />
                         </PopoverContent>
                         </Popover>
-                    </div>
+                        <FormMessage />
+                    </FormItem>
                 )}
             />
              <FormField
@@ -419,7 +424,7 @@ export default function CrearSesionPage() {
                 render={({ field }) => (
                      <FormItem>
                         <FormLabel>Espacio disponible</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecciona el espacio" />
@@ -441,7 +446,7 @@ export default function CrearSesionPage() {
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Objetivos</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecciona objetivos" />
@@ -557,3 +562,5 @@ export default function CrearSesionPage() {
     </>
   );
 }
+
+    
