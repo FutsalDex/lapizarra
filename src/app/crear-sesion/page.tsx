@@ -12,6 +12,15 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Button } from '@/components/ui/button';
 import {
   Pencil,
@@ -40,7 +49,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/AuthContext';
-import { addDoc, collection, doc, getDoc, updateDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, updateDoc, Timestamp, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -301,8 +310,8 @@ export default function CrearSesionPage() {
         </p>
       </div>
 
-     <form onSubmit={form.handleSubmit(handleSaveSession)}>
-      <div className="space-y-12">
+     <Form {...form}>
+     <form onSubmit={form.handleSubmit(handleSaveSession)} className="space-y-12">
         <Card>
           <CardHeader>
             <CardTitle>Información de la Sesión</CardTitle>
@@ -347,20 +356,26 @@ export default function CrearSesionPage() {
                 control={form.control}
                 name="microcycle"
                 render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label htmlFor="microcycle">Microciclo</Label>
-                        <Input id="microcycle" type="number" placeholder="Ej: 1" {...field} />
-                    </div>
+                    <FormItem>
+                        <FormLabel>Microciclo</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="Ej: 1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}
                 />
             <FormField
                 control={form.control}
                 name="sessionNumber"
                 render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label htmlFor="session-number">Número de sesión</Label>
-                        <Input id="session-number" type="number" placeholder="Ej: 1" {...field} />
-                    </div>
+                  <FormItem>
+                    <FormLabel>Número de sesión</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ej: 1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
                 />
           </CardContent>
@@ -378,41 +393,49 @@ export default function CrearSesionPage() {
                 control={form.control}
                 name="players"
                 render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label htmlFor="players">Jugadores de campo</Label>
-                        <Input id="players" type="number" placeholder="Ej: 16" {...field}/>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Jugadores de campo</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ej: 16" {...field}/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                  )}
             />
              <FormField
                 control={form.control}
                 name="space"
                 render={({ field }) => (
-                     <div className="space-y-2">
-                        <Label>Espacio disponible</Label>
+                     <FormItem>
+                        <FormLabel>Espacio disponible</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecciona el espacio" />
                             </SelectTrigger>
+                          </FormControl>
                             <SelectContent>
                                 <SelectItem value="full-court">Campo completo</SelectItem>
                                 <SelectItem value="half-court">Medio campo</SelectItem>
                                 <SelectItem value="small-area">Espacio reducido</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
+                        <FormMessage />
+                    </FormItem>
                  )}
             />
             <FormField
                 control={form.control}
                 name="objectives"
                 render={({ field }) => (
-                    <div className="space-y-2">
-                        <Label>Objetivos</Label>
+                    <FormItem>
+                        <FormLabel>Objetivos</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecciona objetivos" />
                             </SelectTrigger>
+                          </FormControl>
                             <SelectContent>
                                 <SelectItem value="attack">Ataque</SelectItem>
                                 <SelectItem value="defense">Defensa</SelectItem>
@@ -420,7 +443,8 @@ export default function CrearSesionPage() {
                                 <SelectItem value="strategy">Estrategia</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
+                        <FormMessage />
+                    </FormItem>
                 )}
             />
           </CardContent>
@@ -511,8 +535,8 @@ export default function CrearSesionPage() {
             {sessionId ? 'Actualizar Sesión' : 'Guardar Sesión'}
           </Button>
         </div>
-      </div>
-     </form>
+      </form>
+     </Form>
     </div>
 
     <SelectExerciseDialog 
