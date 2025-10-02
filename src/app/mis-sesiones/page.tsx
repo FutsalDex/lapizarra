@@ -59,6 +59,7 @@ interface Exercise {
   id: string;
   Ejercicio: string;
   'Duración (min)': string;
+  [key: string]: any;
 }
 
 interface Session {
@@ -75,6 +76,7 @@ interface PopulatedSession extends Omit<Session, 'initialExercise' | 'mainExerci
     mainExercises: (Exercise | null)[];
     finalExercise: Exercise | null;
     totalDuration: number;
+    [key: string]: any;
 }
 
 
@@ -126,7 +128,7 @@ export default function MisSesionesPage() {
             const totalDuration = initialDuration + mainDuration + finalDuration;
 
           return {
-            ...session,
+            ...(session as unknown as PopulatedSession),
             initialExercise: initialEx,
             mainExercises: mainExs,
             finalExercise: finalEx,
@@ -162,6 +164,16 @@ export default function MisSesionesPage() {
         });
     }
   }
+
+  const handleViewSheet = (session: PopulatedSession) => {
+    const sessionData = {
+      ...session,
+      mainExercises: session.mainExercises.filter(ex => ex !== null),
+      date: new Date(session.date.seconds * 1000).toISOString(),
+    };
+    localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
+    window.open('/crear-sesion/ficha', '_blank');
+  };
 
   return (
     <div className="container mx-auto max-w-7xl py-12 px-4">
@@ -260,7 +272,7 @@ export default function MisSesionesPage() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col items-stretch space-y-2">
-                        <Button variant="outline"><Eye className="mr-2 h-4 w-4" />Ver Ficha Detallada</Button>
+                        <Button variant="outline" onClick={() => handleViewSheet(session)}><Eye className="mr-2 h-4 w-4" />Ver Ficha Detallada</Button>
                         <div className="grid grid-cols-2 gap-2">
                             <Button asChild variant="secondary">
                                 <Link href={`/crear-sesion?sessionId=${session.id}`}>
@@ -293,7 +305,3 @@ export default function MisSesionesPage() {
     </div>
   );
 }
-
-
-
-    
