@@ -13,7 +13,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -29,6 +29,7 @@ interface Exercise {
   'Duración (min)': string;
   Imagen?: string;
   aiHint?: string;
+  Categoría?: string;
   [key: string]: any;
 }
 
@@ -39,9 +40,9 @@ interface SessionData {
   players?: string;
   space?: string;
   objectives?: string;
-  initialExercise: Exercise | null;
-  mainExercises: (Exercise | null)[];
-  finalExercise: Exercise | null;
+  initialExercises: Exercise[];
+  mainExercises: Exercise[];
+  finalExercises: Exercise[];
 }
 
 interface SessionSheetPreviewDialogProps {
@@ -64,36 +65,51 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
   const handlePrint = () => {
     const printableContent = document.getElementById('printable-content');
     if (printableContent) {
-      const printWindow = window.open('', '', 'height=800,width=800');
-      if (printWindow) {
-        printWindow.document.write('<html><head><title>Ficha de Sesión</title>');
-        // Directly include Tailwind CDN for simplicity in print window, or link to a compiled print.css
-        printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
-        printWindow.document.write(`
-          <style>
-            @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              .page-break { page-break-before: always; }
-            }
-            .break-inside-avoid { page-break-inside: avoid; }
-            body { font-family: sans-serif; }
-          </style>
-        `);
-        printWindow.document.write('</head><body class="p-8">');
-        printWindow.document.write(printableContent.innerHTML);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 250);
-      }
+        const printWindow = window.open('', '', 'height=800,width=800');
+        if (printWindow) {
+            const contentHTML = printableContent.innerHTML;
+            const tailwindCssUrl = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Ficha de Sesión</title>
+                    <link href="${tailwindCssUrl}" rel="stylesheet">
+                    <style>
+                        @media print {
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .page-break { page-break-before: always; }
+                            .break-inside-avoid { page-break-inside: avoid; }
+                        }
+                        body { font-family: sans-serif; }
+                        .bg-slate-800 { background-color: #1e293b !important; }
+                        .bg-slate-200 { background-color: #e2e8f0 !important; }
+                        .bg-slate-100 { background-color: #f1f5f9 !important; }
+                        .text-white { color: #ffffff !important; }
+                        .border-slate-800 { border-color: #1e293b !important; }
+                    </style>
+                </head>
+                <body class="p-2">
+                    ${contentHTML}
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500); // Wait for styles to load
+        }
     }
   };
 
-  const allExercises = session ? [session.initialExercise, ...session.mainExercises, session.finalExercise].filter(Boolean) as Exercise[] : [];
+  const allExercises = session ? [...session.initialExercises, ...session.mainExercises, ...session.finalExercises] : [];
+  
   const totalDuration = allExercises.reduce((acc, ex) => acc + parseInt(ex?.['Duración (min)'] || '0', 10), 0);
+
+  const getCategory = (exercise: Exercise) => exercise.Categoría || 'General';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -107,69 +123,72 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
         </DialogHeader>
 
         <ScrollArea className="flex-grow h-0 pr-6">
-          <div id="printable-content" className="space-y-6 py-4">
+          <div id="printable-content" className="space-y-4 p-1 bg-white text-gray-800">
             {!session ? (
               <div className="space-y-4">
-                <Skeleton className="h-8 w-1/2" />
                 <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-64 w-full" />
                 <Skeleton className="h-64 w-full" />
               </div>
             ) : (
-              <>
-                <div className="text-left mb-4">
-                  <h1 className="text-3xl font-bold font-headline tracking-tight text-primary">
-                    Ficha de la Sesión
-                  </h1>
-                  {session.date && (
-                    <p className="text-md text-muted-foreground mt-1 capitalize">
-                      {format(new Date(session.date), "eeee, d 'de' MMMM 'de' yyyy", { locale: es })}
-                    </p>
-                  )}
+              <div className="border-4 border-slate-800 p-2 space-y-2">
+                {/* Header */}
+                <header className="grid grid-cols-6 gap-px text-center text-xs">
+                    <div className="col-span-1 bg-white flex items-center justify-center p-1"><Shield className="h-10 w-10 text-slate-800"/></div>
+                    <div className="bg-slate-800 text-white p-1"><p>Microciclo</p><p className="font-bold text-sm bg-white text-slate-800 rounded-sm">{session.microcycle || 'N/A'}</p></div>
+                    <div className="bg-slate-800 text-white p-1"><p>Sesión</p><p className="font-bold text-sm bg-white text-slate-800 rounded-sm">{session.sessionNumber || 'N/A'}</p></div>
+                    <div className="bg-slate-800 text-white p-1"><p>Fecha</p><p className="font-bold text-sm bg-white text-slate-800 rounded-sm">{session.date ? format(new Date(session.date), 'dd/MM/yyyy') : 'N/A'}</p></div>
+                    <div className="bg-slate-800 text-white p-1"><p>Objetivos</p><p className="font-bold text-sm bg-white text-slate-800 rounded-sm capitalize">{session.objectives || 'N/A'}</p></div>
+                    <div className="bg-slate-800 text-white p-1"><p>Jugadores</p><p className="font-bold text-sm bg-white text-slate-800 rounded-sm">{session.players || 'N/A'}</p></div>
+                </header>
+
+                {/* Tasks Overview */}
+                <div className="grid grid-cols-5 gap-px text-center text-xs font-bold">
+                    <div className="bg-slate-200 p-2"><p>TAREAS</p><p>Tipos de tareas</p></div>
+                     {allExercises.slice(0, 4).map((ex, i) => (
+                        <div key={`overview-${i}`} className="bg-slate-200 p-2">
+                            <p>TAREA {i+1}</p>
+                            <p className="font-normal">{ex ? getCategory(ex) : '---'}</p>
+                        </div>
+                    ))}
                 </div>
 
-                <Card className="mb-6 break-inside-avoid">
-                  <CardHeader>
-                      <CardTitle>Información General</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div><p className="font-semibold">Nº Sesión:</p><p>{session.sessionNumber || 'N/A'}</p></div>
-                      <div><p className="font-semibold">Microciclo:</p><p>{session.microcycle || 'N/A'}</p></div>
-                      <div><p className="font-semibold">Jugadores:</p><p>{session.players || 'N/A'}</p></div>
-                      <div><p className="font-semibold">Tiempo Total:</p><p>{totalDuration} min</p></div>
-                      <div className="col-span-2"><p className="font-semibold">Objetivos:</p><p className="capitalize">{session.objectives || 'N/A'}</p></div>
-                      <div className="col-span-2"><p className="font-semibold">Espacio:</p><p className="capitalize">{session.space || 'N/A'}</p></div>
-                  </CardContent>
-                </Card>
-                
-                <div className="space-y-6">
-                  {allExercises.map((exercise, index) => (
-                      <Card key={exercise.id + index} className="overflow-hidden break-inside-avoid">
-                          <CardHeader>
-                              <CardTitle>{exercise.Ejercicio}</CardTitle>
-                              <CardDescription>Duración: {exercise['Duración (min)']} min</CardDescription>
-                          </CardHeader>
-                          <div className="relative h-80 w-full bg-muted print-image">
-                              <Image
-                                  src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/800/600`}
+                {/* Exercises Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {allExercises.slice(0, 4).map((exercise, index) => (
+                    <div key={`ex-${index}`} className="border-2 border-slate-800 break-inside-avoid">
+                        <h4 className="bg-slate-200 text-center font-bold p-1">Tarea {index + 1}</h4>
+                        <div className="grid grid-cols-2">
+                           <div className="relative h-48 w-full bg-gray-100">
+                                <Image
+                                  src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/400/300`}
                                   alt={exercise.Ejercicio}
-                                  fill
+                                  layout="fill"
                                   className="object-contain"
-                              />
-                          </div>
-                          <CardContent className="p-6 space-y-4">
-                              <div>
-                                  <h4 className="font-semibold">Objetivos</h4>
-                                  <p className="text-muted-foreground text-sm">{exercise.Objetivos}</p>
-                              </div>
-                              <div>
-                                  <h4 className="font-semibold">Descripción</h4>
-                                  <p className="text-muted-foreground text-sm">{exercise['Descripción de la tarea']}</p>
-                              </div>
-                          </CardContent>
-                      </Card>
+                                />
+                            </div>
+                            <div className="text-xs">
+                                <div className="bg-slate-200 font-bold p-1">Complejidad</div>
+                                <div className="p-2 border-b-2 border-slate-800 h-16 overflow-hidden">
+                                    <p>{exercise['Descripción de la tarea'] || 'Sin descripción.'}</p>
+                                </div>
+                                <div className="bg-slate-200 font-bold p-1">Competitividad</div>
+                                <div className="p-2 h-16 overflow-hidden">
+                                     <p>{exercise.Objetivos || 'Sin objetivos.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <footer className="grid grid-cols-4 gap-px text-center text-xs">
+                            <div className="bg-slate-200 p-1"><p className="font-bold">Tiempo de trabajo</p><p>{exercise['Duración (min)']} min</p></div>
+                            <div className="bg-slate-200 p-1"><p className="font-bold">Tiempo de descanso</p><p>N/A</p></div>
+                            <div className="bg-slate-200 p-1"><p className="font-bold">Jugadores</p><p>{session.players || 'N/A'}</p></div>
+                            <div className="bg-slate-200 p-1"><p className="font-bold">Espacio de juego</p><p>{session.space || 'N/A'}</p></div>
+                        </footer>
+                    </div>
                   ))}
                 </div>
-              </>
+                 <div className="text-center text-xs text-gray-500 pt-2">Powered by LaPizarra</div>
+              </div>
             )}
           </div>
         </ScrollArea>
@@ -179,7 +198,7 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
                     Cerrar
                 </Button>
             </DialogClose>
-            <Button onClick={handlePrint}>
+            <Button onClick={handlePrint} disabled={!session}>
                 <Download className="mr-2 h-4 w-4" />
                 Descargar PDF
             </Button>

@@ -253,7 +253,7 @@ export default function CrearSesionPage() {
     const addExerciseSlot = (type: 'initial' | 'main' | 'final') => {
         const updaters = {
             'initial': { set: setInitialExercises, limit: 2 },
-            'main': { set: setMainExercises, limit: 2 },
+            'main': { set: setMainExercises, limit: 4 },
             'final': { set: setFinalExercises, limit: 2 }
         };
         
@@ -330,16 +330,14 @@ export default function CrearSesionPage() {
     }
   }
 
-  const handleViewSheet = () => {
-    const sessionData = {
+  const getSessionDataForPreview = () => {
+    return {
       ...form.getValues(),
-      initialExercise: initialExercises[0],
-      mainExercises: mainExercises,
-      finalExercise: finalExercises[0],
+      initialExercises: initialExercises.filter(Boolean) as Exercise[],
+      mainExercises: mainExercises.filter(Boolean) as Exercise[],
+      finalExercises: finalExercises.filter(Boolean) as Exercise[],
       date: form.getValues('date')?.toISOString(),
     };
-    localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
-    window.open('/crear-sesion/ficha', '_blank');
   };
 
   return (
@@ -553,7 +551,7 @@ export default function CrearSesionPage() {
                     title={`Tarea Principal ${index + 1}`}
                 />
                 ))}
-                 {mainExercises.length < 2 && (
+                 {mainExercises.length < 4 && (
                   <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={() => addExerciseSlot('main')}>
                     <CardHeader className="p-0">
                       <CardTitle className="text-lg font-semibold text-muted-foreground">
@@ -606,7 +604,7 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <DownloadOptionsDialog onDownload={handleViewSheet}>
+           <DownloadOptionsDialog onDownload={getSessionDataForPreview}>
               <Button variant="outline" size="lg" type="button">
                 <ClipboardList className="mr-2 h-5 w-5" />
                 Ver Ficha de Sesión
