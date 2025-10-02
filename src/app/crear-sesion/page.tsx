@@ -56,7 +56,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SelectExerciseDialog from './_components/SelectExerciseDialog';
 import Image from 'next/image';
-import DownloadOptionsDialog from './_components/DownloadOptionsDialog';
+import SessionSheetPreviewDialog from './_components/SessionSheetPreviewDialog';
 import '@/app/print.css';
 
 interface Exercise {
@@ -248,7 +248,9 @@ export default function CrearSesionPage() {
 
 
   const addMainExerciseSlot = () => {
-    setMainExercises((prev) => [...prev, null]);
+    if (mainExercises.length < 4) {
+      setMainExercises((prev) => [...prev, null]);
+    }
   };
 
   const removeMainExerciseSlot = (index: number) => {
@@ -514,18 +516,20 @@ export default function CrearSesionPage() {
                     title={`Tarea ${index + 1}`}
                 />
                 ))}
-                <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={addMainExerciseSlot}>
-                  <CardHeader className="p-0">
-                    <CardTitle className="text-lg font-semibold text-muted-foreground">
-                      Añadir Tarea
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0 mt-2">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground">
-                      <Plus className="h-6 w-6" />
-                    </div>
-                  </CardContent>
-                </Card>
+                 {mainExercises.length < 4 && (
+                  <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={addMainExerciseSlot}>
+                    <CardHeader className="p-0">
+                      <CardTitle className="text-lg font-semibold text-muted-foreground">
+                        Añadir Tarea
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 mt-2">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground">
+                        <Plus className="h-6 w-6" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
 
@@ -548,12 +552,12 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <DownloadOptionsDialog onDownload={getSessionDataForPreview}>
+           <SessionSheetPreviewDialog onDownload={getSessionDataForPreview}>
               <Button variant="outline" size="lg" type="button">
                 <ClipboardList className="mr-2 h-5 w-5" />
                 Ver Ficha de Sesión
               </Button>
-           </DownloadOptionsDialog>
+           </SessionSheetPreviewDialog>
           <Button variant="secondary" size="lg" type="button" disabled>
             <Sparkles className="mr-2 h-5 w-5" />
             Generar con IA
