@@ -63,6 +63,7 @@ interface Exercise {
   'Duración (min)': string;
   Imagen?: string;
   aiHint?: string;
+  [key: string]: any;
 }
 
 const sessionSchema = z.object({
@@ -266,11 +267,10 @@ export default function CrearSesionPage() {
 
     setIsSaving(true);
     
-    // Sanitize data to prevent storing undefined values
     const sanitizedData = {
         date: data.date,
         microcycle: data.microcycle || '',
-        sessionNumber: data.sessionNumber,
+        sessionNumber: data.sessionNumber || '',
         players: data.players || '',
         space: data.space || '',
         objectives: data.objectives || '',
@@ -307,6 +307,17 @@ export default function CrearSesionPage() {
         setIsSaving(false);
     }
   }
+
+  const handleViewSheet = () => {
+    const sessionData = {
+      ...form.getValues(),
+      initialExercise,
+      mainExercises: mainExercises.filter(ex => ex !== null),
+      finalExercise,
+    };
+    localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
+    window.open('/crear-sesion/ficha', '_blank');
+  };
 
 
   return (
@@ -537,7 +548,7 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <Button variant="outline" size="lg" type="button" disabled>
+           <Button variant="outline" size="lg" type="button" onClick={handleViewSheet}>
             <ClipboardList className="mr-2 h-5 w-5" />
             Ver Ficha de Sesión
           </Button>
@@ -562,5 +573,3 @@ export default function CrearSesionPage() {
     </>
   );
 }
-
-    
