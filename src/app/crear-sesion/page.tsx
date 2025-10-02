@@ -56,6 +56,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SelectExerciseDialog from './_components/SelectExerciseDialog';
 import Image from 'next/image';
+import DownloadOptionsDialog from './_components/DownloadOptionsDialog';
 
 interface Exercise {
   id: string;
@@ -548,10 +549,12 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <Button variant="outline" size="lg" type="button" onClick={handleViewSheet}>
-            <ClipboardList className="mr-2 h-5 w-5" />
-            Ver Ficha de Sesión
-          </Button>
+           <DownloadOptionsDialog onDownload={handleViewSheet}>
+              <Button variant="outline" size="lg" type="button">
+                <ClipboardList className="mr-2 h-5 w-5" />
+                Ver Ficha de Sesión
+              </Button>
+           </DownloadOptionsDialog>
           <Button variant="secondary" size="lg" type="button" disabled>
             <Sparkles className="mr-2 h-5 w-5" />
             Generar con IA
