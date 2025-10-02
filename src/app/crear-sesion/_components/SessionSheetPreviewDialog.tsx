@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -61,7 +62,34 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
   };
 
   const handlePrint = () => {
-    window.print();
+    const printableContent = document.getElementById('printable-content');
+    if (printableContent) {
+      const printWindow = window.open('', '', 'height=800,width=800');
+      if (printWindow) {
+        printWindow.document.write('<html><head><title>Ficha de Sesión</title>');
+        // Directly include Tailwind CDN for simplicity in print window, or link to a compiled print.css
+        printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
+        printWindow.document.write(`
+          <style>
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .page-break { page-break-before: always; }
+            }
+            .break-inside-avoid { page-break-inside: avoid; }
+            body { font-family: sans-serif; }
+          </style>
+        `);
+        printWindow.document.write('</head><body class="p-8">');
+        printWindow.document.write(printableContent.innerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
+    }
   };
 
   const allExercises = session ? [session.initialExercise, ...session.mainExercises, session.finalExercise].filter(Boolean) as Exercise[] : [];
@@ -78,8 +106,8 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-grow h-0 pr-6" id="printable-content">
-          <div className="space-y-6 py-4">
+        <ScrollArea className="flex-grow h-0 pr-6">
+          <div id="printable-content" className="space-y-6 py-4">
             {!session ? (
               <div className="space-y-4">
                 <Skeleton className="h-8 w-1/2" />
@@ -99,7 +127,7 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
                   )}
                 </div>
 
-                <Card className="mb-6">
+                <Card className="mb-6 break-inside-avoid">
                   <CardHeader>
                       <CardTitle>Información General</CardTitle>
                   </CardHeader>
