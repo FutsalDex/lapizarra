@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import '@/app/print.css';
 
 interface Exercise {
   id: string;
@@ -72,7 +73,7 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="print-hidden">
           <DialogTitle>Previsualización de la Ficha de Sesión</DialogTitle>
           <DialogDescription>
             Así se verá tu sesión. Puedes descargarla como PDF desde aquí.
@@ -116,12 +117,12 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
                 
                 <div className="space-y-6">
                   {allExercises.map((exercise, index) => (
-                      <Card key={exercise.id + index} className="overflow-hidden">
+                      <Card key={exercise.id + index} className="overflow-hidden break-inside-avoid">
                           <CardHeader>
                               <CardTitle>{exercise.Ejercicio}</CardTitle>
                               <CardDescription>Duración: {exercise['Duración (min)']} min</CardDescription>
                           </CardHeader>
-                          <div className="relative h-60 w-full bg-muted print-image">
+                          <div className="relative h-80 w-full bg-muted print-image">
                               <Image
                                   src={exercise.Imagen || `https://picsum.photos/seed/${exercise.id}/800/600`}
                                   alt={exercise.Ejercicio}
