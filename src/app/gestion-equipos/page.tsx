@@ -154,14 +154,14 @@ export default function GestionEquiposPage() {
         if (!user || !userProfile) return false;
         if (userProfile.role === 'Admin') return true;
         if (userProfile.role === 'Subscribed' && myTeams.length < 5) return true;
-        if (userProfile.role === 'Registered' && myTeams.length < 1) return true;
+        if (userProfile.role === 'Registered' && myTeams.length < 2) return true;
         return false;
     }
     
     const getLimitMessage = () => {
         if (!userProfile) return '';
         if (userProfile.role === 'Registered') {
-            return 'Has alcanzado el límite de 1 equipo para usuarios registrados. Considera suscribirte para crear más.';
+            return 'Has alcanzado el límite de 2 equipos para usuarios registrados. Considera suscribirte para crear más.';
         }
         if (userProfile.role === 'Subscribed') {
             return 'Has alcanzado el límite de 5 equipos para tu plan de suscripción.';

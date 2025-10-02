@@ -311,9 +311,9 @@ export default function TeamRosterPage() {
                 <TableBody>
                     {players.map((player) => (
                         <TableRow key={player.id}>
-                            <TableCell><Input value={player.number} onChange={(e) => handlePlayerChange(player.id, 'number', parseInt(e.target.value) || 0)} className="h-8 w-14 text-center" disabled={isDemoMode} /></TableCell>
-                            <TableCell><Input value={player.name} onChange={(e) => handlePlayerChange(player.id, 'name', e.target.value)} className="h-8" disabled={isDemoMode} /></TableCell>
-                            <TableCell>
+                            <TableCell className="py-1"><Input value={player.number} onChange={(e) => handlePlayerChange(player.id, 'number', parseInt(e.target.value) || 0)} className="h-8 w-14 text-center" disabled={isDemoMode} /></TableCell>
+                            <TableCell className="py-1"><Input value={player.name} onChange={(e) => handlePlayerChange(player.id, 'name', e.target.value)} className="h-8" disabled={isDemoMode} /></TableCell>
+                            <TableCell className="py-1">
                                 <Select value={player.position} onValueChange={(value) => handlePlayerChange(player.id, 'position', value)} disabled={isDemoMode}>
                                     <SelectTrigger className="h-8">
                                         <SelectValue />
@@ -328,7 +328,7 @@ export default function TeamRosterPage() {
                                     </SelectContent>
                                 </Select>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right py-1">
                                  <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeletePlayer(player.id)} disabled={isSaving || isDemoMode}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
