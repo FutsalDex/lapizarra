@@ -57,6 +57,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import SelectExerciseDialog from './_components/SelectExerciseDialog';
 import Image from 'next/image';
 import DownloadOptionsDialog from './_components/DownloadOptionsDialog';
+import '@/app/print.css';
 
 interface Exercise {
   id: string;
