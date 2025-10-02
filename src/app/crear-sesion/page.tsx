@@ -31,6 +31,7 @@ import {
   ClipboardList,
   Sparkles,
   Replace,
+  Loader2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -55,6 +56,7 @@ import SelectExerciseDialog from './_components/SelectExerciseDialog';
 import Image from 'next/image';
 import SessionSheetPreviewDialog from './_components/SessionSheetPreviewDialog';
 import '@/app/print.css';
+import DownloadOptionsDialog from './_components/DownloadOptionsDialog';
 
 interface Exercise {
   id: string;
@@ -145,7 +147,7 @@ export default function CrearSesionPage() {
     
     // State for selected exercises
     const [initialExercises, setInitialExercises] = useState<(Exercise | null)[]>([null]);
-    const [mainExercises, setMainExercises] = useState<(Exercise | null)[]>([null]);
+    const [mainExercises, setMainExercises] = useState<(Exercise | null)[]>([null, null]);
     const [finalExercises, setFinalExercises] = useState<(Exercise | null)[]>([null]);
 
     // State for dialogs
@@ -195,7 +197,7 @@ export default function CrearSesionPage() {
                     const populatedFinal = await fetchExercises(sessionData.finalExercises || []);
                     
                     setInitialExercises(populatedInitial.length > 0 ? populatedInitial : [null]);
-                    setMainExercises(populatedMain.length > 0 ? populatedMain : [null]);
+                    setMainExercises(populatedMain.length > 0 ? populatedMain : [null, null]);
                     setFinalExercises(populatedFinal.length > 0 ? populatedFinal : [null]);
                     
                     form.reset({
@@ -249,15 +251,15 @@ export default function CrearSesionPage() {
     };
 
     const addExerciseSlot = (type: 'initial' | 'main' | 'final') => {
-        const updater = {
-            'initial': setInitialExercises,
-            'main': setMainExercises,
-            'final': setFinalExercises
-        }[type];
+        const updaters = {
+            'initial': { set: setInitialExercises, limit: 2 },
+            'main': { set: setMainExercises, limit: 2 },
+            'final': { set: setFinalExercises, limit: 2 }
+        };
         
-        const limit = 2;
+        const updater = updaters[type];
 
-        updater(prev => prev.length < limit ? [...prev, null] : prev);
+        updater.set(prev => prev.length < updater.limit ? [...prev, null] : prev);
     }
     
     const removeExerciseSlot = (type: 'initial' | 'main' | 'final', index: number) => {
@@ -328,15 +330,17 @@ export default function CrearSesionPage() {
     }
   }
 
-  const getSessionDataForPreview = () => {
-    return {
+  const handleViewSheet = () => {
+    const sessionData = {
       ...form.getValues(),
-      initialExercise: initialExercises[0], // For preview, we might just show the first one
-      mainExercises: mainExercises.filter(Boolean),
+      initialExercise: initialExercises[0],
+      mainExercises: mainExercises,
       finalExercise: finalExercises[0],
       date: form.getValues('date')?.toISOString(),
     };
-  }
+    localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
+    window.open('/crear-sesion/ficha', '_blank');
+  };
 
   return (
     <>
@@ -602,7 +606,7 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <DownloadOptionsDialog>
+           <DownloadOptionsDialog onDownload={handleViewSheet}>
               <Button variant="outline" size="lg" type="button">
                 <ClipboardList className="mr-2 h-5 w-5" />
                 Ver Ficha de Sesión
