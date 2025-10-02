@@ -5,7 +5,7 @@
         print-color-adjust: exact;
     }
     .print-hidden {
-        display: none;
+        display: none !important;
     }
     .container {
         max-width: 100% !important;
@@ -14,11 +14,19 @@
     .card {
         box-shadow: none !important;
         border: 1px solid #e2e8f0 !important;
+        page-break-inside: avoid;
+    }
+    .break-inside-avoid {
+      page-break-inside: avoid;
     }
     h1, h2, h3, h4, h5, h6 {
         page-break-after: avoid;
     }
     p, div {
         page-break-inside: avoid;
+    }
+    @page {
+      size: A4;
+      margin: 1cm;
     }
 }

@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import '@/app/print.css';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -51,9 +50,17 @@ export default function SessionSheetPage() {
     const data = localStorage.getItem('sessionSheetData');
     if (data) {
       setSession(JSON.parse(data));
+    } else {
+      // If no data, redirect or show message, then clear item
+      router.push('/crear-sesion');
     }
     setLoading(false);
-  }, []);
+    
+    // Clean up local storage after use
+    return () => {
+      localStorage.removeItem('sessionSheetData');
+    }
+  }, [router]);
 
   const handlePrint = () => {
     window.print();
@@ -80,8 +87,7 @@ export default function SessionSheetPage() {
   if (!session) {
     return (
       <div className="container mx-auto py-12 text-center">
-        <p>No se encontraron datos de la sesión.</p>
-        <Button onClick={() => router.back()} className="mt-4">Volver</Button>
+        <p>No se encontraron datos de la sesión. Redirigiendo...</p>
       </div>
     );
   }
@@ -91,7 +97,7 @@ export default function SessionSheetPage() {
   const totalDuration = allExercises.reduce((acc, ex) => acc + parseInt(ex?.['Duración (min)'] || '0', 10), 0);
 
   return (
-    <div className="container mx-auto max-w-4xl py-12 px-4">
+    <div className="container mx-auto max-w-4xl py-12 px-4" id="printable-content">
       <div className="mb-6 flex justify-between items-center print-hidden">
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -130,7 +136,7 @@ export default function SessionSheetPage() {
       
       <div className="space-y-8">
         {allExercises.map((exercise, index) => (
-            <Card key={exercise.id + index} className="overflow-hidden">
+            <Card key={exercise.id + index} className="overflow-hidden break-inside-avoid">
                 <CardHeader>
                     <CardTitle>{exercise.Ejercicio}</CardTitle>
                     <CardDescription>Duración: {exercise['Duración (min)']} min</CardDescription>

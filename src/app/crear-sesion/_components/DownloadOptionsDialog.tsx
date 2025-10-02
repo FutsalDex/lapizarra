@@ -10,7 +10,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,7 @@ import { Download, BookCopy } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import SessionSheetPreviewDialog from './SessionSheetPreviewDialog';
 
 interface DownloadOptionsDialogProps {
   children: React.ReactNode;
@@ -135,14 +135,15 @@ export default function DownloadOptionsDialog({
               Ir a sesiones
             </Link>
           </Button>
-          <DialogClose asChild>
-            <Button onClick={onDownload}>
-              <Download className="mr-2 h-4 w-4" />
-              Descargar sesión
-            </Button>
-          </DialogClose>
+          <SessionSheetPreviewDialog onDownload={onDownload}>
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Descargar sesión
+              </Button>
+          </SessionSheetPreviewDialog>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

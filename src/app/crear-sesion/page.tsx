@@ -315,10 +315,21 @@ export default function CrearSesionPage() {
       initialExercise,
       mainExercises: mainExercises.filter(ex => ex !== null),
       finalExercise,
+      date: form.getValues('date')?.toISOString(),
     };
     localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
     window.open('/crear-sesion/ficha', '_blank');
   };
+
+  const getSessionDataForPreview = () => {
+    return {
+      ...form.getValues(),
+      initialExercise,
+      mainExercises: mainExercises.filter(ex => ex !== null),
+      finalExercise,
+      date: form.getValues('date')?.toISOString(),
+    };
+  }
 
   const getPreviewImage = () => {
     const firstMainExercise = mainExercises.find(ex => ex !== null);
@@ -554,7 +565,7 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <DownloadOptionsDialog onDownload={handleViewSheet} previewImage={getPreviewImage()}>
+           <DownloadOptionsDialog onDownload={getSessionDataForPreview} previewImage={getPreviewImage()}>
               <Button variant="outline" size="lg" type="button">
                 <ClipboardList className="mr-2 h-5 w-5" />
                 Ver Ficha de Sesión
