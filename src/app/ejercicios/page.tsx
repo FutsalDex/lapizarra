@@ -131,7 +131,7 @@ export default function EjerciciosPage() {
     }
 };
 
-  const phases = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Fase).filter(Boolean)))], [exercises]);
+  const phases = useMemo(() => ['Todas', 'Fase Inicial', 'Fase Principal', 'Fase Final'], []);
   const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 

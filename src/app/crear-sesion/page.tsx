@@ -31,11 +31,8 @@ import {
   ClipboardList,
   Sparkles,
   Replace,
-  BookOpen,
-  Loader2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -147,13 +144,13 @@ export default function CrearSesionPage() {
     const [isSaving, setIsSaving] = useState(false);
     
     // State for selected exercises
-    const [initialExercise, setInitialExercise] = useState<Exercise | null>(null);
-    const [mainExercises, setMainExercises] = useState<(Exercise | null)[]>([]);
-    const [finalExercise, setFinalExercise] = useState<Exercise | null>(null);
+    const [initialExercises, setInitialExercises] = useState<(Exercise | null)[]>([null]);
+    const [mainExercises, setMainExercises] = useState<(Exercise | null)[]>([null]);
+    const [finalExercises, setFinalExercises] = useState<(Exercise | null)[]>([null]);
 
     // State for dialogs
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [currentSelection, setCurrentSelection] = useState<{type: 'initial' | 'main' | 'final', index?: number} | null>(null);
+    const [currentSelection, setCurrentSelection] = useState<{type: 'initial' | 'main' | 'final', index: number} | null>(null);
 
 
     const form = useForm<SessionFormValues>({
@@ -176,18 +173,12 @@ export default function CrearSesionPage() {
                 if (sessionSnap.exists()) {
                     const sessionData = sessionSnap.data();
 
-                    // Fetch all exercises at once
-                    const exerciseIds = [
-                        sessionData.initialExercise,
-                        ...sessionData.mainExercises,
-                        sessionData.finalExercise
-                    ].filter(Boolean);
-
-                    if(exerciseIds.length > 0) {
+                    const fetchExercises = async (ids: string[]) => {
+                        if (ids.length === 0) return [];
                         const exercisesData: Record<string, Exercise> = {};
                         const chunks = [];
-                        for (let i = 0; i < exerciseIds.length; i += 30) {
-                            chunks.push(exerciseIds.slice(i, i + 30));
+                        for (let i = 0; i < ids.length; i += 30) {
+                            chunks.push(ids.slice(i, i + 30));
                         }
                         for(const chunk of chunks) {
                             const exercisesQuery = query(collection(db, 'exercises'), where('__name__', 'in', chunk));
@@ -196,11 +187,16 @@ export default function CrearSesionPage() {
                                 exercisesData[doc.id] = { id: doc.id, ...doc.data() } as Exercise;
                             });
                         }
-                        
-                        setInitialExercise(exercisesData[sessionData.initialExercise] || null);
-                        setMainExercises(sessionData.mainExercises.map((id: string) => exercisesData[id] || null));
-                        setFinalExercise(exercisesData[sessionData.finalExercise] || null);
+                        return ids.map(id => exercisesData[id] || null);
                     }
+                    
+                    const populatedInitial = await fetchExercises(sessionData.initialExercises || []);
+                    const populatedMain = await fetchExercises(sessionData.mainExercises || []);
+                    const populatedFinal = await fetchExercises(sessionData.finalExercises || []);
+                    
+                    setInitialExercises(populatedInitial.length > 0 ? populatedInitial : [null]);
+                    setMainExercises(populatedMain.length > 0 ? populatedMain : [null]);
+                    setFinalExercises(populatedFinal.length > 0 ? populatedFinal : [null]);
                     
                     form.reset({
                         date: (sessionData.date as Timestamp).toDate(),
@@ -217,7 +213,7 @@ export default function CrearSesionPage() {
     }, [sessionId, form]);
 
 
-    const handleSelectClick = (type: 'initial' | 'main' | 'final', index?: number) => {
+    const handleSelectClick = (type: 'initial' | 'main' | 'final', index: number) => {
         setCurrentSelection({ type, index });
         setIsDialogOpen(true);
     };
@@ -226,19 +222,25 @@ export default function CrearSesionPage() {
         if (currentSelection) {
             switch (currentSelection.type) {
                 case 'initial':
-                    setInitialExercise(exercise);
+                    setInitialExercises(prev => {
+                        const newInitial = [...prev];
+                        newInitial[currentSelection.index] = exercise;
+                        return newInitial;
+                    });
                     break;
                 case 'main':
                     setMainExercises(prev => {
                         const newMain = [...prev];
-                        if (currentSelection.index !== undefined) {
-                            newMain[currentSelection.index] = exercise;
-                        }
+                        newMain[currentSelection.index] = exercise;
                         return newMain;
                     });
                     break;
                 case 'final':
-                    setFinalExercise(exercise);
+                    setFinalExercises(prev => {
+                        const newFinal = [...prev];
+                        newFinal[currentSelection.index] = exercise;
+                        return newFinal;
+                    });
                     break;
             }
         }
@@ -246,24 +248,38 @@ export default function CrearSesionPage() {
         setCurrentSelection(null);
     };
 
+    const addExerciseSlot = (type: 'initial' | 'main' | 'final') => {
+        const updater = {
+            'initial': setInitialExercises,
+            'main': setMainExercises,
+            'final': setFinalExercises
+        }[type];
+        
+        const limit = 2;
 
-  const addMainExerciseSlot = () => {
-    if (mainExercises.length < 4) {
-      setMainExercises((prev) => [...prev, null]);
+        updater(prev => prev.length < limit ? [...prev, null] : prev);
     }
-  };
-
-  const removeMainExerciseSlot = (index: number) => {
-      setMainExercises(prev => prev.filter((_, i) => i !== index));
-  }
+    
+    const removeExerciseSlot = (type: 'initial' | 'main' | 'final', index: number) => {
+        const updater = {
+            'initial': setInitialExercises,
+            'main': setMainExercises,
+            'final': setFinalExercises
+        }[type];
+        
+        updater(prev => {
+            const newArr = prev.filter((_, i) => i !== index);
+            return newArr.length > 0 ? newArr : [null]; // Always keep at least one slot
+        });
+    }
 
   const handleSaveSession = async (data: SessionFormValues) => {
     if (!user) {
         toast({ title: 'Error', description: 'Debes iniciar sesión para guardar una sesión.', variant: 'destructive'});
         return;
     }
-
-    const allExercises = [initialExercise, ...mainExercises, finalExercise].filter(ex => ex !== null);
+    
+    const allExercises = [...initialExercises, ...mainExercises, ...finalExercises].filter(Boolean);
     if (allExercises.length === 0) {
         toast({ title: 'Sesión vacía', description: 'Debes añadir al menos un ejercicio para guardar la sesión.', variant: 'destructive'});
         return;
@@ -283,9 +299,9 @@ export default function CrearSesionPage() {
     const sessionData = {
         ...sanitizedData,
         userId: user.uid,
-        initialExercise: initialExercise?.id || null,
+        initialExercises: initialExercises.map(ex => ex?.id).filter(Boolean),
         mainExercises: mainExercises.map(ex => ex?.id).filter(Boolean),
-        finalExercise: finalExercise?.id || null,
+        finalExercises: finalExercises.map(ex => ex?.id).filter(Boolean),
     };
     
     try {
@@ -315,9 +331,9 @@ export default function CrearSesionPage() {
   const getSessionDataForPreview = () => {
     return {
       ...form.getValues(),
-      initialExercise,
-      mainExercises: mainExercises.filter(ex => ex !== null),
-      finalExercise,
+      initialExercise: initialExercises[0], // For preview, we might just show the first one
+      mainExercises: mainExercises.filter(Boolean),
+      finalExercise: finalExercises[0],
       date: form.getValues('date')?.toISOString(),
     };
   }
@@ -490,34 +506,20 @@ export default function CrearSesionPage() {
           <div className="space-y-8">
             <div>
               <h3 className="text-xl font-semibold mb-4 border-b pb-2">
-                Calentamiento
+                Fase Inicial
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                 <ExerciseCard 
-                    exercise={initialExercise}
-                    onSelect={() => handleSelectClick('initial')}
-                    onRemove={() => setInitialExercise(null)}
-                    title="Tarea Inicial"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold mb-4 border-b pb-2">
-                Parte Principal
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {mainExercises.map((ex, index) => (
+                 {initialExercises.map((ex, index) => (
                   <ExerciseCard 
                     key={index}
                     exercise={ex}
-                    onSelect={() => handleSelectClick('main', index)}
-                    onRemove={() => removeMainExerciseSlot(index)}
-                    title={`Tarea ${index + 1}`}
-                />
+                    onSelect={() => handleSelectClick('initial', index)}
+                    onRemove={() => removeExerciseSlot('initial', index)}
+                    title={`Tarea Inicial ${index + 1}`}
+                  />
                 ))}
-                 {mainExercises.length < 4 && (
-                  <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={addMainExerciseSlot}>
+                 {initialExercises.length < 2 && (
+                  <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={() => addExerciseSlot('initial')}>
                     <CardHeader className="p-0">
                       <CardTitle className="text-lg font-semibold text-muted-foreground">
                         Añadir Tarea
@@ -535,15 +537,63 @@ export default function CrearSesionPage() {
 
             <div>
               <h3 className="text-xl font-semibold mb-4 border-b pb-2">
-                Vuelta a la Calma
+                Fase Principal
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                 <ExerciseCard 
-                    exercise={finalExercise}
-                    onSelect={() => handleSelectClick('final')}
-                    onRemove={() => setFinalExercise(null)}
-                    title="Tarea Final"
+                {mainExercises.map((ex, index) => (
+                  <ExerciseCard 
+                    key={index}
+                    exercise={ex}
+                    onSelect={() => handleSelectClick('main', index)}
+                    onRemove={() => removeExerciseSlot('main', index)}
+                    title={`Tarea Principal ${index + 1}`}
                 />
+                ))}
+                 {mainExercises.length < 2 && (
+                  <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={() => addExerciseSlot('main')}>
+                    <CardHeader className="p-0">
+                      <CardTitle className="text-lg font-semibold text-muted-foreground">
+                        Añadir Tarea
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 mt-2">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground">
+                        <Plus className="h-6 w-6" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold mb-4 border-b pb-2">
+                Fase Final
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                 {finalExercises.map((ex, index) => (
+                  <ExerciseCard 
+                    key={index}
+                    exercise={ex}
+                    onSelect={() => handleSelectClick('final', index)}
+                    onRemove={() => removeExerciseSlot('final', index)}
+                    title={`Tarea Final ${index + 1}`}
+                  />
+                ))}
+                 {finalExercises.length < 2 && (
+                  <Card className="flex flex-col items-center justify-center text-center p-4 border-2 border-dashed h-48 bg-transparent hover:border-primary hover:bg-accent/50 cursor-pointer" onClick={() => addExerciseSlot('final')}>
+                    <CardHeader className="p-0">
+                      <CardTitle className="text-lg font-semibold text-muted-foreground">
+                        Añadir Tarea
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 mt-2">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground">
+                        <Plus className="h-6 w-6" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </div>
@@ -552,12 +602,12 @@ export default function CrearSesionPage() {
         <Separator />
 
         <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-           <SessionSheetPreviewDialog onDownload={getSessionDataForPreview}>
+           <DownloadOptionsDialog>
               <Button variant="outline" size="lg" type="button">
                 <ClipboardList className="mr-2 h-5 w-5" />
                 Ver Ficha de Sesión
               </Button>
-           </SessionSheetPreviewDialog>
+           </DownloadOptionsDialog>
           <Button variant="secondary" size="lg" type="button" disabled>
             <Sparkles className="mr-2 h-5 w-5" />
             Generar con IA

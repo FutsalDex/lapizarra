@@ -66,15 +66,15 @@ interface Session {
   id: string;
   date: { seconds: number; nanoseconds: number };
   sessionNumber: string;
-  initialExercise: string;
+  initialExercises: string[];
   mainExercises: string[];
-  finalExercise: string;
+  finalExercises: string[];
 }
 
-interface PopulatedSession extends Omit<Session, 'initialExercise' | 'mainExercises' | 'finalExercise'> {
-    initialExercise: Exercise | null;
+interface PopulatedSession extends Omit<Session, 'initialExercises' | 'mainExercises' | 'finalExercises'> {
+    initialExercises: (Exercise | null)[];
     mainExercises: (Exercise | null)[];
-    finalExercise: Exercise | null;
+    finalExercises: (Exercise | null)[];
     totalDuration: number;
     [key: string]: any;
 }
@@ -118,20 +118,17 @@ export default function MisSesionesPage() {
         );
 
         const populatedSessions = sessionsData.map((session) => {
-            const initialEx = exercisesMap.get(session.initialExercise) || null;
-            const mainExs = session.mainExercises.map((id) => exercisesMap.get(id) || null);
-            const finalEx = exercisesMap.get(session.finalExercise) || null;
+            const initialExs = (session.initialExercises || []).map((id) => exercisesMap.get(id) || null);
+            const mainExs = (session.mainExercises || []).map((id) => exercisesMap.get(id) || null);
+            const finalExs = (session.finalExercises || []).map((id) => exercisesMap.get(id) || null);
 
-            const initialDuration = parseInt(initialEx?.['Duración (min)'] || '0', 10);
-            const mainDuration = mainExs.reduce((acc, ex) => acc + parseInt(ex?.['Duración (min)'] || '0', 10),0);
-            const finalDuration = parseInt(finalEx?.['Duración (min)'] || '0', 10);
-            const totalDuration = initialDuration + mainDuration + finalDuration;
+            const totalDuration = [...initialExs, ...mainExs, ...finalExs].reduce((acc, ex) => acc + parseInt(ex?.['Duración (min)'] || '0', 10),0);
 
           return {
             ...(session as unknown as PopulatedSession),
-            initialExercise: initialEx,
+            initialExercises: initialExs,
             mainExercises: mainExs,
-            finalExercise: finalEx,
+            finalExercises: finalExs,
             totalDuration
           };
         });
@@ -168,7 +165,9 @@ export default function MisSesionesPage() {
   const handleViewSheet = (session: PopulatedSession) => {
     const sessionData = {
       ...session,
+      initialExercise: session.initialExercises[0], // Adjust for multi-exercise phases
       mainExercises: session.mainExercises.filter(ex => ex !== null),
+      finalExercise: session.finalExercises[0],
       date: new Date(session.date.seconds * 1000).toISOString(),
     };
     localStorage.setItem('sessionSheetData', JSON.stringify(sessionData));
@@ -257,18 +256,22 @@ export default function MisSesionesPage() {
                     </CardHeader>
                     <CardContent className="flex-grow space-y-4 text-sm">
                         <div>
-                            <h4 className="font-semibold text-foreground">Calentamiento</h4>
-                            <p className="text-muted-foreground">{session.initialExercise?.Ejercicio || 'N/A'}</p>
+                            <h4 className="font-semibold text-foreground">Fase Inicial</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                {session.initialExercises.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li> : <li key="empty">N/A</li>)}
+                            </ul>
                         </div>
                          <div>
-                            <h4 className="font-semibold text-foreground">Ejercicios Principales</h4>
+                            <h4 className="font-semibold text-foreground">Fase Principal</h4>
                             <ul className="list-disc list-inside text-muted-foreground">
-                                {session.mainExercises.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li> : null)}
+                                {session.mainExercises.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li> : <li key="empty">N/A</li>)}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-foreground">Vuelta a la Calma</h4>
-                            <p className="text-muted-foreground">{session.finalExercise?.Ejercicio || 'N/A'}</p>
+                            <h4 className="font-semibold text-foreground">Fase Final</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                {session.finalExercises.map(ex => ex ? <li key={ex.id}>{ex.Ejercicio}</li> : <li key="empty">N/A</li>)}
+                            </ul>
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col items-stretch space-y-2">

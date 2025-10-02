@@ -301,9 +301,9 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Calentamiento">Calentamiento</SelectItem>
-                        <SelectItem value="Parte Principal">Parte Principal</SelectItem>
-                        <SelectItem value="Vuelta a la Calma">Vuelta a la Calma</SelectItem>
+                        <SelectItem value="Fase Inicial">Fase Inicial</SelectItem>
+                        <SelectItem value="Fase Principal">Fase Principal</SelectItem>
+                        <SelectItem value="Fase Final">Fase Final</SelectItem>
                       </SelectContent>
                     </Select>
                   <FormMessage />
