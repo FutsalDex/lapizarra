@@ -17,10 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Download, BookCopy } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface DownloadOptionsDialogProps {
   children: React.ReactNode;
   onDownload: () => void;
+  previewImage: string | null;
 }
 
 const options = [
@@ -77,6 +79,7 @@ const options = [
 export default function DownloadOptionsDialog({
   children,
   onDownload,
+  previewImage,
 }: DownloadOptionsDialogProps) {
   const [selected, setSelected] = useState('resumido');
 
@@ -90,6 +93,15 @@ export default function DownloadOptionsDialog({
             Elige el formato que mejor se adapte a tus necesidades.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="relative w-full h-40 rounded-md overflow-hidden bg-muted my-4">
+            <Image 
+                src={previewImage || `https://picsum.photos/seed/session/800/400`}
+                alt="Vista previa de la sesión"
+                fill
+                className="object-contain"
+            />
+        </div>
 
         <div className="grid grid-cols-3 gap-4 py-4">
           {options.map((opt) => (
