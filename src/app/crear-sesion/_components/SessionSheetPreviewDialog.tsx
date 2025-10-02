@@ -78,6 +78,7 @@ export default function SessionSheetPreviewDialog({ children, onDownload }: Sess
                     <style>
                         @media print {
                             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            @page { size: A4; margin: 1cm; }
                             .page-break { page-break-before: always; }
                             .break-inside-avoid { page-break-inside: avoid; }
                         }
