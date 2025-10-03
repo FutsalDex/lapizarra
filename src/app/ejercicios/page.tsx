@@ -65,7 +65,6 @@ export default function EjerciciosPage() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPhase, setSelectedPhase] = useState('Todas');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [selectedAge, setSelectedAge] = useState('Todas');
   const [currentPage, setCurrentPage] = useState(1);
@@ -129,7 +128,6 @@ export default function EjerciciosPage() {
     }
 };
 
-  const phases = useMemo(() => ['Todas', 'Fase Inicial', 'Fase Principal', 'Fase Final'], []);
   const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 
@@ -138,20 +136,18 @@ export default function EjerciciosPage() {
         const termMatch = (exercise.Ejercicio || '')
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
-        const phaseMatch =
-          selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
         const categoryMatch =
           selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
         const ageMatch = 
           selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
 
-        return termMatch && phaseMatch && categoryMatch && ageMatch;
+        return termMatch && categoryMatch && ageMatch;
       });
-  }, [exercises, searchTerm, selectedPhase, selectedCategory, selectedAge]);
+  }, [exercises, searchTerm, selectedCategory, selectedAge]);
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedPhase, selectedCategory, selectedAge]);
+  }, [searchTerm, selectedCategory, selectedAge]);
 
 
   const paginatedExercises = useMemo(() => {
@@ -181,7 +177,7 @@ export default function EjerciciosPage() {
       </div>
 
       <div className="mb-8 p-4 bg-card rounded-lg shadow-sm border space-y-4">
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -191,21 +187,6 @@ export default function EjerciciosPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-            <Select value={selectedPhase} onValueChange={(value) => setSelectedPhase(value)} disabled={loading}>
-              <SelectTrigger className="w-full h-11">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Todas las Fases" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                {phases.map((phase) => (
-                  <SelectItem key={phase} value={phase}>
-                    {phase}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={loading}>
               <SelectTrigger className="w-full h-11">
                  <div className="flex items-center gap-2">
