@@ -189,7 +189,7 @@ export default function EjerciciosPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-            <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={loading}>
+            <Select value={selectedPhase} onValueChange={(value) => setSelectedPhase(value)} disabled={loading}>
               <SelectTrigger className="w-full h-11">
                 <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
@@ -333,3 +333,4 @@ export default function EjerciciosPage() {
     </div>
   );
 }
+
