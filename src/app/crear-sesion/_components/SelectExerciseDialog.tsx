@@ -65,11 +65,14 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
 
   useEffect(() => {
     if (open) {
-      if (currentPhase) {
-        setSelectedPhase(currentPhase);
-      } else {
-        setSelectedPhase('Todas');
-      }
+      // When the dialog opens, set the filter to the current phase
+      setSelectedPhase(currentPhase || 'Todas');
+    } else {
+      // Reset filters when dialog closes
+      setSelectedPhase('Todas');
+      setSelectedCategory('Todas');
+      setSelectedAge('Todas');
+      setSearchTerm('');
     }
   }, [open, currentPhase]);
   
