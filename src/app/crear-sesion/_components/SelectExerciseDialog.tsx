@@ -51,24 +51,27 @@ interface SelectExerciseDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onExerciseSelect: (exercise: Exercise) => void;
+    currentPhase?: 'Fase Inicial' | 'Fase Principal' | 'Fase Final';
 }
 
-export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSelect }: SelectExerciseDialogProps) {
+export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSelect, currentPhase }: SelectExerciseDialogProps) {
   const { user } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [selectedAge, setSelectedAge] = useState('Todas');
+  const [selectedPhase, setSelectedPhase] = useState('Todas');
 
   useEffect(() => {
     if (open) {
-      // Reset filters on open
+      // Reset filters on open, except for phase if it's provided
       setSelectedCategory('Todas');
       setSelectedAge('Todas');
       setSearchTerm('');
+      setSelectedPhase(currentPhase || 'Todas');
     }
-  }, [open]);
+  }, [open, currentPhase]);
   
   useEffect(() => {
     if (!open) return;
@@ -98,6 +101,7 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
   
   const categories = useMemo(() => ['Todas', ...Array.from(new Set(exercises.map((ex) => ex.Categoría).filter(Boolean)))], [exercises]);
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
+  const phases = useMemo(() => ['Todas', 'Fase Inicial', 'Fase Principal', 'Fase Final'], []);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter((exercise) => {
@@ -109,9 +113,12 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
       const ageMatch = 
         selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
 
-      return termMatch && categoryMatch && ageMatch;
+      const phaseMatch =
+        selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
+
+      return termMatch && categoryMatch && ageMatch && phaseMatch;
     });
-  }, [exercises, searchTerm, selectedCategory, selectedAge]);
+  }, [exercises, searchTerm, selectedCategory, selectedAge, selectedPhase]);
 
 
   return (
@@ -134,7 +141,7 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={loading}>
               <SelectTrigger><SelectValue placeholder="Todas las Categorías" /></SelectTrigger>
               <SelectContent>
@@ -145,6 +152,12 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
               <SelectTrigger><SelectValue placeholder="Todas las Edades" /></SelectTrigger>
               <SelectContent>
                  {ages.map((age) => <SelectItem key={age} value={age}>{age === 'Todas' ? 'Todas las Edades' : ageCategoryLabels[age] || age}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={loading || !!currentPhase}>
+              <SelectTrigger><SelectValue placeholder="Todas las Fases" /></SelectTrigger>
+              <SelectContent>
+                {phases.map((phase) => <SelectItem key={phase} value={phase}>{phase}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

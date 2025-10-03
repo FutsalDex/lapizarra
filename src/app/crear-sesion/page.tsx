@@ -78,6 +78,8 @@ const sessionSchema = z.object({
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
+type PhaseType = 'Fase Inicial' | 'Fase Principal' | 'Fase Final';
+
 const ExerciseCard = ({
   exercise,
   onSelect,
@@ -152,7 +154,7 @@ export default function CrearSesionPage() {
 
     // State for dialogs
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [currentSelection, setCurrentSelection] = useState<{type: 'initial' | 'main' | 'final', index: number} | null>(null);
+    const [currentSelection, setCurrentSelection] = useState<{type: 'initial' | 'main' | 'final', index: number, phase: PhaseType} | null>(null);
 
 
     const form = useForm<SessionFormValues>({
@@ -216,7 +218,12 @@ export default function CrearSesionPage() {
 
 
     const handleSelectClick = (type: 'initial' | 'main' | 'final', index: number) => {
-        setCurrentSelection({ type, index });
+        const phaseMap: Record<typeof type, PhaseType> = {
+            'initial': 'Fase Inicial',
+            'main': 'Fase Principal',
+            'final': 'Fase Final'
+        };
+        setCurrentSelection({ type, index, phase: phaseMap[type] });
         setIsDialogOpen(true);
     };
 
@@ -627,6 +634,7 @@ export default function CrearSesionPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onExerciseSelect={handleExerciseSelected}
+        currentPhase={currentSelection?.phase}
     />
     </>
   );
