@@ -65,10 +65,8 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
 
   useEffect(() => {
     if (open) {
-      // When the dialog opens, set the filter to the current phase
       setSelectedPhase(currentPhase || 'Todas');
     } else {
-      // Reset filters when dialog closes
       setSelectedPhase('Todas');
       setSelectedCategory('Todas');
       setSelectedAge('Todas');
@@ -107,20 +105,22 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 
   const filteredExercises = useMemo(() => {
-      return exercises.filter((exercise) => {
-        const termMatch = (exercise.Ejercicio || '')
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-        const phaseMatch =
-          selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
-        const categoryMatch =
-          selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
-        const ageMatch = 
-          selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
+    return exercises.filter((exercise) => {
+      const termMatch = (exercise.Ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const phaseMatch =
+        !currentPhase || exercise.Fase === currentPhase;
 
-        return termMatch && phaseMatch && categoryMatch && ageMatch;
-      });
-  }, [exercises, searchTerm, selectedPhase, selectedCategory, selectedAge]);
+      const categoryMatch =
+        selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
+      
+      const ageMatch = 
+        selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
+
+      return termMatch && phaseMatch && categoryMatch && ageMatch;
+    });
+  }, [exercises, searchTerm, selectedPhase, selectedCategory, selectedAge, currentPhase]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
