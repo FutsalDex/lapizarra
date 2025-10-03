@@ -74,8 +74,6 @@ export default function EjerciciosPage() {
     if (authLoading) return;
     
     let q;
-    // For non-registered users, we still fetch a limited number, but we will paginate on the client side.
-    // We could implement server-side pagination with query cursors if the dataset grows very large.
     if (user) {
         q = query(collection(db, "exercises"), where("Visible", "==", true));
     } else {
@@ -136,7 +134,6 @@ export default function EjerciciosPage() {
   const ages = useMemo(() => ['Todas', ...Array.from(new Set(exercises.flatMap((ex) => ex.Edad).filter(Boolean)))], [exercises]);
 
   const filteredExercises = useMemo(() => {
-      setCurrentPage(1); // Reset to first page on filter change
       return exercises.filter((exercise) => {
         const termMatch = (exercise.Ejercicio || '')
           .toLowerCase()
@@ -151,6 +148,11 @@ export default function EjerciciosPage() {
         return termMatch && phaseMatch && categoryMatch && ageMatch;
       });
   }, [exercises, searchTerm, selectedPhase, selectedCategory, selectedAge]);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedPhase, selectedCategory, selectedAge]);
+
 
   const paginatedExercises = useMemo(() => {
       const startIndex = (currentPage - 1) * EXERCISES_PER_PAGE;
