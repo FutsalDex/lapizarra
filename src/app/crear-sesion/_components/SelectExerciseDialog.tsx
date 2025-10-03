@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -65,10 +64,10 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
 
   useEffect(() => {
     if (open) {
-      // Reset filters on open, except for phase if it's provided
+      // Reset filters on open, and set phase if provided
+      setSearchTerm('');
       setSelectedCategory('Todas');
       setSelectedAge('Todas');
-      setSearchTerm('');
       setSelectedPhase(currentPhase || 'Todas');
     }
   }, [open, currentPhase]);
@@ -106,15 +105,9 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
   const filteredExercises = useMemo(() => {
     return exercises.filter((exercise) => {
       const termMatch = (exercise.Ejercicio || '').toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const categoryMatch =
-        selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
-      
-      const ageMatch = 
-        selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
-
-      const phaseMatch =
-        selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
+      const categoryMatch = selectedCategory === 'Todas' || exercise.Categoría === selectedCategory;
+      const ageMatch =  selectedAge === 'Todas' || (exercise.Edad && exercise.Edad.includes(selectedAge));
+      const phaseMatch = selectedPhase === 'Todas' || exercise.Fase === selectedPhase;
 
       return termMatch && categoryMatch && ageMatch && phaseMatch;
     });
