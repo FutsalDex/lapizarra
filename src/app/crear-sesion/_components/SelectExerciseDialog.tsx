@@ -51,9 +51,10 @@ interface SelectExerciseDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onExerciseSelect: (exercise: Exercise) => void;
+    currentPhase: 'Fase Inicial' | 'Fase Principal' | 'Fase Final' | null;
 }
 
-export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSelect }: SelectExerciseDialogProps) {
+export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSelect, currentPhase }: SelectExerciseDialogProps) {
   const { user } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,16 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [selectedAge, setSelectedAge] = useState('Todas');
 
+  useEffect(() => {
+    if (open) {
+      if (currentPhase) {
+        setSelectedPhase(currentPhase);
+      } else {
+        setSelectedPhase('Todas');
+      }
+    }
+  }, [open, currentPhase]);
+  
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -129,7 +140,7 @@ export default function SelectExerciseDialog({ open, onOpenChange, onExerciseSel
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={loading}>
+            <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={loading || !!currentPhase}>
               <SelectTrigger><SelectValue placeholder="Todas las Fases" /></SelectTrigger>
               <SelectContent>
                 {phases.map((phase) => <SelectItem key={phase} value={phase}>{phase}</SelectItem>)}

@@ -154,6 +154,14 @@ export default function CrearSesionPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentSelection, setCurrentSelection] = useState<{type: 'initial' | 'main' | 'final', index: number} | null>(null);
 
+    const phaseMapping = {
+      initial: 'Fase Inicial',
+      main: 'Fase Principal',
+      final: 'Fase Final',
+    } as const;
+
+    const currentPhase = currentSelection ? phaseMapping[currentSelection.type] : null;
+
 
     const form = useForm<SessionFormValues>({
         resolver: zodResolver(sessionSchema),
@@ -627,6 +635,7 @@ export default function CrearSesionPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onExerciseSelect={handleExerciseSelected}
+        currentPhase={currentPhase}
     />
     </>
   );
