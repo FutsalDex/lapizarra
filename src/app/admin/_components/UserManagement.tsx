@@ -143,7 +143,6 @@ export default function UserManagement() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem>Editar Rol</DropdownMenuItem>
                         <ManageSubscriptionDialog user={user} />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
