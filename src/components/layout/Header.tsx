@@ -33,7 +33,6 @@ const mainNav = [
   { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
   { title: "Favoritos", href: "/favoritos", icon: Heart },
-  { title: "Mis Ejercicios", href: "/mis-ejercicios", icon: Upload },
 ];
 
 const adminNav = [
