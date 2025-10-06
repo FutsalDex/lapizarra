@@ -115,7 +115,6 @@ export default function UserManagement() {
                 <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Rol</TableHead>
                 <TableHead>Suscripción</TableHead>
                 <TableHead>Fecha Suscripción</TableHead>
                 <TableHead>Fecha Vencimiento</TableHead>
@@ -130,11 +129,6 @@ export default function UserManagement() {
                 <TableRow key={user.docId}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>{user.displayName}</TableCell>
-                    <TableCell>
-                    <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Subscribed' ? 'default' : 'secondary'}>
-                        {user.role}
-                    </Badge>
-                    </TableCell>
                     <TableCell>{user.subscription}</TableCell>
                     <TableCell>{formatDate(user.subscriptionStartDate)}</TableCell>
                     <TableCell>{formatDate(user.subscriptionEndDate)}</TableCell>
