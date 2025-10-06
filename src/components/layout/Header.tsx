@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, ClipboardList } from "lucide-react";
+import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -33,7 +33,7 @@ const mainNav = [
   { title: "Crear Sesión", href: "/crear-sesion", icon: Pencil },
   { title: "Mi Equipo", href: "/mi-equipo", icon: Users },
   { title: "Favoritos", href: "/favoritos", icon: Heart },
-  { title: "Mis Puntos", href: "/suscripcion", icon: Star },
+  { title: "Mis Ejercicios", href: "/mis-ejercicios", icon: Upload },
 ];
 
 const adminNav = [
@@ -111,6 +111,12 @@ export default function Header() {
                   <Link href="/perfil">
                     <User className="mr-2 h-4 w-4" />
                     <span>Mi Perfil</span>
+                  </Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                  <Link href="/suscripcion">
+                    <Star className="mr-2 h-4 w-4" />
+                    <span>Suscripción y Puntos</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

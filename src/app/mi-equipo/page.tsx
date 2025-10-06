@@ -20,6 +20,7 @@ import {
   LifeBuoy,
   ArrowRight,
   ShieldPlus,
+  Upload,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
@@ -38,6 +39,12 @@ const modules = [
     description: 'Encuentra y organiza todas las sesiones de entrenamiento que has creado manualmente.',
     icon: ClipboardList,
     href: '/mis-sesiones',
+  },
+   {
+    title: 'Mis Ejercicios',
+    description: 'Aporta ejercicios a la comunidad, gestiónalos y gana puntos para tu suscripción.',
+    icon: Upload,
+    href: '/mis-ejercicios',
   },
     {
     title: 'Mis Eventos',
