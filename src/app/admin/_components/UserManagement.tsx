@@ -48,12 +48,15 @@ export default function UserManagement() {
     const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
       const usersDataPromises = snapshot.docs.map(async (doc) => {
         const data = doc.data();
+        let discount = 0;
         
-        // Fetch user's exercises to calculate discount
-        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
-        const exercisesSnapshot = await getDocs(exercisesQuery);
-        const exerciseCount = exercisesSnapshot.size;
-        const discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
+        if (data.uid) {
+            // Fetch user's exercises to calculate discount
+            const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
+            const exercisesSnapshot = await getDocs(exercisesQuery);
+            const exerciseCount = exercisesSnapshot.size;
+            discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
+        }
 
         return {
           docId: doc.id,
