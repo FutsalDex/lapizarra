@@ -821,6 +821,9 @@ const StatsLegend = () => (
                         </TableBody>
                          <TableFooter className="bg-secondary/80 sticky bottom-0">
                             <TableRow>
+                                {tableHeaders}
+                            </TableRow>
+                            <TableRow>
                                 <TableCell colSpan={2} className="font-bold text-right sticky left-0 bg-secondary/80 z-20">TOTAL</TableCell>
                                 <TableCell className="text-center font-bold">{totals.goals}</TableCell>
                                 <TableCell className="text-center font-bold">{totals.assists}</TableCell>
@@ -1050,3 +1053,4 @@ const StatsLegend = () => (
     </div>
   );
 }
+
