@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -87,7 +88,7 @@ export default function LoyaltyStatus() {
 
   const exerciseCount = exercises.length;
   const points = exerciseCount * 5;
-  const savings = (exerciseCount * 0.1).toFixed(2);
+  const savings = (points * 0.05).toFixed(2);
 
   // Example renewal date (you would get this from user's subscription data)
   const renewalDate = new Date();
@@ -111,7 +112,7 @@ export default function LoyaltyStatus() {
         icon={Gift}
         title="Ahorro en Renovación"
         value={`${savings} €`}
-        description="10 céntimos por cada ejercicio."
+        description="1 punto = 5 céntimos"
       />
       <StatCard
         icon={Calendar}
