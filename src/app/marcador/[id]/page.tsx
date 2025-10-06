@@ -749,6 +749,26 @@ const StatsLegend = () => (
     }
 
     const players = userPlayers || [];
+    
+    const totals = players.reduce((acc, player) => {
+        acc.goals += player.goals || 0;
+        acc.assists += player.assists || 0;
+        acc.amarillas += player.amarillas || 0;
+        acc.rojas += player.rojas || 0;
+        acc.faltas += player.faltas || 0;
+        acc.tirosPuerta += player.tirosPuerta || 0;
+        acc.tirosFuera += player.tirosFuera || 0;
+        acc.recuperaciones += player.recuperaciones || 0;
+        acc.perdidas += player.perdidas || 0;
+        acc.paradas += player.paradas || 0;
+        acc.gRec += player.gRec || 0;
+        acc.vs1 += player.vs1 || 0;
+        return acc;
+    }, {
+        goals: 0, assists: 0, amarillas: 0, rojas: 0, faltas: 0,
+        tirosPuerta: 0, tirosFuera: 0, recuperaciones: 0, perdidas: 0,
+        paradas: 0, gRec: 0, vs1: 0
+    });
 
     return (
         <div className="space-y-6">
@@ -799,8 +819,22 @@ const StatsLegend = () => (
                                 </TableRow>
                             ))}
                         </TableBody>
-                        <TableFooter className="bg-secondary/50">
-                            {tableHeaders}
+                         <TableFooter className="bg-secondary/80 sticky bottom-0">
+                            <TableRow>
+                                <TableCell colSpan={2} className="font-bold text-right sticky left-0 bg-secondary/80 z-20">TOTAL</TableCell>
+                                <TableCell className="text-center font-bold">{totals.goals}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.assists}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.amarillas}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.rojas}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.faltas}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.tirosPuerta}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.tirosFuera}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.recuperaciones}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.perdidas}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.paradas}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.gRec}</TableCell>
+                                <TableCell className="text-center font-bold">{totals.vs1}</TableCell>
+                            </TableRow>
                         </TableFooter>
                     </Table>
                 </div>
