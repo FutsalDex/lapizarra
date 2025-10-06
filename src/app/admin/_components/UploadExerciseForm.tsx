@@ -79,7 +79,7 @@ interface UploadExerciseFormProps {
 }
 
 
-export default function UploadExerciseForm({ exerciseToEdit, onFinished, children, showBatchUpload = true }: UploadExerciseFormProps) {
+export default function UploadExerciseForm({ exerciseToEdit, onFinished, children, showBatchUpload = false }: UploadExerciseFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -518,6 +518,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                       <FormLabel className="text-base">Visibilidad del Ejercicio</FormLabel>
                       <FormDescription>
                         Para que tu ejercicio se contabilice en el programa de fidelización debe estar activado. La activación supone la visibilidad de tu ejercicio en la biblioteca de ejercicios de la aplicación, esto significa que tu ejercicio será visible por cualquier otro usuario.
+Si no deseas compartir tu ejercicio ni que se sume a tu programa de fidelización , desbloquea el botón de visualización
                       </FormDescription>
                   </div>
                   <FormControl>
