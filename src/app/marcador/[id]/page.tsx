@@ -108,7 +108,7 @@ export default function MarcadorEnVivoPage() {
   const { toast } = useToast();
   const [match, setMatch] = useState<MatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(isSaving);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const matchRef = useRef(match);
   
@@ -820,9 +820,7 @@ const StatsLegend = () => (
                             ))}
                         </TableBody>
                          <TableFooter className="bg-secondary/80 sticky bottom-0">
-                            <TableRow>
-                                {tableHeaders}
-                            </TableRow>
+                            {tableHeaders}
                             <TableRow>
                                 <TableCell colSpan={2} className="font-bold text-right sticky left-0 bg-secondary/80 z-20">TOTAL</TableCell>
                                 <TableCell className="text-center font-bold">{totals.goals}</TableCell>
@@ -1053,5 +1051,6 @@ const StatsLegend = () => (
     </div>
   );
 }
+
 
 
