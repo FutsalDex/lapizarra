@@ -17,7 +17,6 @@ const basicFeatures = [
     'Acceso completo a la biblioteca de ejercicios',
     'Creación de sesiones de entrenamiento ilimitadas',
     'Gestión de 1 equipo',
-    'Soporte con IA',
 ];
 
 const proFeatures = [
@@ -25,7 +24,6 @@ const proFeatures = [
     'Gestión de equipos ilimitada',
     'Compartir equipos con tu cuerpo técnico',
     'Estadísticas avanzadas y comparativas',
-    'Próximamente: Análisis de vídeo con IA',
 ];
 
 
