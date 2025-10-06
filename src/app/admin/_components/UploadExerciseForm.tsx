@@ -517,7 +517,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                   <div className="space-y-0.5">
                       <FormLabel className="text-base">Visibilidad del Ejercicio</FormLabel>
                       <FormDescription>
-                        Para que tu ejercicio se contabilice en el programa de fidelización debe estar activado. La activación supone la visibilidad de tu ejercicio en la biblioteca de ejercicios de la aplicación, Esto significa que tu ejercicio será visible por cualquier otro usuario.
+                        Para que tu ejercicio se contabilice en el programa de fidelización debe estar activado. La activación supone la visibilidad de tu ejercicio en la biblioteca de ejercicios de la aplicación, esto significa que tu ejercicio será visible por cualquier otro usuario.
                       </FormDescription>
                   </div>
                   <FormControl>
