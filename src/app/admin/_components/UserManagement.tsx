@@ -58,13 +58,11 @@ export default function UserManagement() {
         const data = doc.data();
         let discount = 0;
         
-        if (data.uid) {
-            // Fetch user's exercises to calculate discount
-            const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
-            const exercisesSnapshot = await getDocs(exercisesQuery);
-            const exerciseCount = exercisesSnapshot.size;
-            discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
-        }
+        // Fetch user's exercises to calculate discount using the document ID
+        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', doc.id));
+        const exercisesSnapshot = await getDocs(exercisesQuery);
+        const exerciseCount = exercisesSnapshot.size;
+        discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
 
         const subscriptionType = data.subscription || 'Trial';
         const subscriptionAmount = subscriptionPrices[subscriptionType] || 0;
