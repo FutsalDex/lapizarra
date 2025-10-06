@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { collection, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, Timestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -34,6 +34,9 @@ interface User {
   role?: 'Admin' | 'Subscribed' | 'Registered' | 'Guest';
   subscription?: string;
   createdAt: Timestamp;
+  subscriptionStartDate?: Timestamp;
+  subscriptionEndDate?: Timestamp;
+  discountAmount?: number;
 }
 
 export default function UserManagement() {
@@ -42,19 +45,31 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usersData = snapshot.docs.map(doc => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
+      const usersDataPromises = snapshot.docs.map(async (doc) => {
         const data = doc.data();
+        
+        // Fetch user's exercises to calculate discount
+        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
+        const exercisesSnapshot = await getDocs(exercisesQuery);
+        const exerciseCount = exercisesSnapshot.size;
+        const discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
+
         return {
-          docId: doc.id, // Use Firestore document ID as the unique key
-          id: data.uid, // Keep the user's auth UID if needed elsewhere
+          docId: doc.id,
+          id: data.uid,
           email: data.email || 'N/A',
           displayName: data.displayName,
-          role: data.role || 'Registered', // Default role
-          subscription: data.subscription || 'Trial', // Default subscription
+          role: data.role || 'Registered',
+          subscription: data.subscription || 'Trial',
           createdAt: data.createdAt,
+          subscriptionStartDate: data.subscriptionStartDate,
+          subscriptionEndDate: data.subscriptionEndDate,
+          discountAmount: discount,
         } as User;
       });
+      
+      const usersData = await Promise.all(usersDataPromises);
       setUsers(usersData);
       setLoading(false);
     });
@@ -64,7 +79,7 @@ export default function UserManagement() {
 
   const filteredUsers = users.filter(user => user.email.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const formatDate = (timestamp: Timestamp) => {
+  const formatDate = (timestamp?: Timestamp) => {
     if (!timestamp) return 'N/A';
     return new Date(timestamp.seconds * 1000).toLocaleDateString('es-ES', {
         year: 'numeric',
@@ -97,8 +112,10 @@ export default function UserManagement() {
                 <TableHead>Email</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead className="hidden sm:table-cell">Suscripción</TableHead>
-                <TableHead className="hidden md:table-cell">Miembro desde</TableHead>
+                <TableHead>Suscripción</TableHead>
+                <TableHead>Fecha Suscripción</TableHead>
+                <TableHead>Fecha Vencimiento</TableHead>
+                <TableHead>Descuento</TableHead>
                 <TableHead>
                     <span className="sr-only">Acciones</span>
                 </TableHead>
@@ -114,8 +131,10 @@ export default function UserManagement() {
                         {user.role}
                     </Badge>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{user.subscription}</TableCell>
-                    <TableCell className="hidden md:table-cell">{formatDate(user.createdAt)}</TableCell>
+                    <TableCell>{user.subscription}</TableCell>
+                    <TableCell>{formatDate(user.subscriptionStartDate)}</TableCell>
+                    <TableCell>{formatDate(user.subscriptionEndDate)}</TableCell>
+                    <TableCell>{user.discountAmount?.toFixed(2) || '0.00'} €</TableCell>
                     <TableCell>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
