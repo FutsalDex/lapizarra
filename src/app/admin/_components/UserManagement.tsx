@@ -37,7 +37,15 @@ interface User {
   subscriptionStartDate?: Timestamp;
   subscriptionEndDate?: Timestamp;
   discountAmount?: number;
+  subscriptionAmount?: number;
+  finalPrice?: number;
 }
+
+const subscriptionPrices: { [key: string]: number } = {
+  'Trial': 0,
+  'Básico': 9.95,
+  'Pro': 19.95,
+};
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -48,14 +56,20 @@ export default function UserManagement() {
     const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
       const usersDataPromises = snapshot.docs.map(async (doc) => {
         const data = doc.data();
-        const userId = doc.id; // Use document ID as the user identifier
         let discount = 0;
         
-        // Fetch user's exercises to calculate discount
-        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', userId));
-        const exercisesSnapshot = await getDocs(exercisesQuery);
-        const exerciseCount = exercisesSnapshot.size;
-        discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
+        if (data.uid) {
+            // Fetch user's exercises to calculate discount
+            const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
+            const exercisesSnapshot = await getDocs(exercisesQuery);
+            const exerciseCount = exercisesSnapshot.size;
+            discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
+        }
+
+        const subscriptionType = data.subscription || 'Trial';
+        const subscriptionAmount = subscriptionPrices[subscriptionType] || 0;
+        const finalPrice = Math.max(0, subscriptionAmount - discount);
+
 
         return {
           docId: doc.id,
@@ -67,6 +81,8 @@ export default function UserManagement() {
           subscriptionStartDate: data.subscriptionStartDate,
           subscriptionEndDate: data.subscriptionEndDate,
           discountAmount: discount,
+          subscriptionAmount: subscriptionAmount,
+          finalPrice: finalPrice,
         } as User;
       });
       
@@ -87,6 +103,11 @@ export default function UserManagement() {
         month: '2-digit',
         day: '2-digit'
     });
+  }
+
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined) return 'N/A';
+    return `${amount.toFixed(2)} €`;
   }
 
   return (
@@ -115,7 +136,9 @@ export default function UserManagement() {
                 <TableHead>Suscripción</TableHead>
                 <TableHead>Fecha Suscripción</TableHead>
                 <TableHead>Fecha Vencimiento</TableHead>
+                <TableHead>Importe Sub.</TableHead>
                 <TableHead>Descuento</TableHead>
+                <TableHead>Precio Final</TableHead>
                 <TableHead>
                     <span className="sr-only">Acciones</span>
                 </TableHead>
@@ -126,10 +149,16 @@ export default function UserManagement() {
                 <TableRow key={user.docId}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>{user.displayName}</TableCell>
-                    <TableCell>{user.subscription}</TableCell>
+                    <TableCell>
+                        <Badge variant={user.subscription === 'Pro' ? 'default' : 'secondary'}>
+                            {user.subscription}
+                        </Badge>
+                    </TableCell>
                     <TableCell>{formatDate(user.subscriptionStartDate)}</TableCell>
                     <TableCell>{formatDate(user.subscriptionEndDate)}</TableCell>
-                    <TableCell>{user.discountAmount?.toFixed(2) || '0.00'} €</TableCell>
+                    <TableCell>{formatCurrency(user.subscriptionAmount)}</TableCell>
+                    <TableCell>{formatCurrency(user.discountAmount)}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(user.finalPrice)}</TableCell>
                     <TableCell>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
