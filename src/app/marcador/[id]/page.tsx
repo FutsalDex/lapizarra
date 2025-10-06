@@ -776,7 +776,7 @@ const StatsLegend = () => (
                 <div className="p-2 bg-primary text-primary-foreground">
                     <h3 className="font-bold text-center">JUGADORES - {match.userTeam === 'local' ? match.localTeam : match.visitorTeam}</h3>
                 </div>
-                <div className="rounded-b-md border border-t-0 overflow-x-auto">
+                <div className="overflow-x-auto">
                     <Table>
                         <TableHeader className="[&_tr]:border-b-0">
                             {tableHeaders}
@@ -784,7 +784,7 @@ const StatsLegend = () => (
                         <TableBody>
                             {players.map((player, index) => (
                                 <TableRow key={player.id}>
-                                    <TableCell className="sticky left-0 bg-background/95 z-10 px-1 md:px-2">
+                                    <TableCell className="sticky left-0 bg-background/95 z-10 px-1 md:px-2 py-0">
                                         <Input 
                                             className="h-8 w-12 text-center" 
                                             value={player.number} 
@@ -792,7 +792,7 @@ const StatsLegend = () => (
                                             readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))} 
                                         />
                                     </TableCell>
-                                    <TableCell className="sticky left-[50px] md:left-[70px] bg-background/95 z-10 px-1 md:px-2 flex items-center gap-2">
+                                    <TableCell className="sticky left-[50px] md:left-[70px] bg-background/95 z-10 px-1 md:px-2 py-0 flex items-center gap-2">
                                         <Input 
                                             className={cn("h-8 flex-grow", player.isPlaying && "bg-green-100 dark:bg-green-900/30")} 
                                             value={player.name} 
