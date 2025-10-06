@@ -75,10 +75,11 @@ interface UploadExerciseFormProps {
   exerciseToEdit?: any;
   onFinished?: () => void;
   children?: React.ReactNode;
+  showBatchUpload?: boolean;
 }
 
 
-export default function UploadExerciseForm({ exerciseToEdit, onFinished, children }: UploadExerciseFormProps) {
+export default function UploadExerciseForm({ exerciseToEdit, onFinished, children, showBatchUpload = true }: UploadExerciseFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -332,8 +333,12 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                         <SelectItem value="Técnica">Técnica</SelectItem>
                         <SelectItem value="Táctica">Táctica</SelectItem>
                         <SelectItem value="Físico">Físico</SelectItem>
-                         <SelectItem value="Psicológico">Psicológico</SelectItem>
-                         <SelectItem value="Estrategia">Estrategia</SelectItem>
+                        <SelectItem value="Psicológico">Psicológico</SelectItem>
+                        <SelectItem value="Estrategia">Estrategia</SelectItem>
+                        <SelectItem value="Global">Global</SelectItem>
+                        <SelectItem value="ABP">ABP (Acciones a Balón Parado)</SelectItem>
+                        <SelectItem value="Transiciones">Transiciones</SelectItem>
+                        <SelectItem value="Porteros">Porteros</SelectItem>
                       </SelectContent>
                     </Select>
                   <FormMessage />
@@ -511,7 +516,7 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                   <div className="space-y-0.5">
                       <FormLabel className="text-base">Visibilidad del Ejercicio</FormLabel>
                       <FormDescription>
-                      Si está activado, el ejercicio será visible para todos los usuarios. Si está desactivado, se ocultará.
+                        Para que tu ejercicio se contabilice en el programa de fidelización debes estar activado. La activación supone la visibilidad de tu ejercicio en la biblioteca general de ejercicios de la aplicación, que ejercicio que será visible por cualquier otro usuario.
                       </FormDescription>
                   </div>
                   <FormControl>
@@ -569,37 +574,40 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
     <div className="space-y-12">
       {formContent}
       
-      <Separator />
+      {showBatchUpload && (
+        <>
+          <Separator />
+          <div>
+            <h3 className="text-lg font-medium mb-2">Subida por Lotes (Excel)</h3>
+            <Alert className="mb-4">
+                <FileQuestion className="h-4 w-4" />
+                <AlertTitle>¿Cómo funciona?</AlertTitle>
+                <AlertDescription>
+                    Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'Ejercicio', 'Fase', 'Edad'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
+                </AlertDescription>
+            </Alert>
 
-       <div>
-        <h3 className="text-lg font-medium mb-2">Subida por Lotes (Excel)</h3>
-         <Alert className="mb-4">
-            <FileQuestion className="h-4 w-4" />
-            <AlertTitle>¿Cómo funciona?</AlertTitle>
-            <AlertDescription>
-                Sube un archivo Excel (.xlsx) con los ejercicios. Asegúrate de que las cabeceras de las columnas coincidan con los nombres de los campos del formulario (ej: 'Ejercicio', 'Fase', 'Edad'). Para las categorías de edad, usa los identificadores ('benjamin', 'alevin') separados por comas.
-            </AlertDescription>
-        </Alert>
-
-         <div className="mt-4">
-            <input
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleBatchUpload}
-                className="hidden"
-                ref={fileInputRef}
-                disabled={loading}
-            />
-            <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                disabled={loading}
-            >
-                <Upload className="mr-2 h-4 w-4" />
-                {loading ? 'Subiendo...' : 'Seleccionar Archivo Excel'}
-            </Button>
-         </div>
-      </div>
+            <div className="mt-4">
+                <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={handleBatchUpload}
+                    className="hidden"
+                    ref={fileInputRef}
+                    disabled={loading}
+                />
+                <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    disabled={loading}
+                >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {loading ? 'Subiendo...' : 'Seleccionar Archivo Excel'}
+                </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

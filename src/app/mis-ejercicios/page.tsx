@@ -49,7 +49,7 @@ export default function MisEjerciciosPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UploadExerciseForm />
+              <UploadExerciseForm showBatchUpload={false} />
             </CardContent>
           </Card>
         </TabsContent>
