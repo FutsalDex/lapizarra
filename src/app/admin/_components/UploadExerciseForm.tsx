@@ -330,15 +330,16 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Técnica">Técnica</SelectItem>
-                        <SelectItem value="Táctica">Táctica</SelectItem>
-                        <SelectItem value="Físico">Físico</SelectItem>
-                        <SelectItem value="Psicológico">Psicológico</SelectItem>
-                        <SelectItem value="Estrategia">Estrategia</SelectItem>
-                        <SelectItem value="Global">Global</SelectItem>
-                        <SelectItem value="ABP">ABP (Acciones a Balón Parado)</SelectItem>
-                        <SelectItem value="Transiciones">Transiciones</SelectItem>
-                        <SelectItem value="Porteros">Porteros</SelectItem>
+                        <SelectItem value="Posesión y circulación del balón">Posesión y circulación del balón</SelectItem>
+                        <SelectItem value="Conducción y regate">Conducción y regate</SelectItem>
+                        <SelectItem value="Finalización">Finalización</SelectItem>
+                        <SelectItem value="Técnica individual y combinada">Técnica individual y combinada</SelectItem>
+                        <SelectItem value="Transiciones (ofensivas y defensivas)">Transiciones (ofensivas y defensivas)</SelectItem>
+                        <SelectItem value="sistema táctico ofensivo">sistema táctico ofensivo</SelectItem>
+                        <SelectItem value="Coordinación, agilidad y velocidad">Coordinación, agilidad y velocidad</SelectItem>
+                        <SelectItem value="Balón parado y remates">Balón parado y remates</SelectItem>
+                        <SelectItem value="Superioridades e inferioridades numéricas">Superioridades e inferioridades numéricas</SelectItem>
+                        <SelectItem value="Pase y control">Pase y control</SelectItem>
                       </SelectContent>
                     </Select>
                   <FormMessage />
