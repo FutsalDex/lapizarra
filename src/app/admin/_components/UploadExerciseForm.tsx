@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/context/AuthContext';
 
 
 const ageCategories = [
@@ -79,6 +80,7 @@ interface UploadExerciseFormProps {
 
 export default function UploadExerciseForm({ exerciseToEdit, onFinished, children }: UploadExerciseFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -127,6 +129,8 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
           ...data,
           Imagen: data.Imagen || `https://picsum.photos/400/250?random=${Date.now()}`,
           aiHint: 'futsal drill',
+          userId: user?.uid, // Associate exercise with the user
+          createdAt: new Date(),
         });
         toast({
           title: '¡Éxito!',
@@ -192,6 +196,8 @@ export default function UploadExerciseForm({ exerciseToEdit, onFinished, childre
                   'Consejos para el entrenador': exercise['Consejos para el entrenador'] || '',
                   Imagen: exercise.Imagen || `https://picsum.photos/400/250?random=${Date.now() + count}`,
                   Visible: exercise.Visible !== undefined ? !!exercise.Visible : true,
+                  userId: user?.uid, // Associate exercise with the user
+                  createdAt: new Date(),
                 };
                 await addDoc(exercisesCollection, docData);
                 count++;
