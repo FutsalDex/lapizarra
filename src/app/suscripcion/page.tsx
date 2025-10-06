@@ -16,8 +16,7 @@ import { Button } from '@/components/ui/button';
 const basicFeatures = [
     'Acceso completo a la biblioteca de ejercicios',
     'Creación de sesiones de entrenamiento ilimitadas',
-    'Gestión de hasta 2 equipos',
-    'Estadísticas básicas de equipo y jugadores',
+    'Gestión de 1 equipo',
     'Soporte con IA',
 ];
 
