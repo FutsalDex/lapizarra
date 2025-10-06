@@ -792,7 +792,7 @@ const StatsLegend = () => (
                                             readOnly={(match.isFinished && !isAdmin) || (!player.id.startsWith('local-') && !player.id.startsWith('visitor-'))} 
                                         />
                                     </TableCell>
-                                    <TableCell className="sticky left-[50px] md:left-[70px] bg-background/95 z-10 px-1 md:px-2 py-0 flex items-center gap-2">
+                                    <TableCell className="sticky left-[50px] md:left-[70px] bg-background/95 z-10 px-1 md:px-2 py-0 flex items-center">
                                         <Input 
                                             className={cn("h-8 flex-grow", player.isPlaying && "bg-green-100 dark:bg-green-900/30")} 
                                             value={player.name} 
@@ -1053,4 +1053,5 @@ const StatsLegend = () => (
     </div>
   );
 }
+
 
