@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { collection, onSnapshot, Timestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import ManageSubscriptionDialog from './ManageSubscriptionDialog';
 
 interface User {
   docId: string; // Document ID from Firestore
@@ -149,7 +150,7 @@ export default function UserManagement() {
                         <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         <DropdownMenuItem>Editar Rol</DropdownMenuItem>
-                        <DropdownMenuItem>Gestionar Suscripción</DropdownMenuItem>
+                        <ManageSubscriptionDialog user={user} />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
                             Eliminar Usuario
