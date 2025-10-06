@@ -32,7 +32,6 @@ interface User {
   id: string; // User UID from Auth
   email: string;
   displayName?: string;
-  role?: 'Admin' | 'Subscribed' | 'Registered' | 'Guest';
   subscription?: string;
   createdAt: Timestamp;
   subscriptionStartDate?: Timestamp;
@@ -49,22 +48,20 @@ export default function UserManagement() {
     const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
       const usersDataPromises = snapshot.docs.map(async (doc) => {
         const data = doc.data();
+        const userId = doc.id; // Use document ID as the user identifier
         let discount = 0;
         
-        if (data.uid) {
-            // Fetch user's exercises to calculate discount
-            const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', data.uid));
-            const exercisesSnapshot = await getDocs(exercisesQuery);
-            const exerciseCount = exercisesSnapshot.size;
-            discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
-        }
+        // Fetch user's exercises to calculate discount
+        const exercisesQuery = query(collection(db, 'exercises'), where('userId', '==', userId));
+        const exercisesSnapshot = await getDocs(exercisesQuery);
+        const exerciseCount = exercisesSnapshot.size;
+        discount = exerciseCount * 5 * 0.05; // 5 points per exercise, 5 cents per point
 
         return {
           docId: doc.id,
           id: data.uid,
           email: data.email || 'N/A',
           displayName: data.displayName,
-          role: data.role || 'Registered',
           subscription: data.subscription || 'Trial',
           createdAt: data.createdAt,
           subscriptionStartDate: data.subscriptionStartDate,
