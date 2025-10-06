@@ -100,7 +100,7 @@ export default function SuscripcionPage() {
         <CardContent className="space-y-4">
             <div>
                 <p className="font-semibold text-lg">1. Envía tu pago por Bizum al:</p>
-                <p className="text-2xl font-bold text-primary tracking-widest bg-background p-2 rounded-md inline-block mt-2">600 123 456</p>
+                <p className="text-2xl font-bold text-primary tracking-widest bg-background p-2 rounded-md inline-block mt-2">607 820 029</p>
             </div>
             <div>
                  <p className="font-semibold text-lg">2. Usa el siguiente concepto en el pago:</p>
