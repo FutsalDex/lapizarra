@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔐 Funciones reutilizables
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // 👤 Colección: /users/{userId}
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update, delete: if isOwner(userId) || isAdmin();
+    }
+
+    // 🏋️ Colección: /exercises/{exerciseId}
+    match /exercises/{exerciseId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // 🏟️ Colección: /teams/{teamId}
+    match /teams/{teamId} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.ownerId) || isAdmin();
+
+      // Subcolección: /players
+      match /players/{playerId} {
+        allow read, write: if isOwner(get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId)
+                            || isAdmin();
+      }
+
+      // Subcolección: /attendance
+      match /attendance/{attendanceId} {
+        allow read, write: if isOwner(get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId)
+                            || isAdmin();
+      }
+    }
+
+    // 📅 Otras colecciones generales
+    match /matches/{matchId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /teamMembers/{memberId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /referrals/{referralId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /invitations/{invitationId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn(); // Puedes ajustar esto si necesitas lógica más específica
+    }
+  }
+}

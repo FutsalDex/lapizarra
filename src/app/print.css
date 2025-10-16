@@ -1,0 +1,44 @@
+
+@media print {
+    html, body {
+        padding: 0;
+        margin: 0;
+        font-size: 9pt;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print-hidden {
+        display: none !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    #printable-exercise-sheet,
+    #printable-exercise-sheet .card {
+      page-break-inside: avoid !important;
+    }
+    
+    .print-layout-container {
+        display: grid !important;
+        grid-template-columns: 2fr 1fr !important; /* Two columns, left is twice as wide as right */
+        gap: 1.5rem;
+    }
+    
+    .print-left-column, .print-right-column {
+        page-break-inside: avoid !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    
+    @page {
+      size: A4 portrait;
+      margin: 1cm;
+    }
+}
