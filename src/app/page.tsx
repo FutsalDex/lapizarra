@@ -11,7 +11,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center text-center py-16 md:py-24 lg:py-32 px-4">
-      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline text-slate-800">
+      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline text-foreground">
         LaPizarra
       </h1>
       <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed mx-auto mt-4">
@@ -21,7 +21,7 @@ export default function Home() {
       </p>
       
       <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
-        <Card className="text-left border-primary border-2 shadow-lg">
+        <Card className="text-left border-primary border-2 shadow-lg bg-card">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-primary">¡Potencia Tu Entrenamiento!</CardTitle>
           </CardHeader>
@@ -37,9 +37,9 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="text-left bg-white shadow-lg">
+        <Card className="text-left bg-card shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-slate-800">
+            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-foreground">
               <Lock className="h-6 w-6 text-muted-foreground" />
               Acceso de Invitado
             </CardTitle>
