@@ -27,7 +27,7 @@ import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 
 const mainNav = [
@@ -42,7 +42,7 @@ const adminNav = [
 ]
 
 export default function Header() {
-  const { user, userProfile, trialDaysLeft, db } = useAuth();
+  const { user, userProfile, trialDaysLeft } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
