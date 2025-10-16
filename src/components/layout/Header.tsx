@@ -27,7 +27,7 @@ import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "../../lib/firebase";
 
 
 const mainNav = [
