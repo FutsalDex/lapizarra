@@ -1,4 +1,6 @@
 {
+  "/crear-sesion/page": "app/crear-sesion/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/mi-equipo/page": "app/mi-equipo/page.js",
   "/page": "app/page.js"
 }
