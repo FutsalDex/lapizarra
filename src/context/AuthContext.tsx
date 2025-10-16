@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { onAuthStateChanged, type User, type Auth } from 'firebase/auth';
+import { onAuthStateChanged, type User, type Auth, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { getFirestore, doc, onSnapshot, Timestamp, setDoc, type Firestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';

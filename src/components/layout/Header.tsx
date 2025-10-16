@@ -27,6 +27,7 @@ import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { signOut } from "firebase/auth";
+import { auth } from "../../lib/firebase";
 
 
 const mainNav = [
@@ -41,7 +42,7 @@ const adminNav = [
 ]
 
 export default function Header() {
-  const { user, userProfile, trialDaysLeft, auth, db } = useAuth();
+  const { user, userProfile, trialDaysLeft, db } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -78,7 +79,6 @@ export default function Header() {
 
 
   const handleLogout = async () => {
-    if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
