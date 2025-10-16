@@ -113,7 +113,7 @@ export default function TeamRosterPage() {
             setMembers(membersData);
         });
         
-        const playersQuery = query(collection(db, 'teams', teamId, 'players'));
+        const playersQuery = query(collection(db, 'teams', teamId, 'players'), where('active', '==', true));
         const unsubscribePlayers = onSnapshot(playersQuery, (snapshot) => {
             const playersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
             setPlayers(playersData.sort((a,b) => a.number - b.number));
