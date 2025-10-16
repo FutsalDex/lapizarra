@@ -1113,64 +1113,75 @@ function AuthProvider(param) {
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
             const unsubscribe = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$node_modules$2f40$firebase$2f$auth$2f$dist$2f$esm2017$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["onAuthStateChanged"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["auth"], {
-                "AuthProvider.useEffect.unsubscribe": async (user)=>{
+                "AuthProvider.useEffect.unsubscribe": (user)=>{
                     setUser(user);
-                    if (user) {
-                        const userDocRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'users', user.uid);
-                        const unsubProfile = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["onSnapshot"])(userDocRef, {
-                            "AuthProvider.useEffect.unsubscribe.unsubProfile": async (docSnap)=>{
-                                if (docSnap.exists()) {
-                                    const profileData = docSnap.data();
-                                    setUserProfile(profileData);
-                                    if (profileData.subscription === 'Trial' && profileData.subscriptionEndDate) {
-                                        const endDate = profileData.subscriptionEndDate.toDate();
-                                        const now = new Date();
-                                        const diffTime = endDate.getTime() - now.getTime();
-                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                        setTrialDaysLeft(diffDays);
-                                    } else {
-                                        setTrialDaysLeft(null);
-                                    }
-                                } else {
-                                    try {
-                                        var _user_email;
-                                        const referralCode = "REF-".concat(user.uid.substring(0, 6).toUpperCase());
-                                        const trialEndDate = new Date();
-                                        trialEndDate.setDate(trialEndDate.getDate() + 30);
-                                        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])(userDocRef, {
-                                            uid: user.uid,
-                                            email: user.email,
-                                            displayName: user.displayName || ((_user_email = user.email) === null || _user_email === void 0 ? void 0 : _user_email.split('@')[0]),
-                                            photoURL: user.photoURL,
-                                            createdAt: new Date(),
-                                            favorites: [],
-                                            role: 'Registered',
-                                            subscription: 'Trial',
-                                            subscriptionStartDate: new Date(),
-                                            subscriptionEndDate: trialEndDate,
-                                            referralCode: referralCode
-                                        });
-                                    } catch (error) {
-                                        console.error("Error creating user document in AuthContext:", error);
-                                    }
-                                }
-                            }
-                        }["AuthProvider.useEffect.unsubscribe.unsubProfile"]);
-                        return ({
-                            "AuthProvider.useEffect.unsubscribe": ()=>unsubProfile()
-                        })["AuthProvider.useEffect.unsubscribe"];
-                    } else {
+                    if (!user) {
+                        setLoading(false);
                         setUserProfile(null);
                         setTrialDaysLeft(null);
                     }
-                    setLoading(false);
                 }
             }["AuthProvider.useEffect.unsubscribe"]);
             return ({
                 "AuthProvider.useEffect": ()=>unsubscribe()
             })["AuthProvider.useEffect"];
         }
-    }["AuthProvider.useEffect"], []);
+    }["AuthProvider.useEffect"], [
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["auth"]
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "AuthProvider.useEffect": ()=>{
+            if (user) {
+                const userDocRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'users', user.uid);
+                const unsubProfile = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["onSnapshot"])(userDocRef, {
+                    "AuthProvider.useEffect.unsubProfile": async (docSnap)=>{
+                        if (docSnap.exists()) {
+                            const profileData = docSnap.data();
+                            setUserProfile(profileData);
+                            if (profileData.subscription === 'Trial' && profileData.subscriptionEndDate) {
+                                const endDate = profileData.subscriptionEndDate.toDate();
+                                const now = new Date();
+                                const diffTime = endDate.getTime() - now.getTime();
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                setTrialDaysLeft(diffDays);
+                            } else {
+                                setTrialDaysLeft(null);
+                            }
+                        } else {
+                            try {
+                                var _user_email;
+                                const referralCode = "REF-".concat(user.uid.substring(0, 6).toUpperCase());
+                                const trialEndDate = new Date();
+                                trialEndDate.setDate(trialEndDate.getDate() + 30);
+                                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])(userDocRef, {
+                                    uid: user.uid,
+                                    email: user.email,
+                                    displayName: user.displayName || ((_user_email = user.email) === null || _user_email === void 0 ? void 0 : _user_email.split('@')[0]),
+                                    photoURL: user.photoURL,
+                                    createdAt: new Date(),
+                                    favorites: [],
+                                    role: 'Registered',
+                                    subscription: 'Trial',
+                                    subscriptionStartDate: new Date(),
+                                    subscriptionEndDate: trialEndDate,
+                                    referralCode: referralCode
+                                });
+                            } catch (error) {
+                                console.error("Error creating user document in AuthContext:", error);
+                            }
+                        }
+                        setLoading(false);
+                    }
+                }["AuthProvider.useEffect.unsubProfile"]);
+                return ({
+                    "AuthProvider.useEffect": ()=>unsubProfile()
+                })["AuthProvider.useEffect"];
+            }
+        }
+    }["AuthProvider.useEffect"], [
+        user,
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"]
+    ]);
     if (loading) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "flex h-screen items-center justify-center",
@@ -1178,12 +1189,12 @@ function AuthProvider(param) {
                 className: "h-16 w-16 animate-spin text-primary"
             }, void 0, false, {
                 fileName: "[project]/src/context/AuthContext.tsx",
-                lineNumber: 105,
+                lineNumber: 110,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/context/AuthContext.tsx",
-            lineNumber: 104,
+            lineNumber: 109,
             columnNumber: 7
         }, this);
     }
@@ -1200,11 +1211,11 @@ function AuthProvider(param) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/context/AuthContext.tsx",
-        lineNumber: 111,
+        lineNumber: 116,
         columnNumber: 5
     }, this);
 }
-_s(AuthProvider, "yoY0eqLjUkLF5etZYtemt+XxKqE=");
+_s(AuthProvider, "hM/MJy/M83HLc1mP0WcND8lGJ40=");
 _c = AuthProvider;
 function useAuth() {
     _s1();

@@ -1028,55 +1028,64 @@ function AuthProvider({ children }) {
     const [trialDaysLeft, setTrialDaysLeft] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const functions = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$functions$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getFunctions"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["auth"].app);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        const unsubscribe = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$node_modules$2f40$firebase$2f$auth$2f$dist$2f$node$2d$esm$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["onAuthStateChanged"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["auth"], async (user)=>{
+        const unsubscribe = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$node_modules$2f40$firebase$2f$auth$2f$dist$2f$node$2d$esm$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["onAuthStateChanged"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["auth"], (user)=>{
             setUser(user);
-            if (user) {
-                const userDocRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["db"], 'users', user.uid);
-                const unsubProfile = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["onSnapshot"])(userDocRef, async (docSnap)=>{
-                    if (docSnap.exists()) {
-                        const profileData = docSnap.data();
-                        setUserProfile(profileData);
-                        if (profileData.subscription === 'Trial' && profileData.subscriptionEndDate) {
-                            const endDate = profileData.subscriptionEndDate.toDate();
-                            const now = new Date();
-                            const diffTime = endDate.getTime() - now.getTime();
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            setTrialDaysLeft(diffDays);
-                        } else {
-                            setTrialDaysLeft(null);
-                        }
-                    } else {
-                        try {
-                            const referralCode = `REF-${user.uid.substring(0, 6).toUpperCase()}`;
-                            const trialEndDate = new Date();
-                            trialEndDate.setDate(trialEndDate.getDate() + 30);
-                            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["setDoc"])(userDocRef, {
-                                uid: user.uid,
-                                email: user.email,
-                                displayName: user.displayName || user.email?.split('@')[0],
-                                photoURL: user.photoURL,
-                                createdAt: new Date(),
-                                favorites: [],
-                                role: 'Registered',
-                                subscription: 'Trial',
-                                subscriptionStartDate: new Date(),
-                                subscriptionEndDate: trialEndDate,
-                                referralCode: referralCode
-                            });
-                        } catch (error) {
-                            console.error("Error creating user document in AuthContext:", error);
-                        }
-                    }
-                });
-                return ()=>unsubProfile();
-            } else {
+            if (!user) {
+                setLoading(false);
                 setUserProfile(null);
                 setTrialDaysLeft(null);
             }
-            setLoading(false);
         });
         return ()=>unsubscribe();
-    }, []);
+    }, [
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["auth"]
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (user) {
+            const userDocRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["db"], 'users', user.uid);
+            const unsubProfile = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["onSnapshot"])(userDocRef, async (docSnap)=>{
+                if (docSnap.exists()) {
+                    const profileData = docSnap.data();
+                    setUserProfile(profileData);
+                    if (profileData.subscription === 'Trial' && profileData.subscriptionEndDate) {
+                        const endDate = profileData.subscriptionEndDate.toDate();
+                        const now = new Date();
+                        const diffTime = endDate.getTime() - now.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        setTrialDaysLeft(diffDays);
+                    } else {
+                        setTrialDaysLeft(null);
+                    }
+                } else {
+                    try {
+                        const referralCode = `REF-${user.uid.substring(0, 6).toUpperCase()}`;
+                        const trialEndDate = new Date();
+                        trialEndDate.setDate(trialEndDate.getDate() + 30);
+                        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$node$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["setDoc"])(userDocRef, {
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: user.displayName || user.email?.split('@')[0],
+                            photoURL: user.photoURL,
+                            createdAt: new Date(),
+                            favorites: [],
+                            role: 'Registered',
+                            subscription: 'Trial',
+                            subscriptionStartDate: new Date(),
+                            subscriptionEndDate: trialEndDate,
+                            referralCode: referralCode
+                        });
+                    } catch (error) {
+                        console.error("Error creating user document in AuthContext:", error);
+                    }
+                }
+                setLoading(false);
+            });
+            return ()=>unsubProfile();
+        }
+    }, [
+        user,
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["db"]
+    ]);
     if (loading) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "flex h-screen items-center justify-center",
@@ -1084,12 +1093,12 @@ function AuthProvider({ children }) {
                 className: "h-16 w-16 animate-spin text-primary"
             }, void 0, false, {
                 fileName: "[project]/src/context/AuthContext.tsx",
-                lineNumber: 105,
+                lineNumber: 110,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/context/AuthContext.tsx",
-            lineNumber: 104,
+            lineNumber: 109,
             columnNumber: 7
         }, this);
     }
@@ -1106,7 +1115,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/context/AuthContext.tsx",
-        lineNumber: 111,
+        lineNumber: 116,
         columnNumber: 5
     }, this);
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -10,7 +9,7 @@ import {
 } from 'react';
 import { onAuthStateChanged, type User, type Auth } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { getFirestore, doc, onSnapshot, Timestamp, setDoc, type Firestore } from 'firebase/firestore';
+import { doc, onSnapshot, Timestamp, setDoc, type Firestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { getFunctions, type Functions } from 'firebase/functions';
 
@@ -20,6 +19,7 @@ interface UserProfile {
     subscriptionStartDate?: Timestamp;
     subscriptionEndDate?: Timestamp;
     referralCode?: string;
+    successfulReferrals?: number;
 }
 
 interface AuthContextType {
@@ -43,9 +43,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user) {
+      if (!user) {
+        setLoading(false);
+        setUserProfile(null);
+        setTrialDaysLeft(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth]);
+  
+  useEffect(() => {
+    if (user) {
         const userDocRef = doc(db, 'users', user.uid);
         
         const unsubProfile = onSnapshot(userDocRef, async (docSnap) => {
@@ -86,18 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     console.error("Error creating user document in AuthContext:", error);
                 }
             }
+            setLoading(false);
         });
         
         return () => unsubProfile();
-      } else {
-        setUserProfile(null);
-        setTrialDaysLeft(null);
       }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  }, [user, db]);
 
   if (loading) {
     return (
