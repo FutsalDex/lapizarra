@@ -87,11 +87,11 @@ export default function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground print-hidden">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-primary text-primary-foreground print-hidden">
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold text-2xl font-headline inline-block text-primary">
+            <span className="font-bold text-2xl font-headline inline-block">
               LaPizarra
             </span>
           </Link>
@@ -100,7 +100,7 @@ export default function Header() {
               <Link
                 key={item.title}
                 href={item.href}
-                className="transition-colors hover:text-primary text-foreground/80 flex items-center gap-2"
+                className="transition-colors hover:text-white/80 text-white/90 flex items-center gap-2"
               >
                 {item.icon && <item.icon className="h-4 w-4" />}
                 {item.title}
@@ -114,16 +114,16 @@ export default function Header() {
              <div className="flex items-center gap-2">
                {isAdmin && (
                   <div className="relative">
-                      <Bell className={cn("h-6 w-6", newUserCount > 0 ? "text-red-500 fill-red-500" : "")} />
+                      <Bell className={cn("h-6 w-6", newUserCount > 0 ? "text-red-500 fill-red-500" : "text-white")} />
                       {newUserCount > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-primary animate-ping" />}
                   </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-accent">
-                    <Avatar className="h-9 w-9 border-2 border-border">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/20">
+                    <Avatar className="h-9 w-9 border-2 border-white/50">
                       <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || ''} />
-                      <AvatarFallback className="bg-secondary text-secondary-foreground">
+                      <AvatarFallback className="bg-primary-foreground text-primary">
                         {isAdmin ? <Shield className="h-5 w-5" /> : (user.email ? user.email.charAt(0).toUpperCase() : <User />)}
                       </AvatarFallback>
                     </Avatar>
@@ -164,13 +164,24 @@ export default function Header() {
           ) : (
             <div className="hidden md:flex items-center space-x-2">
               <Button 
-                variant="ghost" 
+                variant={pathname === '/login' ? 'secondary' : 'ghost'} 
                 asChild 
+                className={cn(
+                    pathname === '/login' 
+                        ? 'bg-white text-primary hover:bg-white/90' 
+                        : 'hover:bg-white/20 hover:text-white'
+                )}
               >
                 <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</Link>
               </Button>
               <Button 
                 asChild 
+                variant={pathname === '/register' ? 'secondary' : 'ghost'}
+                className={cn(
+                    pathname === '/register'
+                        ? 'bg-white text-primary hover:bg-white/90'
+                        : 'hover:bg-white/20 hover:text-white'
+                )}
               >
                 <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
               </Button>
@@ -180,20 +191,20 @@ export default function Header() {
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
-                className="md:hidden px-2"
+                className="md:hidden px-2 hover:bg-white/20"
                 aria-label="Toggle Menu"
               >
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="pr-0 flex flex-col bg-background text-foreground">
+            <SheetContent side="left" className="pr-0 flex flex-col bg-primary text-primary-foreground">
               <SheetTitle className="sr-only">Menú de navegación móvil</SheetTitle>
               <SheetDescription className="sr-only">
                 Una lista de enlaces para navegar por el sitio web.
               </SheetDescription>
               <SheetClose asChild>
                 <Link href="/" className="flex items-center space-x-2 mb-6">
-                   <span className="font-bold text-2xl font-headline inline-block text-primary">
+                   <span className="font-bold text-2xl font-headline inline-block">
                     LaPizarra
                   </span>
                 </Link>
@@ -203,7 +214,7 @@ export default function Header() {
                   <SheetClose asChild key={item.title}>
                     <Link
                       href={item.href}
-                      className="transition-colors hover:text-primary p-2 rounded-md flex items-center gap-2"
+                      className="transition-colors hover:text-white/80 p-2 rounded-md flex items-center gap-2"
                     >
                        {item.icon && <item.icon className="h-5 w-5" />}
                       {item.title}
@@ -214,19 +225,19 @@ export default function Header() {
               <div className="mt-auto flex flex-col space-y-2">
                 {user ? (
                    <SheetClose asChild>
-                     <Button onClick={handleLogout} variant="secondary">
+                     <Button onClick={handleLogout} variant="secondary" className="bg-white text-primary hover:bg-white/90">
                        Cerrar Sesión
                      </Button>
                    </SheetClose>
                 ) : (
                   <>
                   <SheetClose asChild>
-                    <Button variant="ghost" asChild className="justify-start">
+                    <Button variant="ghost" asChild className="hover:bg-white/20 justify-start">
                       <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</Link>
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Button asChild variant="default" className="justify-start">
+                    <Button asChild variant="secondary" className="bg-white text-primary hover:bg-white/90 justify-start">
                       <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Registrarse</Link>
                     </Button>
                   </SheetClose>

@@ -32,7 +32,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={cn("min-h-screen font-body antialiased", "dark")}>
+      <body className={cn("min-h-screen font-body antialiased")}>
         <AuthProvider>
           <FirebaseErrorListener />
           <div className="relative flex min-h-dvh flex-col">
