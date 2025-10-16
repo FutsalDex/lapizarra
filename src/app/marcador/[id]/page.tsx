@@ -99,7 +99,7 @@ type PlayerStatKeys = keyof Omit<Player, 'id' | 'name' | 'number' | 'isPlaying' 
 type OpponentStatKeys = keyof Omit<OpponentTeamStats, 'goals'>;
 
 
-export default function MarcadorEnVivoPage() {
+export default function MarcadorEnVivoPageBackup() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
@@ -1050,3 +1050,5 @@ const StatsLegend = () => (
     </div>
   );
 }
+
+    
