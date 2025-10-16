@@ -8,8 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { onAuthStateChanged, type User, type Auth, signOut } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, type User, type Auth } from 'firebase/auth';
+import { auth, db } from '../lib/firebase';
 import { getFirestore, doc, onSnapshot, Timestamp, setDoc, type Firestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { getFunctions, type Functions } from 'firebase/functions';
@@ -38,7 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const functions = getFunctions(auth.app);
 
 

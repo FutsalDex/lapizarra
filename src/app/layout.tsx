@@ -4,7 +4,8 @@ import { cn } from "../lib/utils";
 import { Toaster } from "../components/ui/toaster";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
-import { AuthProvider } from "../context/AuthContext";
+import { AuthProvider } from '../context/AuthContext';
+import FirebaseErrorListener from '../components/layout/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: "LaPizarra - Tu Asistente de Futsal",
@@ -33,6 +34,7 @@ export default function RootLayout({
       </head>
       <body className={cn("min-h-screen font-body antialiased")}>
         <AuthProvider>
+          <FirebaseErrorListener />
           <div className="relative flex min-h-dvh flex-col">
             <Header />
             <main className="flex-1">{children}</main>
