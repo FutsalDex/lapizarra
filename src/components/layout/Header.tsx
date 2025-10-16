@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, ShieldCheck, Menu, LogOut, User, Upload, AlertTriangle, Bell } from "lucide-react";
+import { BookOpen, Pencil, Users, Heart, Star, LogIn, UserPlus, Shield, Menu, LogOut, User, Upload, AlertTriangle, Bell } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -36,7 +37,7 @@ const mainNav = [
 ];
 
 const adminNav = [
-    { title: "Panel Admin", href: "/admin", icon: ShieldCheck },
+    { title: "Panel Admin", href: "/admin", icon: Shield },
 ]
 
 export default function Header() {
@@ -77,6 +78,7 @@ export default function Header() {
 
 
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
@@ -122,7 +124,7 @@ export default function Header() {
                     <Avatar className="h-9 w-9 border-2 border-white/50">
                       <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || ''} />
                       <AvatarFallback className="bg-primary-foreground text-primary">
-                        {isAdmin ? <ShieldCheck className="h-5 w-5" /> : (user.email ? user.email.charAt(0).toUpperCase() : <User />)}
+                        {isAdmin ? <Shield className="h-5 w-5" /> : (user.email ? user.email.charAt(0).toUpperCase() : <User />)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>

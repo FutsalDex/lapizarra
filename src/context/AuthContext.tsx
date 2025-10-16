@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,11 +9,10 @@ import {
   type ReactNode,
 } from 'react';
 import { onAuthStateChanged, type User, type Auth } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
+import { auth } from '../lib/firebase';
+import { getFirestore, doc, onSnapshot, Timestamp, setDoc, type Firestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { doc, onSnapshot, Timestamp, setDoc } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
-import { Firestore } from 'firebase/firestore';
 
 interface UserProfile {
     role: 'Registered' | 'Subscribed' | 'Admin';
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const db = getFirestore(auth.app);
   const functions = getFunctions(auth.app);
 
 
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [db]);
 
   if (loading) {
     return (
