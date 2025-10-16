@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -22,10 +23,11 @@ import {
 } from "../ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useAuth } from "../../context/AuthContext";
-import { auth, db } from "../../lib/firebase";
 import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
 
 
 const mainNav = [
@@ -54,7 +56,7 @@ export default function Header() {
   }
   
   useEffect(() => {
-    if (!user || !isAdmin) {
+    if (!user || !isAdmin || !db) {
       setNewUserCount(0);
       return;
     }
@@ -73,11 +75,11 @@ export default function Header() {
     });
 
     return () => unsubscribe();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, db]);
 
 
   const handleLogout = async () => {
-    await auth.signOut();
+    await signOut(auth);
     router.push('/login');
   };
   
