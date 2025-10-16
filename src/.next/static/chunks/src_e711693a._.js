@@ -1108,6 +1108,7 @@ function AuthProvider(param) {
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [userProfile, setUserProfile] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [trialDaysLeft, setTrialDaysLeft] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const functions = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$functions$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getFunctions"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["auth"].app);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
@@ -1177,12 +1178,12 @@ function AuthProvider(param) {
                 className: "h-16 w-16 animate-spin text-primary"
             }, void 0, false, {
                 fileName: "[project]/src/context/AuthContext.tsx",
-                lineNumber: 104,
+                lineNumber: 105,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/context/AuthContext.tsx",
-            lineNumber: 103,
+            lineNumber: 104,
             columnNumber: 7
         }, this);
     }
@@ -1199,11 +1200,11 @@ function AuthProvider(param) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/context/AuthContext.tsx",
-        lineNumber: 110,
+        lineNumber: 111,
         columnNumber: 5
     }, this);
 }
-_s(AuthProvider, "WycvliXlKHiFjN+6Nj63IB/wNNM=");
+_s(AuthProvider, "yoY0eqLjUkLF5etZYtemt+XxKqE=");
 _c = AuthProvider;
 function useAuth() {
     _s1();

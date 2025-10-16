@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const functions = getFunctions(auth.app);
 
 
