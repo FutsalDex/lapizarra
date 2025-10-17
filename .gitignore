@@ -44,3 +44,9 @@ next-env.d.ts
 # genkit
 .genkit/
 .genkit-cache.json
+node_modules/
+hosting/dist/
+.next/
+node_modules/
+hosting/dist/
+.next/

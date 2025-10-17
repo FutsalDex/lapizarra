@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+* { margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; }
+.card { padding: 2em; }
+.read-the-docs { color: #888; }
+
+/* Fix wrap texto largo */
+p, h1, h2, h3 { word-break: break-word; hyphens: auto; overflow-wrap: break-word; }
